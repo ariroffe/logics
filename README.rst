@@ -48,7 +48,7 @@ Construct formulae and inferences/metainferences, and use specific methods of th
 >>> formula = classical_parser.parse('~(p and not q)')
 >>> inference = classical_parser.parse('(p / p) // (q / p & not p)')
 >>> type(formula)
-<class 'logics.classes.propositional.inference.Inference'>
+<class 'logics.classes.propositional.formula.Formula'>
 >>> type(inference)
 <class 'logics.classes.propositional.inference.Inference'>
 >>> formula.depth
