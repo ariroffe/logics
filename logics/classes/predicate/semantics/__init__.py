@@ -1,0 +1,1 @@
+from logics.classes.predicate.semantics.models import Model, ModelTheory
