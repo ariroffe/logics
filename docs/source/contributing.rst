@@ -9,7 +9,8 @@ Contributing Guidelines
 
 * If you are planning on adding a new feature, please open a new branch in the git repository, named
   ``feature-<name of your feature>``. To apply a hotfix, do so in a branch ``hotfix-<what is being fixed>``. When you
-  are done with your code, make a Pull Request on GitHub so that administrators can review your code.
+  are done with your code, make a Pull Request on GitHub into de ``develop`` branch, so that administrators can review
+  your code.
 
 * Please follow the OOP style used throughout the project. Placing your new code in new files is preferred.
 
