@@ -343,8 +343,8 @@ class TruthPredicateLanguage(PredicateLanguage):
     """Language for arithmetic containing a truth predicate
 
     Subclasses PredicateLanguage but has a special clause for ``is_well_formed``, which states that atomic formulae that
-    begin with predicate ``'Tr'`` must only argument must be a numeral. I.e. truth predicate atomics must be of the form
-    ``PredicateFormula(['Tr', '514951'])``
+    begin with predicate ``'Tr'`` must have a numeral as its only argument. I.e. truth predicate atomics must be of the
+    form ``PredicateFormula(['Tr', '514951'])``
     """
     def _is_atomic_well_formed(self, formula, return_error):
         if formula[0] == 'Tr':

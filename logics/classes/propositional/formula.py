@@ -45,6 +45,7 @@ class Formula(list):
 
         Examples
         --------
+        >>> from logics.classes.propositional import Formula
         >>> Formula(['p']).is_atomic
         True
         >>> Formula(['~', ['p']]).is_atomic
@@ -57,6 +58,7 @@ class Formula(list):
 
         Examples
         --------
+        >>> from logics.classes.propositional import Formula
         >>> Formula(['p']).arguments()
         []
         >>> Formula(['∧', ['p'], ['~', ['A']]]).arguments()
@@ -73,6 +75,7 @@ class Formula(list):
 
         Examples
         --------
+        >>> from logics.classes.propositional import Formula
         >>> from logics.instances.propositional.languages import classical_language
         >>> Formula(['p']).is_schematic(classical_language)
         False
@@ -95,6 +98,7 @@ class Formula(list):
 
         Examples
         --------
+        >>> from logics.classes.propositional import Formula
         >>> Formula(['p']).main_symbol is None
         True
         >>> Formula(['∧', ['p'], ['~', ['A']]]).main_symbol
@@ -110,6 +114,7 @@ class Formula(list):
 
         Examples
         --------
+        >>> from logics.classes.propositional import Formula
         >>> Formula(['p']).depth
         0
         >>> Formula(['∧', ['p'], ['~', ['A']]]).depth
@@ -134,6 +139,7 @@ class Formula(list):
 
         Examples
         --------
+        >>> from logics.classes.propositional import Formula
         >>> Formula(['p']).subformulae
         [['p']]
         >>> Formula(['∧', ['p'], ['~', ['A']]]).subformulae
@@ -156,6 +162,7 @@ class Formula(list):
 
         Examples
         --------
+        >>> from logics.classes.propositional import Formula
         >>> from logics.instances.propositional.languages import classical_language
         >>> Formula(['∧', ['p'], ['~', ['A']]]).atomics_inside(classical_language)
         {'A', 'p'}
@@ -196,6 +203,7 @@ class Formula(list):
 
         Examples
         --------
+        >>> from logics.classes.propositional import Formula
         >>> f = Formula(['∧', ['p'], ['~', ['A']]])
         >>> f.substitute(Formula(['~', ['A']]), Formula(['~', ['p']]))
         ['∧', ['p'], ['~', ['p']]]
@@ -239,6 +247,7 @@ class Formula(list):
 
         Examples
         --------
+        >>> from logics.classes.propositional import Formula
         >>> from logics.instances.propositional.languages import classical_language
         >>> f = Formula(['∧', ['A'], ['B']])
         >>> f.instantiate(classical_language, {'A': Formula(['B']),
@@ -292,6 +301,7 @@ class Formula(list):
 
         Examples
         --------
+        >>> from logics.classes.propositional import Formula
         >>> from logics.instances.propositional.languages import classical_language
         >>> f = Formula(['→', ['p'], ['→', ['p'], ['q']]])
         >>> f.schematic_substitute(classical_language, Formula(['→', ['A'], ['B']]),
@@ -352,6 +362,7 @@ class Formula(list):
 
         Examples
         --------
+        >>> from logics.classes.propositional import Formula
         >>> from logics.instances.propositional.languages import classical_language
         >>> Formula(['~', ['p']]).is_instance_of(Formula(['A']), classical_language)
         True

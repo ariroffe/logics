@@ -94,12 +94,12 @@ class StandardParser:
 
     >>> classical_parser.parse_replacement_dict.update({'⊃': '→', '≡': '↔'})
     >>> classical_parser.unparse_replacement_dict.update({'→': '⊃', '↔': '≡'})
-    >>> # You can now use ``'⊃'`` and ``'≡'`` as arguments to the parser
+    >>> # You can now use '⊃' and '≡' as arguments to the parser
     >>> f = classical_parser.parse('(p ≡ q) and (q ⊃ r)')
-    >>> # Internally, the formula is still stored with ``'→'`` and ``'↔'``
+    >>> # Internally, the formula is still stored with '→' and '↔'
     >>> f
     ['∧', ['↔', ['p'], ['q']], ['→', ['q'], ['r']]]
-    >>> # When unparsing, you will see what you want (``'⊃'`` and ``'≡'``)
+    >>> # When unparsing, you will see what you want ('⊃' and '≡')
     >>> classical_parser.unparse(f)
     '(p ≡ q) ∧ (q ⊃ r)'
     """

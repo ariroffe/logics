@@ -129,7 +129,7 @@ class Inference:
 
     @property
     def is_metainference(self):
-        """True if the level > 1, False otherwise"""
+        """``True`` if the level > 1, ``False`` otherwise"""
         return self.level > 1
 
     def atomics_inside(self, language, prev_at=None):
@@ -153,7 +153,7 @@ class Inference:
         return at
 
     def is_schematic(self, language):
-        """True if at least one Formula inside the Inference is schematic (contains a schematic Formula),
+        """``True`` if at least one Formula inside the Inference is schematic (contains a schematic Formula),
         False otherwise"""
         for atomic in self.atomics_inside(language):
             if language.is_metavariable_string(atomic):

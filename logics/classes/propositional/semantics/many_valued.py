@@ -876,6 +876,12 @@ class IntersectionLogic(LocalValidityMixin, ValidityShortcutsMixin, list):
                 return False
         return True
 
+    def is_locally_valid(self, inference):
+        for logic in self:
+            if not logic.is_locally_valid(inference):
+                return False
+        return True
+
     def is_globally_valid(self, inference):
         for logic in self:
             if not logic.is_globally_valid(inference):
@@ -930,6 +936,12 @@ class UnionLogic(LocalValidityMixin, ValidityShortcutsMixin, list):
     def satisfies(self, inference, atomic_valuation_dict=None, evaluate_premise=False):
         for logic in self:
             if logic.satisfies(inference, atomic_valuation_dict, evaluate_premise):
+                return True
+        return False
+
+    def is_locally_valid(self, inference):
+        for logic in self:
+            if logic.is_locally_valid(inference):
                 return True
         return False
 

@@ -63,6 +63,7 @@ class PredicateFormula(Formula):
 
         Examples
         --------
+        >>> from logics.classes.predicate import PredicateFormula
         >>> PredicateFormula(['P', 'x']).is_atomic
         True
         >>> PredicateFormula(['∧', ['~', ['P', 'a']],['X', 'a']]).is_atomic
@@ -79,6 +80,7 @@ class PredicateFormula(Formula):
 
         Examples
         --------
+        >>> from logics.classes.predicate import PredicateFormula
         >>> PredicateFormula(['∧', ['P', 'x'], ['A']]).arguments()
         [['P', 'x'], ['A']]
         >>> PredicateFormula(['∃', 'x', ['∀', 'X', ['X', 'x']]]).arguments()
@@ -107,6 +109,7 @@ class PredicateFormula(Formula):
 
         Examples
         --------
+        >>> from logics.classes.predicate import PredicateFormula
         >>> from logics.instances.predicate.languages import classical_function_language
         >>> PredicateFormula(['∀', 'X', ['X', 'x']]).free_variables(classical_function_language)
         {'x'}
@@ -160,6 +163,7 @@ class PredicateFormula(Formula):
 
         Examples
         --------
+        >>> from logics.classes.predicate import PredicateFormula
         >>> from logics.instances.predicate.languages import classical_function_language
         >>> PredicateFormula(['∀', 'X', ['X', 'x']]).is_closed(classical_function_language)
         False
@@ -173,6 +177,7 @@ class PredicateFormula(Formula):
 
         Examples
         --------
+        >>> from logics.classes.predicate import PredicateFormula
         >>> from logics.instances.predicate.languages import classical_function_language
         >>> PredicateFormula(['∀', 'X', ['X', 'x']]).is_open(classical_function_language)
         True
@@ -204,6 +209,7 @@ class PredicateFormula(Formula):
 
         Examples
         --------
+        >>> from logics.classes.predicate import PredicateFormula
         >>> PredicateFormula(['P', 'x']).vsubstitute('x', 'a')
         ['P', 'a']
         >>> PredicateFormula(['∀', 'x', ['P', 'x']]).vsubstitute('x', 'a')

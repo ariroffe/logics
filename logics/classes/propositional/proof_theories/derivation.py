@@ -97,7 +97,7 @@ class Derivation(list):
 
     @property
     def conclusion(self):
-        """Returns the formula in the last step of the derivation (or None if the derivation is empty)"""
+        """Returns the formula in the last step of the derivation (or ``None`` if the derivation is empty)"""
         if not self:
             return None
         return self[-1].content

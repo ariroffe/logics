@@ -13,7 +13,7 @@ Instances
 
 .. data:: logics.instances.predicate.languages.arithmetic_truth_language
 
-   A language for arithmetic truth. Similar to the language of natural number arithmetic (see Languages > Instances),
+   A language for arithmetic truth. Similar to the language of natural number arithmetic (see Language > Instances),
    with added unary predicate `Tr`, unary function `quote` and sentential constant `λ`.
 
 

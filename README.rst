@@ -7,7 +7,7 @@ as possible), well-documented and readable code and minimal dependencies, rather
 applications are educational software (e.g. `TAUT <https://taut-logic.com/>`_, which uses a previous version of this
 package), and quick prototyping of ideas for research purposes.
 
-To see the documentation please visit: LINK
+To see the documentation, visit `this link <https://logics.readthedocs.io/en/latest/?>`_.
 
 
 Installation
