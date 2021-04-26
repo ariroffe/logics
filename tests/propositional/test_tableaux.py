@@ -150,6 +150,8 @@ class TestConstructiveTrees(unittest.TestCase):
         self.assertEqual(cl_system.rules['R∧'].children[0].content, Formula(['A1']))
         self.assertEqual(cl_system.rules['R∧'].children[1].content, Formula(['A2']))
 
+        # Further tests are in tests.utils.test_tableaux_solver
+
 
 if __name__ == '__main__':
     unittest.main()

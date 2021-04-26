@@ -876,6 +876,8 @@ class ConstructiveTreeSystem(TableauxSystem):
     └── ~~q (R∧)
         └── ~q (R~)
     """
+    fast_node_is_closed_enabled = False
+
     def __init__(self, language, solver=None):
         self.language = language
         self.closure_rules = []
@@ -892,3 +894,36 @@ class ConstructiveTreeSystem(TableauxSystem):
             for ar in range(arity):
                 TableauxNode(content=Formula([f'A{ar+1}']), justification=f'R{constant}', parent=initial_node)
             self.rules[f'R{constant}'] = initial_node
+
+    def node_is_closed(self, node):
+        """In a constructive tree system a node is considered closed iff its content is an atomic wff
+
+        Examples
+        --------
+        >>> from logics.utils.parsers import classical_parser
+        >>> from logics.instances.propositional.tableaux import classical_constructive_tree_system  # Identical to the above
+        >>> tree = classical_constructive_tree_system.solve_tree(classical_parser.parse('~p'))
+        >>> classical_constructive_tree_system.node_is_closed(tree.children[0])
+        True
+        >>> classical_constructive_tree_system.tree_is_closed(tree)
+        True
+        """
+        if node.content.is_atomic and self.language.is_well_formed(node.content):
+            return True
+        return False
+
+    def is_well_formed(self, formula):
+        """Determines through tableaux methods if a formula is well-formed (if its constructive tree is closed)
+
+        This method is actually an alias of `is_valid`
+
+        Examples
+        --------
+        >>> from logics.classes.propositional import Formula
+        >>> from logics.instances.propositional.tableaux import classical_constructive_tree_system
+        >>> classical_constructive_tree_system.is_well_formed(Formula(['~', ['~', ['p']]]))
+        True
+        >>> classical_constructive_tree_system.is_well_formed(Formula(['~', '~', ['p']]))
+        False
+        """
+        return self.is_valid(formula)

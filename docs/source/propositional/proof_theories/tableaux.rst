@@ -59,3 +59,4 @@ Constructive Tree System
 ------------------------
 
 .. autoclass:: logics.classes.propositional.proof_theories.tableaux.ConstructiveTreeSystem
+   :members:

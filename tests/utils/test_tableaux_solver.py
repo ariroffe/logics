@@ -1,5 +1,6 @@
 import unittest
 
+from logics.classes.propositional import Formula
 from logics.instances.propositional.tableaux import classical_tableaux_system, LP_tableaux_system, \
     classical_constructive_tree_system
 from logics.utils.solvers.tableaux import standard_tableaux_solver, mvl_tableaux_solver
@@ -140,6 +141,7 @@ class TestConstructiveTreeSolver(unittest.TestCase):
         self.assertEqual(len(tree.children), 1)
         self.assertEqual(tree.children[0].content, classical_parser.parse('p'))
         self.assertEqual(len(tree.children[0].children), 0)
+        self.assertTrue(classical_constructive_tree_system.tree_is_closed(tree))
 
         # p ∧ ~q
         tree = classical_constructive_tree_system.solve_tree(classical_parser.parse('p ∧ ~q'))
@@ -151,6 +153,12 @@ class TestConstructiveTreeSolver(unittest.TestCase):
         self.assertEqual(len(tree.children[1].children), 1)
         self.assertEqual(tree.children[1].children[0].content, classical_parser.parse('q'))
         self.assertEqual(len(tree.children[1].children[0].children), 0)
+        self.assertTrue(classical_constructive_tree_system.tree_is_closed(tree))
+
+    def test_is_well_formed(self):
+        self.assertTrue(classical_constructive_tree_system.is_well_formed(Formula(['~', ['~', ['p']]])))
+        self.assertFalse(classical_constructive_tree_system.is_well_formed(Formula(['~', '~', ['p']])))
+        # Needs further testing
 
 
 if __name__ == '__main__':
