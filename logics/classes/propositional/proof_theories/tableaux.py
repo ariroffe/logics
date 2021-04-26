@@ -829,3 +829,101 @@ class ManyValuedTableauxSystem(TableauxSystem):
         elif node.content in inference.conclusions and node.index == 0:
             return True
         return False
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+
+class ConstructiveTreeSystem(TableauxSystem):
+    """Constructive tree system for a given language
+
+    Only takes a language (make sure it is an instance of ``InfiniteLanguage``) and, optionally, a solver.
+    Will automatically build the tableaux rules from the given language.
+
+    Examples
+    --------
+    >>> from logics.utils.parsers import classical_parser
+    >>> from logics.instances.propositional.languages import classical_infinite_language
+    >>> from logics.utils.solvers.tableaux import constructive_tree_solver
+    >>> from logics.classes.propositional.proof_theories.tableaux import ConstructiveTreeSystem
+    >>> classical_ct_system = ConstructiveTreeSystem(classical_infinite_language, solver=constructive_tree_solver)
+
+    The rules are automatically built:
+
+    >>> classical_ct_system.rules['R~'].print_tree(classical_parser)
+    ~A1
+    └── A1 (R~)
+    >>> classical_ct_system.rules['R∧'].print_tree(classical_parser)
+    A1 ∧ A2
+    ├── A1 (R∧)
+    └── A2 (R∧)
+
+    The solver works as expected:
+
+    >>> tree = classical_ct_system.solve_tree(classical_parser.parse('p and not q'))
+    >>> tree.print_tree(classical_parser)
+    p ∧ ~q
+    ├── p (R∧)
+    └── ~q (R∧)
+        └── q (R~)
+    >>> tree = classical_ct_system.solve_tree(classical_parser.parse('(p iff ~r) and ~~q'))
+    >>> tree.print_tree(classical_parser)
+    (p ↔ ~r) ∧ ~~q
+    ├── p ↔ ~r (R∧)
+    │   ├── p (R↔)
+    │   └── ~r (R↔)
+    │       └── r (R~)
+    └── ~~q (R∧)
+        └── ~q (R~)
+    """
+    fast_node_is_closed_enabled = False
+
+    def __init__(self, language, solver=None):
+        self.language = language
+        self.closure_rules = []
+        self.solver = solver
+        self.rules = dict()
+
+        # Automatically establish the rules based on the language
+        for constant in language.constant_arity_dict:
+            arity = language.constant_arity_dict[constant]
+            initial_formula = [constant]
+            initial_formula.extend([[f'A{num+1}'] for num in range(arity)])
+            initial_formula = Formula(initial_formula)
+            initial_node = TableauxNode(content=initial_formula, justification=None)
+            for ar in range(arity):
+                TableauxNode(content=Formula([f'A{ar+1}']), justification=f'R{constant}', parent=initial_node)
+            self.rules[f'R{constant}'] = initial_node
+
+    def node_is_closed(self, node):
+        """In a constructive tree system a node is considered closed iff its content is an atomic wff
+
+        Examples
+        --------
+        >>> from logics.utils.parsers import classical_parser
+        >>> from logics.instances.propositional.tableaux import classical_constructive_tree_system  # Identical to the above
+        >>> tree = classical_constructive_tree_system.solve_tree(classical_parser.parse('~p'))
+        >>> classical_constructive_tree_system.node_is_closed(tree.children[0])
+        True
+        >>> classical_constructive_tree_system.tree_is_closed(tree)
+        True
+        """
+        if node.content.is_atomic and self.language.is_well_formed(node.content):
+            return True
+        return False
+
+    def is_well_formed(self, formula):
+        """Determines through tableaux methods if a formula is well-formed (if its constructive tree is closed)
+
+        This method is actually an alias of `is_valid`
+
+        Examples
+        --------
+        >>> from logics.classes.propositional import Formula
+        >>> from logics.instances.propositional.tableaux import classical_constructive_tree_system
+        >>> classical_constructive_tree_system.is_well_formed(Formula(['~', ['~', ['p']]]))
+        True
+        >>> classical_constructive_tree_system.is_well_formed(Formula(['~', '~', ['p']]))
+        False
+        """
+        return self.is_valid(formula)

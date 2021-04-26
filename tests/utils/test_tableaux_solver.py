@@ -1,6 +1,8 @@
 import unittest
 
-from logics.instances.propositional.tableaux import classical_tableaux_system, LP_tableaux_system
+from logics.classes.propositional import Formula
+from logics.instances.propositional.tableaux import classical_tableaux_system, LP_tableaux_system, \
+    classical_constructive_tree_system
 from logics.utils.solvers.tableaux import standard_tableaux_solver, mvl_tableaux_solver
 from logics.utils.parsers import classical_parser
 from logics.utils.formula_generators.generators_biased import random_formula_generator
@@ -9,7 +11,7 @@ from logics.instances.propositional.languages import classical_infinite_language
 from logics.instances.propositional.many_valued_semantics import classical_mvl_semantics, LP_mvl_semantics
 
 
-class TestNaturalDeductionSolver(unittest.TestCase):
+class TestTableauxSolver(unittest.TestCase):
     def test_some_inferences(self):
         conjunction_elimination = classical_parser.parse('p ∧ q / p')
         conditional_elimination = classical_parser.parse('p, p → q / q')
@@ -52,9 +54,9 @@ class TestNaturalDeductionSolver(unittest.TestCase):
         # Test with valid arguments
         for _ in range(1000):
             inf = random_formula_generator.random_valid_inference(num_premises=2, num_conclusions=1,
-                                                                    max_depth=3, atomics=['p', 'q', 'r'],
-                                                                    language=cl_language,
-                                                                    validity_apparatus=classical_mvl_semantics)
+                                                                  max_depth=3, atomics=['p', 'q', 'r'],
+                                                                  language=cl_language,
+                                                                  validity_apparatus=classical_mvl_semantics)
 
             tableaux = standard_tableaux_solver.solve(inf, classical_tableaux_system)
             # print('\nInference to solve:', classical_parser.unparse(inf))
@@ -129,6 +131,34 @@ class TestNaturalDeductionSolver(unittest.TestCase):
                 correct, error_list = LP_tableaux_system.is_correct_tree(tableaux, inf)
                 print(error_list)
                 raise e
+
+
+class TestConstructiveTreeSolver(unittest.TestCase):
+    def test_constructive_tree_solver(self):
+        # ~p
+        tree = classical_constructive_tree_system.solve_tree(classical_parser.parse('~p'))
+        self.assertEqual(tree.content, classical_parser.parse('~p'))
+        self.assertEqual(len(tree.children), 1)
+        self.assertEqual(tree.children[0].content, classical_parser.parse('p'))
+        self.assertEqual(len(tree.children[0].children), 0)
+        self.assertTrue(classical_constructive_tree_system.tree_is_closed(tree))
+
+        # p ∧ ~q
+        tree = classical_constructive_tree_system.solve_tree(classical_parser.parse('p ∧ ~q'))
+        self.assertEqual(tree.content, classical_parser.parse('p ∧ ~q'))
+        self.assertEqual(len(tree.children), 2)
+        self.assertEqual(tree.children[0].content, classical_parser.parse('p'))
+        self.assertEqual(len(tree.children[0].children), 0)
+        self.assertEqual(tree.children[1].content, classical_parser.parse('~q'))
+        self.assertEqual(len(tree.children[1].children), 1)
+        self.assertEqual(tree.children[1].children[0].content, classical_parser.parse('q'))
+        self.assertEqual(len(tree.children[1].children[0].children), 0)
+        self.assertTrue(classical_constructive_tree_system.tree_is_closed(tree))
+
+    def test_is_well_formed(self):
+        self.assertTrue(classical_constructive_tree_system.is_well_formed(Formula(['~', ['~', ['p']]])))
+        self.assertFalse(classical_constructive_tree_system.is_well_formed(Formula(['~', '~', ['p']])))
+        # Needs further testing
 
 
 if __name__ == '__main__':

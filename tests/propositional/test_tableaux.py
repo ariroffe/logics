@@ -1,6 +1,6 @@
 import unittest
 
-from logics.classes.propositional.proof_theories.tableaux import TableauxNode
+from logics.classes.propositional.proof_theories.tableaux import TableauxNode, ConstructiveTreeSystem
 from logics.classes.propositional import Formula
 from logics.instances.propositional.languages import classical_infinite_language as lang
 from logics.instances.propositional.tableaux import classical_tableaux_system
@@ -134,6 +134,23 @@ class TestTableauxSystem(unittest.TestCase):
         '''
         self.assertFalse(classical_tableaux_system.is_correct_tree(n1))
         # More extensive tests (with the random argument generator) are made in tests/utils/test_tableaux_solver
+
+
+class TestConstructiveTrees(unittest.TestCase):
+    def test_constructive_tree_system_rules(self):
+        cl_system = ConstructiveTreeSystem(lang)  # lang is classical_infinite_language
+        # Negation
+        self.assertEqual(cl_system.rules['R~'].content, Formula(['~', ['A1']]))
+        self.assertEqual(len(cl_system.rules['R~'].children), 1)
+        self.assertEqual(cl_system.rules['R~'].children[0].content, Formula(['A1']))
+
+        # Conjunction
+        self.assertEqual(cl_system.rules['R∧'].content, Formula(['∧', ['A1'], ['A2']]))
+        self.assertEqual(len(cl_system.rules['R∧'].children), 2)
+        self.assertEqual(cl_system.rules['R∧'].children[0].content, Formula(['A1']))
+        self.assertEqual(cl_system.rules['R∧'].children[1].content, Formula(['A2']))
+
+        # Further tests are in tests.utils.test_tableaux_solver
 
 
 if __name__ == '__main__':

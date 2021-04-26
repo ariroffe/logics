@@ -19,6 +19,7 @@ Table of Contents
 
    setup
    project_structure
+   contributing
 
 
 .. toctree::

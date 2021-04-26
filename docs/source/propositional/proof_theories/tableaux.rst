@@ -53,3 +53,10 @@ Tableaux Solver
    :members:
 
 .. autoclass:: logics.utils.solvers.tableaux.ManyValuedTableauxSolver
+
+
+Constructive Tree System
+------------------------
+
+.. autoclass:: logics.classes.propositional.proof_theories.tableaux.ConstructiveTreeSystem
+   :members:
