@@ -829,3 +829,25 @@ class ManyValuedTableauxSystem(TableauxSystem):
         elif node.content in inference.conclusions and node.index == 0:
             return True
         return False
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+
+class ConstructiveTreeSystem(TableauxSystem):
+    def __init__(self, language, solver=None):
+        self.language = language
+        self.closure_rules = []
+        self.solver = solver
+        self.rules = dict()
+
+        # Automatically establish the rules based on the language
+        for constant in language.constant_arity_dict:
+            arity = language.constant_arity_dict[constant]
+            initial_formula = [constant]
+            initial_formula.extend([f'A{num+1}' for num in range(arity)])
+            initial_formula = Formula(initial_formula)
+            initial_node = TableauxNode(content=initial_formula, justification=None)
+            for ar in range(arity):
+                TableauxNode(content=Formula([f'A{ar+1}']), justification=f'R{constant}', parent=initial_node)
+            self.rules[f'R{constant}'] = initial_node

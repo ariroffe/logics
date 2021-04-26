@@ -1,7 +1,8 @@
 from logics.classes.propositional import Formula
 from logics.instances.propositional.languages import classical_infinite_language
-from logics.classes.propositional.proof_theories.tableaux import TableauxNode, TableauxSystem, ManyValuedTableauxSystem
-from logics.utils.solvers.tableaux import standard_tableaux_solver, mvl_tableaux_solver
+from logics.classes.propositional.proof_theories.tableaux import TableauxNode, TableauxSystem, \
+    ManyValuedTableauxSystem, ConstructiveTreeSystem
+from logics.utils.solvers.tableaux import standard_tableaux_solver, mvl_tableaux_solver, constructive_tree_solver
 from logics.instances.propositional.languages import classical_infinite_language_noconditional
 
 
@@ -258,3 +259,9 @@ TableauxNode(content=Formula(['□', ['~', ['A']]]), justification='R~◇', pare
 ['~', ['◇', ['A']]]
 └── ['□', ['~', ['A']]] (R~◇)
 '''
+
+# ----------------------------------------------------------------------------------------------------------------------
+# CONSTRUCTIVE TREES
+
+classical_constructive_tree_system = ConstructiveTreeSystem(language=classical_infinite_language,
+                                                            solver=constructive_tree_solver)

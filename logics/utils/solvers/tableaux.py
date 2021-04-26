@@ -189,3 +189,21 @@ class ModalTableauxSolver(TableauxSolver):
 
     # Aca en solve guardar en una lista los nodos de PreOrderIter, y aplicar solo si esta en la lista
     # tod eso wrappeado en un while que trackee si hubo algun cambio
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+
+class ConstructiveTreeSolver(TableauxSolver):
+    """Solver that returns the constructive tree of a formula
+
+    Examples
+    --------
+
+    """
+    def _begin_tableaux(self, inference):
+        # In this case inference will be a formula
+        return TableauxNode(content=inference, parent=None)
+
+
+constructive_tree_solver = ConstructiveTreeSolver()
