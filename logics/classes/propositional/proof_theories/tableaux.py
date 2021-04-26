@@ -835,6 +835,47 @@ class ManyValuedTableauxSystem(TableauxSystem):
 # ----------------------------------------------------------------------------------------------------------------------
 
 class ConstructiveTreeSystem(TableauxSystem):
+    """Constructive tree system for a given language
+
+    Only takes a language (make sure it is an instance of ``InfiniteLanguage``) and, optionally, a solver.
+    Will automatically build the tableaux rules from the given language.
+
+    Examples
+    --------
+    >>> from logics.utils.parsers import classical_parser
+    >>> from logics.instances.propositional.languages import classical_infinite_language
+    >>> from logics.utils.solvers.tableaux import constructive_tree_solver
+    >>> from logics.classes.propositional.proof_theories.tableaux import ConstructiveTreeSystem
+    >>> classical_ct_system = ConstructiveTreeSystem(classical_infinite_language, solver=constructive_tree_solver)
+
+    The rules are automatically built:
+
+    >>> classical_ct_system.rules['R~'].print_tree(classical_parser)
+    ~A1
+    └── A1 (R~)
+    >>> classical_ct_system.rules['R∧'].print_tree(classical_parser)
+    A1 ∧ A2
+    ├── A1 (R∧)
+    └── A2 (R∧)
+
+    The solver works as expected:
+
+    >>> tree = classical_ct_system.solve_tree(classical_parser.parse('p and not q'))
+    >>> tree.print_tree(classical_parser)
+    p ∧ ~q
+    ├── p (R∧)
+    └── ~q (R∧)
+        └── q (R~)
+    >>> tree = classical_ct_system.solve_tree(classical_parser.parse('(p iff ~r) and ~~q'))
+    >>> tree.print_tree(classical_parser)
+    (p ↔ ~r) ∧ ~~q
+    ├── p ↔ ~r (R∧)
+    │   ├── p (R↔)
+    │   └── ~r (R↔)
+    │       └── r (R~)
+    └── ~~q (R∧)
+        └── ~q (R~)
+    """
     def __init__(self, language, solver=None):
         self.language = language
         self.closure_rules = []

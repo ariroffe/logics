@@ -110,6 +110,7 @@ class Language:
         See Also
         --------
         logics.classes.propositional.Formula
+        logics.classes.propositional.proof_theories.tableaux.ConstructiveTreeSystem
         """
         # Atomic formulae
         if formula.is_atomic:
