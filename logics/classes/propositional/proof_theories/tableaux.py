@@ -845,7 +845,7 @@ class ConstructiveTreeSystem(TableauxSystem):
         for constant in language.constant_arity_dict:
             arity = language.constant_arity_dict[constant]
             initial_formula = [constant]
-            initial_formula.extend([f'A{num+1}' for num in range(arity)])
+            initial_formula.extend([[f'A{num+1}'] for num in range(arity)])
             initial_formula = Formula(initial_formula)
             initial_node = TableauxNode(content=initial_formula, justification=None)
             for ar in range(arity):
