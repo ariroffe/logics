@@ -256,3 +256,84 @@ LKminEA_rules = {
 LKminEA_order = ['~L', '~R', '∧L1', '∧L2', '∧R', '∨L', '∨R1', '∨R2']
 LKminEA = SequentCalculus(language=classical_infinite_language_noconditional, axioms={'identity': identity},
                           rules=LKminEA_rules, solver=LKminEA_sequent_reducer, solver_rule_order=LKminEA_order)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+# SEQUENT-STYLE NATURAL DEDUCTION CALCULI
+
+# NEGATION
+NK_negation_intro_premise = SequentNode(content=classical_parser.parse('Gamma, A ==> ⊥'))
+NK_negation_intro = SequentNode(content=classical_parser.parse('Gamma ==> ~A'), children=[NK_negation_intro_premise])
+
+NK_negation_elim_premise1 = SequentNode(content=classical_parser.parse('Gamma ==> A'))
+NK_negation_elim_premise2 = SequentNode(content=classical_parser.parse('Delta ==> ~A'))
+NK_negation_elim = SequentNode(content=classical_parser.parse('Gamma, Delta ==> ⊥'),
+                               children=[NK_negation_elim_premise1, NK_negation_elim_premise2])
+
+NK_double_negation_premise = SequentNode(content=classical_parser.parse('Gamma ==> ~~A'))
+NK_double_negation = SequentNode(content=classical_parser.parse('Gamma ==> A'), children=[NK_double_negation_premise])
+
+NK_EFSQ_premise = SequentNode(content=classical_parser.parse('Gamma ==> ⊥'))
+NK_EFSQ = SequentNode(content=classical_parser.parse('Gamma ==> A'), children=[NK_EFSQ_premise])
+
+# CONJUNCTION
+NK_conjunction_intro_premise1 = SequentNode(content=classical_parser.parse('Gamma ==> A'))
+NK_conjunction_intro_premise2 = SequentNode(content=classical_parser.parse('Delta ==> B'))
+NK_conjunction_intro = SequentNode(content=classical_parser.parse('Gamma, Delta ==> A ∧ B'),
+                                   children=[NK_conjunction_intro_premise1, NK_conjunction_intro_premise2])
+
+NK_conjunction_elim1_premise = SequentNode(content=classical_parser.parse('Gamma ==> A ∧ B'))
+NK_conjunction_elim1 = SequentNode(content=classical_parser.parse('Gamma ==> A'),
+                                   children=[NK_conjunction_elim1_premise])
+
+NK_conjunction_elim2_premise = SequentNode(content=classical_parser.parse('Gamma ==> A ∧ B'))
+NK_conjunction_elim2 = SequentNode(content=classical_parser.parse('Gamma ==> B'),
+                                   children=[NK_conjunction_elim2_premise])
+
+# DISJUNCTION
+NK_disjunction_intro1_premise = SequentNode(content=classical_parser.parse('Gamma ==> A'))
+NK_disjunction_intro1 = SequentNode(content=classical_parser.parse('Gamma ==> A ∨ B'),
+                                    children=[NK_disjunction_intro1_premise])
+
+NK_disjunction_intro2_premise = SequentNode(content=classical_parser.parse('Gamma ==> B'))
+NK_disjunction_intro2 = SequentNode(content=classical_parser.parse('Gamma ==> A ∨ B'),
+                                    children=[NK_disjunction_intro2_premise])
+
+NK_disjunction_elim_premise1 = SequentNode(content=classical_parser.parse('Gamma ==> A ∨ B'))
+NK_disjunction_elim_premise2 = SequentNode(content=classical_parser.parse('Gamma, A ==> C'))
+NK_disjunction_elim_premise3 = SequentNode(content=classical_parser.parse('Gamma, B ==> C'))
+NK_disjunction_elim = SequentNode(content=classical_parser.parse('Gamma ==> C'),
+                                  children=[NK_disjunction_elim_premise1, NK_disjunction_elim_premise2,
+                                            NK_disjunction_elim_premise3])
+
+# CONDITIONAL
+NK_conditional_intro_premise = SequentNode(content=classical_parser.parse('Gamma, A ==> B'))
+NK_conditional_intro = SequentNode(content=classical_parser.parse('Gamma ==> A → B'),
+                                   children=[NK_conditional_intro_premise])
+
+NK_conditional_elim_premise1 = SequentNode(content=classical_parser.parse('Gamma ==> A → B'))
+NK_conditional_elim_premise2 = SequentNode(content=classical_parser.parse('Gamma ==> A'))
+NK_conditional_elim = SequentNode(content=classical_parser.parse('Gamma ==> B'),
+                                  children=[NK_conditional_elim_premise1, NK_conditional_elim_premise2])
+
+NK_rules = {
+    'EL': exchange_left,
+    'WL': weakening_left,
+    'CL': contraction_left,
+    'Cut': cut,
+    '~E': NK_negation_elim,
+    '~I': NK_negation_intro,
+    'DN': NK_double_negation,
+    'EFSQ': NK_EFSQ,
+    '∧I': NK_conjunction_intro,
+    '∧E1': NK_conjunction_elim1,
+    '∧E2': NK_conjunction_elim2,
+    '∨I1': NK_disjunction_intro1,
+    '∨I2': NK_disjunction_intro2,
+    '∨E': NK_disjunction_elim,
+    '→I': NK_conditional_intro,
+    '→E': NK_conditional_elim
+}
+NK = SequentCalculus(language=classical_infinite_language_nobiconditional, axioms={'identity': identity},
+                     rules=NK_rules)
