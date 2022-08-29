@@ -703,14 +703,14 @@ class MixedManyValuedSemantics(LocalValidityMixin, ValidityShortcutsMixin):
         >>> subformulae, table = CL.truth_table(classical_parser.parse('p / p'))
         [['p']]
         >>> for row in table:
-        >>> ...    print(row)
+        ...     print(row)
         ['1']
         ['0']
         >>> subformulae, table = CL.truth_table(classical_parser.parse('(q / p) // (p / ~q)'))
         >>> subformulae
         [['q'], ['p'], ['~', ['q']]]
         >>> for row in table:
-        >>> ...    print(row)
+        ...     print(row)
         ['1', '1', '0']
         ['0', '1', '1']
         ['1', '0', '0']
