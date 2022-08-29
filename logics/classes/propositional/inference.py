@@ -155,6 +155,14 @@ class Inference:
 
     @property
     def subformulae(self):
+        """Returns a list of the subformulae of the formula, without repetitions.
+
+        Examples
+        --------
+        >>> from logics.classes.propositional import Formula, Inference
+        >>> Inference([Formula(['p'])], [Formula(['p'])]).subformulae
+        [['p']]
+        """
         sf = list()
         for premise in self.premises:
             sf.extend(premise.subformulae)
