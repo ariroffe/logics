@@ -57,6 +57,14 @@ class TestInferenceClass(unittest.TestCase):
         self.assertFalse(self.p__p.is_schematic(language))
         self.assertTrue(Inference([Formula(['A'])], [Formula(['p'])]).is_schematic(language))
 
+    def test_subformulae(self):
+        self.assertEqual(self.empty_inference.subformulae, [])
+        self.assertEqual(self.empty_metainference.subformulae, [])
+        self.assertEqual(self.p__q.subformulae, [self.p, self.q])
+        self.assertEqual(self.p__p.subformulae, [self.p])  # There should not be repetitions
+        self.assertEqual(self.p_pthenq__q.subformulae, [self.p, self.q, self.pthenq])
+        self.assertEqual(Inference([self.p__p], [self.p__p]).subformulae, [self.p])
+
     def test_substitute(self):
         # Substitute subformulae inside inferences
         self.assertEqual(self.p__p.substitute(self.p, self.q), Inference([self.q], [self.q]))

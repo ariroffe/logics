@@ -674,12 +674,12 @@ class MixedManyValuedSemantics(LocalValidityMixin, ValidityShortcutsMixin):
         # If you got to here, all premises are locally valid and all conclusions locally invalid
         return False
 
-    def truth_table(self, formula):
+    def truth_table(self, formula_or_inference):
         """Returns a representation of a truth table for a formula.
 
-        Takes an instance of Formula as input, and returns 2-list where the first member is a list of subformulae
-        (ordered by depth) and the second member is a 2-dimensional list with the valuations of those subformulae
-        (in that order)
+        Takes an instance of Formula or Inference as input, and returns 2-list where the first member is a list of
+        subformulae (ordered by depth) and the second member is a 2-dimensional list with the valuations of those
+        subformulae (in that order)
 
         Examples
         --------
@@ -697,14 +697,30 @@ class MixedManyValuedSemantics(LocalValidityMixin, ValidityShortcutsMixin):
         ['1', '0', '0']
         ['0', '0', '1']
 
-        In each row above, the three values correspond to the values
-        of `p`, `q`, and `p → q` respectively
+        In each row above, the three values correspond to the values of `p`, `q`, and `p → q` respectively.
+        Examples for inferences / metainferences:
+
+        >>> subformulae, table = CL.truth_table(classical_parser.parse('p / p'))
+        [['p']]
+        >>> for row in table:
+        >>> ...    print(row)
+        ['1']
+        ['0']
+        >>> subformulae, table = CL.truth_table(classical_parser.parse('(q / p) // (p / ~q)'))
+        >>> subformulae
+        [['q'], ['p'], ['~', ['q']]]
+        >>> for row in table:
+        >>> ...    print(row)
+        ['1', '1', '0']
+        ['0', '1', '1']
+        ['1', '0', '0']
+        ['0', '0', '1']
         """
-        ordered_subformulae = sorted(formula.subformulae, key=lambda x: x.depth)
-        truth_value_combinations = self._get_truth_value_combinations(formula)
+        ordered_subformulae = sorted(formula_or_inference.subformulae, key=lambda x: x.depth)
+        truth_value_combinations = self._get_truth_value_combinations(formula_or_inference)
         truth_table = list()
         for combination in truth_value_combinations:
-            atomic_valuation_dict = self._get_atomic_valuation_dict(formula, combination)
+            atomic_valuation_dict = self._get_atomic_valuation_dict(formula_or_inference, combination)
             truth_table_row = list()
             for subformula in ordered_subformulae:
                 truth_table_row.append(self.valuation(subformula, atomic_valuation_dict))

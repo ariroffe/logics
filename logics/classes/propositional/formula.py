@@ -135,7 +135,7 @@ class Formula(list):
 
     @property
     def subformulae(self):
-        """Returns a list of the subformulae of the formula.
+        """Returns a list of the subformulae of the formula, without repetitions.
 
         Examples
         --------
@@ -144,6 +144,8 @@ class Formula(list):
         [['p']]
         >>> Formula(['∧', ['p'], ['~', ['A']]]).subformulae
         [['p'], ['A'], ['~', ['A']], ['∧', ['p'], ['~', ['A']]]]
+        >>> Formula(["∧", ["p"], ["p"]]).subformulae  # p will only appear once
+        [['p'], ['∧', ['p'], ['p']]]
         """
         return self._get_subformulae()
 
@@ -159,6 +161,7 @@ class Formula(list):
 
     def atomics_inside(self, language, prev_at=None):
         """Returns the set of the atomic letter strings (both propositional letters and metavariables) inside a formula.
+        Sentential constants do not count.
 
         Examples
         --------

@@ -146,7 +146,23 @@ class TestMixedManyValuedSemantics(unittest.TestCase):
         for x in truth_table:
             # Evaluate like this because the order of the rows in the truth table comes out differently for some reason
             self.assertTrue(x in correct_answer)
-        classical_semantics.truth_table(Formula(['⊥']))
+
+        # Formula with Bottom
+        subformulae, truth_table = classical_semantics.truth_table(Formula(['⊥']))
+        self.assertEqual(subformulae, [['⊥']])
+        self.assertEqual(truth_table, [['0']])
+
+        # Inference
+        i = Inference([self.p], [self.p])
+        subformulae, truth_table = classical_semantics.truth_table(i)
+        self.assertEqual(subformulae, [self.p])
+        self.assertEqual(truth_table, [['1'], ['0']])
+
+        # Metainference
+        i = Inference([Inference([self.p], [self.p])], [Inference([self.p], [self.q])])  # p / p // p / q
+        subformulae, truth_table = classical_semantics.truth_table(i)
+        self.assertEqual(subformulae, [self.p, self.q])
+        self.assertEqual(truth_table, [['1', '1'], ['1', '0'], ['0', '1'], ['0', '0']])
 
     # TESTS WITH OTHER MVLs
     def test_other_mvls(self):

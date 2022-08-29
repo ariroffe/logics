@@ -153,6 +153,19 @@ class Inference:
             at = conclusion.atomics_inside(language, prev_at=at)
         return at
 
+    @property
+    def subformulae(self):
+        sf = list()
+        for premise in self.premises:
+            sf.extend(premise.subformulae)
+        for conclusion in self.conclusions:
+            sf.extend(conclusion.subformulae)
+        # we need to remove repetitions to have a consistent API
+        for idx in range(len(sf)-1, -1, -1):  # loop backwards so we can remove items without causing trouble
+            if sf.count(sf[idx]) > 1:  # Not the most efficient but clear to read
+                del sf[idx]
+        return sf
+
     def is_schematic(self, language):
         """``True`` if at least one Formula inside the Inference is schematic (contains a schematic Formula),
         False otherwise"""
