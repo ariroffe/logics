@@ -376,7 +376,7 @@ class Inference:
         Given a level-1 Inference of the form A, B, C / D, E, F returns a Formula of the form
         ((A ∧ B) ∧ C) → ((D ∨ E) ∨ F)
 
-        For a metainference (A, B / C) / (D / E, F) will return the Formula ((A ∧ B) → C) → (D → (E ∨ F))
+        For a metainference (A, B / C) // (D / E, F) will return the Formula ((A ∧ B) → C) → (D → (E ∨ F))
 
 
         Examples
@@ -386,7 +386,7 @@ class Inference:
         >>> assoc_cond = inf.associated_conditional()
         >>> classical_parser.unparse(assoc_cond)
         '((p1 ∧ p2) ∧ p3) → ((q1 ∨ q2) ∨ q3)'
-        >>> metainf = classical_parser.parse("(p1, p2 / q1) / (r1 / s1, s2)")
+        >>> metainf = classical_parser.parse("(p1, p2 / q1) // (r1 / s1, s2)")
         >>> assoc_cond2 = metainf.associated_conditional()
         >>> classical_parser.unparse(assoc_cond2)
         '((p1 ∧ p2) → q1) → (r1 → (s1 ∨ s2))'
@@ -398,8 +398,8 @@ class Inference:
         - An inference with empty conclusions and non-empty premises, e.g. A, B /, will return the formula ~(A ∧ B)
         - The above clauses also work recursively (e.g. (/ A, B) // returns ~(A ∨ B); while (/) // (/) returns ⊥ → ⊥)
         - Beware because the translation may not preserve (in)validity in some systems. E.g. valid inferences of K3
-        will be turned into non-tautological formulae for that system (because it has no tautologies). The same may
-        happen with ST metainferences (e.g. Cut) and its inferences
+          will be turned into non-tautological formulae for that system (because it has no tautologies). The same may
+          happen with ST metainferences (e.g. Cut) and its inferences
         """
         # An empty (meta)inference (both premises and conclusions) returns Top
         if not self.premises and not self.conclusions:
