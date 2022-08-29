@@ -7,7 +7,7 @@ from logics.utils.formula_generators.generators_biased import random_formula_gen
 from logics.classes.propositional import Formula, Inference
 from logics.instances.propositional.many_valued_semantics import classical_mvl_semantics as classical_semantics
 from logics.instances.propositional.many_valued_semantics import K3_mvl_semantics as K3, LP_mvl_semantics as LP, \
-    ST_mvl_semantics as ST, TS_mvl_semantics as TS
+    ST_mvl_semantics as ST, TS_mvl_semantics as TS, LFI1_mvl_semantics as LFI1
 from logics.instances.propositional.many_valued_semantics import classical_logic_up_to_level, empty_logic_up_to_level
 from logics.classes.propositional.semantics import MixedMetainferentialSemantics, IntersectionLogic, UnionLogic
 
@@ -15,6 +15,7 @@ from logics.classes.propositional.semantics import MixedMetainferentialSemantics
 class TestMixedManyValuedSemantics(unittest.TestCase):
     def setUp(self):
         self.p = Formula(['p'])
+        self.notp = Formula(['~', ['p']])
         self.q = Formula(['q'])
         self.pthenq = Formula(['→', ['p'], ['q']])
         self.pthenp = Formula(['→', ['p'], ['p']])
@@ -27,6 +28,7 @@ class TestMixedManyValuedSemantics(unittest.TestCase):
         self.p_pthenq__q = Inference([self.p, self.pthenq], [self.q])  # p, p → q / q
         self.q_pthenq__p = Inference([self.q, self.pthenq], [self.p])  # q, p → q / p
         self.p1__p2 = Inference([self.p1], [self.p2])  # p1 / p2
+        self.explosion = Inference([self.p, self.notp], [self.q])  # p, ~p / q
 
         self.p__p___p__p = Inference([self.p__p], [self.p__p])  # p / p // p / p
         self.p__p___p__q = Inference([self.p__p], [self.p__q])  # p / p // p / q
@@ -170,6 +172,12 @@ class TestMixedManyValuedSemantics(unittest.TestCase):
             self.assertFalse(logic.is_valid(modus_ponens))
         for logic in (K3, ST):
             self.assertTrue(logic.is_valid(modus_ponens))
+
+        # Explosion is invalid in LP and LFI1, but valid if we add consistent p
+        for logic in (LP, LFI1):
+            self.assertFalse(logic.is_valid(self.explosion))
+        valid_explosion = Inference([self.p, self.notp, Formula(["◦", ["p"]])], [self.q])  # p, ~p, ◦p / q
+        self.assertTrue(LFI1.is_valid(valid_explosion))
 
         # Metainferences
         # Transitivity as a metainference, (p / q), (q / r) // (p / r), should be invadilid in ST, valid in the rest

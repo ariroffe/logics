@@ -46,7 +46,8 @@ classical_infinite_language_only_negation_conditional = InfiniteLanguage(atomics
 
 # LFIs
 LFI_language = deepcopy(classical_infinite_language_with_sent_constants)
-LFI_language.constant_arity_dict["∘"] = 1
+LFI_language.constant_arity_dict["•"] = 1
+LFI_language.constant_arity_dict["◦"] = 1
 
 # MODAL LOGIC
 modal_arity_dict = {'~': 1, '□': 1, '◇': 1, '∧': 2, '∨': 2, '→': 2, '↔': 2}

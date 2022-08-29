@@ -91,14 +91,14 @@ class TestPropositionalParser(unittest.TestCase):
         self.assertEqual(modal_parser.unparse(f_native), '□p')
 
         # LFI parser
-        f_native = Formula(['∘', self.p])
-        f_parsed = LFI_parser.parse('∘p')
+        f_native = Formula(['◦', self.p])
+        f_parsed = LFI_parser.parse('◦p')
         f_parsed2 = LFI_parser.parse('°p')
-        f_parsed3 = LFI_parser.parse('circ p')
+        f_parsed3 = LFI_parser.parse('consistent p')
         self.assertEqual(f_native, f_parsed)
         self.assertEqual(f_native, f_parsed2)
         self.assertEqual(f_native, f_parsed3)
-        self.assertEqual(LFI_parser.unparse(f_native), '∘p')
+        self.assertEqual(LFI_parser.unparse(f_native), '◦p')
 
     def test_parse_inference(self):
         # Regular inferences

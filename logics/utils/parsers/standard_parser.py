@@ -585,8 +585,11 @@ classical_parser = StandardParser(language=classical_infinite_language_with_sent
 
 LFI_replacement_dict = copy(classical_parse_replacement_dict)
 LFI_replacement_dict.update({
-    "°": "∘",
-    "circ ": "∘",
+    "inc ": "•",
+    "inconsistent ": "•",
+    "con ": "◦",
+    "consistent ": "◦",
+    "°": "◦",
 })
 LFI_parser = StandardParser(language=LFI_language,
                             parse_replacement_dict=LFI_replacement_dict,

@@ -54,4 +54,5 @@ The following are predefined instances of Language and InfiniteLanguage.
 
 .. data:: logics.instances.propositional.languages.LFI_language
 
-    Same as classical_infinite_language_with_sent_constants, adding the unary constant `∘`
+    Same as classical_infinite_language_with_sent_constants, adding the unary constants • and ◦,
+    with •A intended to mean "A is inconsistent", and ◦A "A is consistent".

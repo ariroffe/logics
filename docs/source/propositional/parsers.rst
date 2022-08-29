@@ -80,11 +80,15 @@ Instances
 
 .. data:: logics.utils.parsers.LFI_parser
 
-    Similar to the classical parser, but contains the unary connective °. Adds the following replacement rules:
+    Similar to the classical parser, but contains two new unary connectives • and ◦.
+    Adds the following replacement rules:
 
 .. code-block:: python
 
     LFI_replacement_dict.update({
-        "°": "∘",
-        "circ": "∘",
+        "inc ": "•",
+        "inconsistent ": "•",
+        "con ": "◦",
+        "consistent ": "◦",
+        "°": "◦",
     })

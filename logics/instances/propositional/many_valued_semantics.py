@@ -2,23 +2,28 @@ from copy import deepcopy
 
 from logics.classes.propositional.semantics import MixedManyValuedSemantics, MixedMetainferentialSemantics
 from logics.instances.propositional.languages import classical_infinite_language_with_sent_constants \
-    as classical_language
+    as classical_language, LFI_language
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Classical logic (with sentential constants)
 
 classical_truth_functions = {
+          #1   #0
     '~': ['0', '1'],
+
     '∧': [ #1   #0
           ['1', '0'],    # 1
           ['0', '0']],   # 0
+
     '∨': [ #1   #0
           ['1', '1'],    # 1
           ['1', '0']],   # 0
+
     '→': [ #1   #0
           ['1', '0'],    # 1
           ['1', '1']],   # 0
+
     '↔': [ #1   #0
           ['1', '0'],    # 1
           ['0', '1']],   # 0
@@ -45,19 +50,24 @@ strict_designated_values = ['1']
 tolerant_designated_values = ['1', 'i']
 
 trivalued_truth_functions = {
+          #1   #i   #0
     '~': ['0', 'i', '1'],
+
     '∧': [ #1   #i   #0
           ['1', 'i', '0'],    # 1
           ['i', 'i', '0'],    # i
           ['0', '0', '0']],   # 0
+
     '∨': [ #1   #i   #0
           ['1', '1', '1'],    # 1
           ['1', 'i', 'i'],    # i
           ['1', 'i', '0']],   # 0
+
     '→': [ #1   #i   #0
           ['1', 'i', '0'],    # 1
           ['1', 'i', 'i'],    # i
           ['1', '1', '1']],   # 0
+
     '↔': [ #1   #i   #0
           ['1', 'i', '0'],    # 1
           ['i', 'i', 'i'],    # i
@@ -106,19 +116,24 @@ WK_designated_values = ['1']
 PWK_designated_values = ['1', 'e']
 
 WK_truth_functions = {
+          #1   #e   #0
     '~': ['0', 'e', '1'],
+
     '∧': [ #1   #e   #0
           ['1', 'e', '0'],    # 1
           ['e', 'e', 'e'],    # e
           ['0', 'e', '0']],   # 0
+
     '∨': [ #1   #e   #0
           ['1', 'e', '1'],    # 1
           ['e', 'e', 'e'],    # e
           ['1', 'e', '0']],   # 0
+
     '→': [ #1   #e   #0
           ['1', 'e', '0'],    # 1
           ['e', 'e', 'e'],    # e
           ['1', 'e', '1']],   # 0
+
     '↔': [ #1   #e   #0
           ['1', 'e', '0'],    # 1
           ['e', 'e', 'e'],    # e
@@ -144,7 +159,7 @@ PWK_mvl_semantics = MixedManyValuedSemantics(language=classical_language,
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-# RM3 and Cooper-Cantwell (Same language and values but change some tables)
+# RM3 (Same language and values but change some tables)
 
 RM3_truth_functions = deepcopy(trivalued_truth_functions)
 RM3_truth_functions['→'] = [ #1   #i   #0
@@ -164,6 +179,23 @@ RM3_mvl_semantics = MixedManyValuedSemantics(language=classical_language,
                                              use_molecular_valuation_fast_version=False,
                                              name='RM3')
 
+
+# ----------------------------------------------------------------------------------------------------------------------
+# LFI1 (Basic logic of formal inconsistency; 3-valued with two extra unary constants • and ◦)
+
+
+LFI1_truth_functions = deepcopy(trivalued_truth_functions)
+                             #1   #i   #0
+LFI1_truth_functions['•'] = ['0', '1', '0']
+LFI1_truth_functions['◦'] = ['1', '0', '1']
+LFI1_mvl_semantics = MixedManyValuedSemantics(language=LFI_language,
+                                              truth_values=trivalued_truth_values,
+                                              premise_designated_values=tolerant_designated_values,
+                                              conclusion_designated_values=tolerant_designated_values,
+                                              truth_function_dict=LFI1_truth_functions,
+                                              sentential_constant_values_dict=classical_sentential_constants_values,
+                                              use_molecular_valuation_fast_version=False,
+                                              name='LFI1')
 
 # ----------------------------------------------------------------------------------------------------------------------
 # FDE (four-valued logic)
