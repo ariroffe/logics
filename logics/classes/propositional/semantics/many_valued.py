@@ -61,6 +61,7 @@ class LocalValidityMixin:
 
         Examples
         --------
+        >>> from logics.utils.parsers import classical_parser
         >>> from logics.instances.propositional.many_valued_semantics import classical_mvl_semantics as CL, ST_mvl_semantics as ST
         >>> CL.is_locally_valid(classical_parser.parse('p or not p'))
         True
@@ -99,6 +100,7 @@ class LocalValidityMixin:
 
         Examples
         --------
+        >>> from logics.utils.parsers import classical_parser
         >>> from logics.instances.propositional.many_valued_semantics import classical_mvl_semantics as CL
         >>> CL.is_locally_antivalid(classical_parser.parse('q, p then q / p'))
         False
@@ -118,6 +120,7 @@ class LocalValidityMixin:
 
         Examples
         --------
+        >>> from logics.utils.parsers import classical_parser
         >>> from logics.instances.propositional.many_valued_semantics import classical_mvl_semantics as CL
         >>> CL.is_contingent(classical_parser.parse('p'))
         True
@@ -364,11 +367,12 @@ class MixedManyValuedSemantics(LocalValidityMixin, ValidityShortcutsMixin):
 
         # If it is not a callable but is an indexable
         else:
-            args = tuple(self.truth_values.index(x) for x in args)  # e.g. if values is [1, 0], (0, 1) turns into (1, 0)
+            args = tuple(self.truth_values.index(x) for x in args)
+            # e.g. if values is ['1', '0'], ('0', '1') turns into (1, 0) -the indexes
             truth_table = copy(self.truth_function_dict[constant])
             for value_index in args:
-                # If the tt is [[1, 1], [1, 0]] for the values [1, 0], calling with (0, 0) first turns into (1, 1) above
-                # and then we get [1, 0] in the first run through this loop, and 0 in the second run
+                # If the tt is [[1, 1], [1, 0]] for the values [1, 0], calling with ('0', '0') first turns into (1, 1)
+                # above, and then we get [1, 0] in the first run through this loop, and 0 in the second run
                 truth_table = truth_table[value_index]
             return truth_table
 
@@ -390,8 +394,8 @@ class MixedManyValuedSemantics(LocalValidityMixin, ValidityShortcutsMixin):
 
         Examples
         --------
-        >>> from logics.instances.propositional.many_valued_semantics import classical_mvl_semantics as CL, ST_mvl_semantics as ST
         >>> from logics.utils.parsers import classical_parser
+        >>> from logics.instances.propositional.many_valued_semantics import classical_mvl_semantics as CL, ST_mvl_semantics as ST
         >>> CL.valuation(classical_parser.parse('p'), {'p': '1'})
         '1'
         >>> CL.valuation(classical_parser.parse('p then q'), {'p': '1'})
@@ -521,8 +525,8 @@ class MixedManyValuedSemantics(LocalValidityMixin, ValidityShortcutsMixin):
 
         Examples
         --------
-        >>> from logics.instances.propositional.many_valued_semantics import classical_mvl_semantics as CL, ST_mvl_semantics as ST
         >>> from logics.utils.parsers import classical_parser
+        >>> from logics.instances.propositional.many_valued_semantics import classical_mvl_semantics as CL, ST_mvl_semantics as ST
         >>> CL.satisfies(classical_parser.parse('p'), {'p': '1'})
         True
         >>> ST.satisfies(classical_parser.parse('p'), {'p': 'i'})
@@ -589,6 +593,7 @@ class MixedManyValuedSemantics(LocalValidityMixin, ValidityShortcutsMixin):
 
         Examples
         --------
+        >>> from logics.utils.parsers import classical_parser
         >>> from logics.instances.propositional.many_valued_semantics import classical_mvl_semantics as CL
         >>> CL.is_globally_valid(classical_parser.parse('(p / q) // (r / s)'))
         True
@@ -622,6 +627,7 @@ class MixedManyValuedSemantics(LocalValidityMixin, ValidityShortcutsMixin):
 
         Examples
         --------
+        >>> from logics.utils.parsers import classical_parser
         >>> from logics.instances.propositional.many_valued_semantics import classical_mvl_semantics as CL
         >>> CL.is_globally_valid2(classical_parser.parse('(p / q) // (r / s)'))
         True
@@ -650,6 +656,7 @@ class MixedManyValuedSemantics(LocalValidityMixin, ValidityShortcutsMixin):
 
         Examples
         --------
+        >>> from logics.utils.parsers import classical_parser
         >>> from logics.instances.propositional.many_valued_semantics import classical_mvl_semantics as CL
         >>> CL.is_globally_valid3(classical_parser.parse('(p / q)'))
         True
@@ -676,6 +683,7 @@ class MixedManyValuedSemantics(LocalValidityMixin, ValidityShortcutsMixin):
 
         Examples
         --------
+        >>> from logics.utils.parsers import classical_parser
         >>> from logics.instances.propositional.many_valued_semantics import classical_mvl_semantics as CL
         >>> CL.truth_table(classical_parser.parse('p'))
         [[['p']], [['1'], ['0']]]

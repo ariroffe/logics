@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from logics.classes.propositional.semantics import MixedManyValuedSemantics, MixedMetainferentialSemantics
 from logics.instances.propositional.languages import classical_infinite_language_with_sent_constants \
     as classical_language
@@ -47,19 +49,19 @@ trivalued_truth_functions = {
     '∧': [ #1   #i   #0
           ['1', 'i', '0'],    # 1
           ['i', 'i', '0'],    # i
-          ['0', '0', '0']],  # 0
+          ['0', '0', '0']],   # 0
     '∨': [ #1   #i   #0
           ['1', '1', '1'],    # 1
           ['1', 'i', 'i'],    # i
-          ['1', 'i', '0']],  # 0
+          ['1', 'i', '0']],   # 0
     '→': [ #1   #i   #0
           ['1', 'i', '0'],    # 1
           ['1', 'i', 'i'],    # i
-          ['1', '1', '1']],  # 0
+          ['1', '1', '1']],   # 0
     '↔': [ #1   #i   #0
           ['1', 'i', '0'],    # 1
           ['i', 'i', 'i'],    # i
-          ['0', 'i', '1']],  # 0
+          ['0', 'i', '1']],   # 0
     }
 
 K3_mvl_semantics = MixedManyValuedSemantics(language=classical_language,
@@ -94,6 +96,115 @@ TS_mvl_semantics = MixedManyValuedSemantics(language=classical_language,
                                             sentential_constant_values_dict=classical_sentential_constants_values,
                                             use_molecular_valuation_fast_version=True,
                                             name='TS')
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# WK and PWK (Weak-Kleene logic and its paraconsistent version, three valued, different truth tables)
+
+WK_truth_values = ['1', 'e', '0']
+WK_designated_values = ['1']
+PWK_designated_values = ['1', 'e']
+
+WK_truth_functions = {
+    '~': ['0', 'e', '1'],
+    '∧': [ #1   #e   #0
+          ['1', 'e', '0'],    # 1
+          ['e', 'e', 'e'],    # e
+          ['0', 'e', '0']],   # 0
+    '∨': [ #1   #e   #0
+          ['1', 'e', '1'],    # 1
+          ['e', 'e', 'e'],    # e
+          ['1', 'e', '0']],   # 0
+    '→': [ #1   #e   #0
+          ['1', 'e', '0'],    # 1
+          ['e', 'e', 'e'],    # e
+          ['1', 'e', '1']],   # 0
+    '↔': [ #1   #e   #0
+          ['1', 'e', '0'],    # 1
+          ['e', 'e', 'e'],    # e
+          ['0', 'e', '1']],   # 0
+    }
+
+WK_mvl_semantics = MixedManyValuedSemantics(language=classical_language,
+                                            truth_values=WK_truth_values,
+                                            premise_designated_values=WK_designated_values,
+                                            conclusion_designated_values=WK_designated_values,
+                                            truth_function_dict=WK_truth_functions,
+                                            sentential_constant_values_dict=classical_sentential_constants_values,
+                                            use_molecular_valuation_fast_version=False,
+                                            name='WK')
+PWK_mvl_semantics = MixedManyValuedSemantics(language=classical_language,
+                                             truth_values=WK_truth_values,
+                                             premise_designated_values=PWK_designated_values,
+                                             conclusion_designated_values=PWK_designated_values,
+                                             truth_function_dict=WK_truth_functions,
+                                             sentential_constant_values_dict=classical_sentential_constants_values,
+                                             use_molecular_valuation_fast_version=False,
+                                             name='WK')
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# RM3 and Cooper-Cantwell (Same language and values but change some tables)
+
+RM3_truth_functions = deepcopy(trivalued_truth_functions)
+RM3_truth_functions['→'] = [ #1   #i   #0
+                            ['1', '0', '0'],    # 1
+                            ['1', 'i', '0'],    # i
+                            ['1', '1', '1']]    # 0
+RM3_truth_functions['↔'] = [ #1   #i   #0
+                            ['1', '0', '0'],    # 1
+                            ['0', 'i', '0'],    # i
+                            ['0', '0', '1']]    # 0
+RM3_mvl_semantics = MixedManyValuedSemantics(language=classical_language,
+                                             truth_values=trivalued_truth_values,
+                                             premise_designated_values=tolerant_designated_values,
+                                             conclusion_designated_values=tolerant_designated_values,
+                                             truth_function_dict=RM3_truth_functions,
+                                             sentential_constant_values_dict=classical_sentential_constants_values,
+                                             use_molecular_valuation_fast_version=False,
+                                             name='RM3')
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# FDE (four-valued logic)
+
+FDE_truth_values = ['1', 'b', 'n', '0']
+FDE_designated_values = ['1', 'b']
+
+FDE_truth_functions = {
+          #1   #b   #n   #0
+    '~': ['0', 'b', 'n', '1'],
+    '∧': [ #1   #b   #n   #0
+          ['1', 'b', 'n', '0'],    # 1
+          ['b', 'b', '0', '0'],    # b
+          ['n', '0', 'n', '0'],    # n
+          ['0', '0', '0', '0']],   # 0
+    '∨': [ #1   #b   #n   #0
+          ['1', '1', '1', '1'],    # 1
+          ['1', 'b', '1', 'b'],    # b
+          ['1', '1', 'n', 'n'],    # n
+          ['1', 'b', 'n', '0']],   # 0
+    '→': [ #1   #b   #n   #0                # This is just ~(A ∨ B)
+          ['1', 'b', 'n', '0'],    # 1
+          ['1', 'b', '1', 'b'],    # b
+          ['1', '1', 'n', 'n'],    # n
+          ['1', '1', '1', '1']],   # 0
+    '↔': [ #1   #b   #n   #0
+          ['1', 'b', 'n', '0'],    # 1
+          ['b', 'b', '1', 'b'],    # b
+          ['n', '1', 'n', 'n'],    # n
+          ['0', 'b', 'n', '1']],   # 0
+    }
+
+
+FDE_mvl_semantics = MixedManyValuedSemantics(language=classical_language,
+                                             truth_values=FDE_truth_values,
+                                             premise_designated_values=FDE_designated_values,
+                                             conclusion_designated_values=FDE_designated_values,
+                                             truth_function_dict=FDE_truth_functions,
+                                             sentential_constant_values_dict=classical_sentential_constants_values,
+                                             use_molecular_valuation_fast_version=False,
+                                             name='FDE')
 
 
 # ----------------------------------------------------------------------------------------------------------------------
