@@ -2,6 +2,7 @@ import warnings
 from copy import deepcopy
 from itertools import permutations
 
+from logics.classes.propositional import Formula
 from logics.classes.exceptions import IncorrectLevels, LevelsWarning
 
 
@@ -368,6 +369,82 @@ class Inference:
             if not return_subst_dict:
                 return True
             return True, subst_dict
+
+    def associated_conditional(self):
+        """Returns the associated conditional for an Inference
+
+        Given a level-1 Inference of the form A, B, C / D, E, F returns a Formula of the form
+        ((A ∧ B) ∧ C) → ((D ∨ E) ∨ F)
+
+        For a metainference (A, B / C) / (D / E, F) will return the Formula ((A ∧ B) → C) → (D → (E ∨ F))
+
+
+        Examples
+        --------
+        >>> from logics.utils.parsers import classical_parser
+        >>> inf = classical_parser.parse("p1, p2, p3 / q1, q2, q3")
+        >>> assoc_cond = inf.associated_conditional()
+        >>> classical_parser.unparse(assoc_cond)
+        '((p1 ∧ p2) ∧ p3) → ((q1 ∨ q2) ∨ q3)'
+        >>> metainf = classical_parser.parse("(p1, p2 / q1) / (r1 / s1, s2)")
+        >>> assoc_cond2 = metainf.associated_conditional()
+        >>> classical_parser.unparse(assoc_cond2)
+        '((p1 ∧ p2) → q1) → (r1 → (s1 ∨ s2))'
+
+        Notes
+        -----
+        - An inference with empty premises and conclusions will return the formula ⊥
+        - An inference with empty premises and non-empty conclusions, e.g. / A, B, will return the formula A ∨ B
+        - An inference with empty conclusions and non-empty premises, e.g. A, B /, will return the formula ~(A ∧ B)
+        - The above clauses also work recursively (e.g. (/ A, B) // returns ~(A ∨ B); while (/) // (/) returns ⊥ → ⊥)
+        - Beware because the translation may not preserve (in)validity in some systems. E.g. valid inferences of K3
+        will be turned into non-tautological formulae for that system (because it has no tautologies). The same may
+        happen with ST metainferences (e.g. Cut) and its inferences
+        """
+        # An empty (meta)inference (both premises and conclusions) returns Top
+        if not self.premises and not self.conclusions:
+            return Formula(["⊥"])
+
+        # Premises
+        premise_conjunction = None
+        if self.premises:
+            # First premise
+            premise_conjunction = self.premises[0]
+            if isinstance(premise_conjunction, Inference):
+                premise_conjunction = premise_conjunction.associated_conditional()
+
+            # Rest of the premises
+            for premise in self.premises[1:]:
+                # If the premise is an Inference itself, we get its associated conditional
+                if isinstance(premise, Inference):
+                    premise = premise.associated_conditional()
+                premise_conjunction = Formula(["∧", premise_conjunction, premise])
+
+        # Conclusions
+        conclusion_disjunction = None
+        if self.conclusions:
+            # First conclusion
+            conclusion_disjunction = self.conclusions[0]
+            if isinstance(conclusion_disjunction, Inference):
+                conclusion_disjunction = conclusion_disjunction.associated_conditional()
+
+            # Rest of conclusions
+            for conclusion in self.conclusions[1:]:
+                # If the conclusion is an Inference itself, we get its associated conditional
+                if isinstance(conclusion, Inference):
+                    conclusion = conclusion.associated_conditional()
+                conclusion_disjunction = Formula(["∨", conclusion_disjunction, conclusion])
+
+        if premise_conjunction is None:
+            # Inference with empty premises
+            return conclusion_disjunction
+
+        if conclusion_disjunction is None:
+            # Inference with empty conclusions (we need to negate the premises)
+            return Formula(["~", premise_conjunction])
+
+        # Inference with both premises and conclusions
+        return Formula(["→", premise_conjunction, conclusion_disjunction])
 
     def is_valid(self, validity_aparatus):
         return validity_aparatus.is_valid(self)

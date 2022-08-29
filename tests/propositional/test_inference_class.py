@@ -111,6 +111,53 @@ class TestInferenceClass(unittest.TestCase):
                                                                           [Inference([AthenB, A], [B])]),
                                                                 language, order=True))
 
+    def test_associated_conditional(self):
+        # p / q
+        inf = Inference([self.p], [self.q])
+        assoc = Formula(["→", self.p, self.q])
+        self.assertEqual(inf.associated_conditional(), assoc)
+
+        # p, q / r, s
+        inf = Inference([self.p, self.q], [Formula(["r"]), Formula(["s"])])
+        assoc = Formula(["→", ["∧", self.p, self.q], ["∨", Formula(["r"]), Formula(["s"])]])
+        self.assertEqual(inf.associated_conditional(), assoc)
+
+        # (p, q / r) // (p1 / p2, p3)
+        inf = Inference([Inference([self.p, self.q], [Formula(["r"])])],
+                        [Inference([Formula(["p1"])], [Formula(["p2"]), Formula(["p3"])])])
+        assoc = Formula(["→",
+                         ["→", ["∧", self.p, self.q], Formula(["r"])],
+                         ["→", Formula(["p1"]), ["∨", Formula(["p2"]), Formula(["p3"])]]
+                         ])
+        self.assertEqual(inf.associated_conditional(), assoc)
+
+        # Empty inference ( / )
+        self.assertEqual(Inference([], []).associated_conditional(), Formula(["⊥"]))
+
+        # Empty premises ( / p, q)
+        inf = Inference([], [self.p, self.q])
+        assoc = Formula(["∨", self.p, self.q])
+        self.assertEqual(inf.associated_conditional(), assoc)
+
+        # Empty conclusions (p, q /)
+        inf = Inference([self.p, self.q], [])
+        assoc = Formula(["~", ["∧", self.p, self.q]])
+        self.assertEqual(inf.associated_conditional(), assoc)
+
+        # Meta emptyness
+        # //
+        self.assertEqual(Inference([], [], level=2).associated_conditional(), Formula(["⊥"]))
+
+        # (/) // (/)
+        self.assertEqual(Inference([Inference([], [])], [Inference([], [])]).associated_conditional(),
+                         Formula(["→", ["⊥"], ["⊥"]]))
+
+        # // /
+        self.assertEqual(Inference([], [Inference([], [])]).associated_conditional(), Formula(["⊥"]))
+
+        # / //
+        self.assertEqual(Inference([Inference([], [])], []).associated_conditional(), Formula(["~", ["⊥"]]))
+
 
 if __name__ == '__main__':
     unittest.main()
