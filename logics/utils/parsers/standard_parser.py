@@ -529,7 +529,7 @@ class StandardParser:
 # INSTANCES
 
 from logics.instances.propositional.languages import classical_infinite_language_with_sent_constants, \
-    modal_infinite_language_with_sent_constants
+    LFI_language, modal_infinite_language_with_sent_constants
 
 
 classical_parse_replacement_dict = {
@@ -582,6 +582,16 @@ classical_parser = StandardParser(language=classical_infinite_language_with_sent
                                   parse_replacement_dict=classical_parse_replacement_dict,
                                   infix_cts=['∧', '∨', '→', '↔'],
                                   comma_separator=',', inference_separator='/', derivation_step_separator=';')
+
+LFI_replacement_dict = copy(classical_parse_replacement_dict)
+LFI_replacement_dict.update({
+    "°": "∘",
+    "circ ": "∘",
+})
+LFI_parser = StandardParser(language=LFI_language,
+                            parse_replacement_dict=LFI_replacement_dict,
+                            infix_cts=['∧', '∨', '→', '↔'],
+                            comma_separator=',', inference_separator='/', derivation_step_separator=';')
 
 modal_replacement_dict = copy(classical_parse_replacement_dict)
 modal_replacement_dict.update({

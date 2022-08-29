@@ -1,7 +1,7 @@
 import unittest
 import warnings
 
-from logics.utils.parsers import classical_parser
+from logics.utils.parsers import classical_parser, modal_parser, LFI_parser
 from logics.instances.predicate.languages import arithmetic_truth_language
 from logics.utils.parsers.predicate_parser import classical_predicate_parser, \
     arithmetic_parser, realnumber_arithmetic_parser, arithmetic_truth_parser
@@ -73,11 +73,32 @@ class TestPropositionalParser(unittest.TestCase):
         self.assertEqual(complex_formula, f2)
         self.assertEqual(classical_parser.unparse(complex_formula), '~(q → p) ∨ ~p')
 
-        # Not well formed
+        # Not well-formed
         self.assertRaises(NotWellFormed, classical_parser.parse, 'pq')
         self.assertRaises(NotWellFormed, classical_parser.parse, '(p)')
         self.assertRaises(NotWellFormed, classical_parser.parse, 'p~p')
         self.assertRaises(NotWellFormed, classical_parser.parse, '(p or q or p)')
+
+    def test_other_parsers(self):
+        # Modal parser
+        f_native = Formula(['□', self.p])
+        f_parsed = modal_parser.parse('□p')
+        f_parsed2 = modal_parser.parse('box p')
+        f_parsed3 = modal_parser.parse('nec p')
+        self.assertEqual(f_native, f_parsed)
+        self.assertEqual(f_native, f_parsed2)
+        self.assertEqual(f_native, f_parsed3)
+        self.assertEqual(classical_parser.unparse(f_native), '□p')
+
+        # LFI parser
+        f_native = Formula(['∘', self.p])
+        f_parsed = LFI_parser.parse('∘p')
+        f_parsed2 = LFI_parser.parse('°p')
+        f_parsed3 = LFI_parser.parse('circ p')
+        self.assertEqual(f_native, f_parsed)
+        self.assertEqual(f_native, f_parsed2)
+        self.assertEqual(f_native, f_parsed3)
+        self.assertEqual(classical_parser.unparse(f_native), '∘p')
 
     def test_parse_inference(self):
         # Regular inferences

@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from logics.classes.propositional.language import Language, InfiniteLanguage
 
 # LANGUAGES FOR CLASSICAL LOGIC (and many non-classical)
@@ -9,13 +11,16 @@ context_variables = ['Γ', 'Δ', 'Σ', 'Λ', 'Π', 'Θ']
 
 classical_language = Language(atomics=atomics, metavariables=metavariables, constant_arity_dict=constant_arity_dict,
                               context_variables=context_variables)
+
 classical_infinite_language = InfiniteLanguage(atomics=atomics, metavariables=metavariables,
                                                constant_arity_dict=constant_arity_dict,
                                                context_variables=context_variables)
+
 classical_language_with_sent_constants = Language(atomics=atomics, metavariables=metavariables,
                                                   constant_arity_dict=constant_arity_dict,
                                                   sentential_constants=sentential_constants,
                                                   context_variables=context_variables)
+
 classical_infinite_language_with_sent_constants = InfiniteLanguage(atomics=atomics, metavariables=metavariables,
                                                                    constant_arity_dict=constant_arity_dict,
                                                                    sentential_constants=sentential_constants,
@@ -24,6 +29,7 @@ classical_infinite_language_with_sent_constants = InfiniteLanguage(atomics=atomi
 classical_infinite_language_noconditional = InfiniteLanguage(atomics=atomics, metavariables=metavariables,
                                                              constant_arity_dict={'~': 1, '∧': 2, '∨': 2},
                                                              context_variables=context_variables)
+
 classical_infinite_language_nobiconditional = InfiniteLanguage(atomics=atomics, metavariables=metavariables,
                                                                constant_arity_dict={'~': 1, '∧': 2, '∨': 2, '→': 2},
                                                                context_variables=context_variables)
@@ -33,11 +39,16 @@ classical_infinite_language_with_sent_constants_nobiconditional = InfiniteLangua
                                                                 constant_arity_dict={'~': 1, '∧': 2, '∨': 2, '→': 2},
                                                                 sentential_constants=sentential_constants,
                                                                 context_variables=context_variables)
+
 classical_infinite_language_only_negation_conditional = InfiniteLanguage(atomics=atomics, metavariables=metavariables,
                                                                          constant_arity_dict={'~': 1, '→': 2},
                                                                          context_variables=context_variables)
 
-# LANGUAGES FOR MODAL LOGIC
+# LFIs
+LFI_language = deepcopy(classical_infinite_language_with_sent_constants)
+LFI_language.constant_arity_dict["∘"] = 1
+
+# MODAL LOGIC
 modal_arity_dict = {'~': 1, '□': 1, '◇': 1, '∧': 2, '∨': 2, '→': 2, '↔': 2}
 modal_language = Language(atomics=atomics, metavariables=metavariables,
                           constant_arity_dict=modal_arity_dict, context_variables=context_variables)

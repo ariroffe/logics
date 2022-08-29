@@ -51,3 +51,7 @@ The following are predefined instances of Language and InfiniteLanguage.
 .. data:: logics.instances.propositional.languages.modal_infinite_language_with_sent_constants
 
     Same as the one immediately above, adding the sentential constants `⊥`, `⊤`
+
+.. data:: logics.instances.propositional.languages.LFI_language
+
+    Same as classical_infinite_language_with_sent_constants, adding the unary constant `∘`

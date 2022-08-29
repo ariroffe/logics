@@ -77,3 +77,14 @@ Instances
         'possible ': '◇',
         'pos ': '◇'
     })
+
+.. data:: logics.utils.parsers.LFI_parser
+
+    Similar to the classical parser, but contains the unary connective °. Adds the following replacement rules:
+
+.. code-block:: python
+
+    LFI_replacement_dict.update({
+        "°": "∘",
+        "circ": "∘",
+    })
