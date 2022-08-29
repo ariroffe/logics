@@ -539,6 +539,7 @@ classical_parse_replacement_dict = {
 
     # For conjunction
     '&': '∧',
+    '^': '∧',
     ' and ': '∧',  # notice the spaces before and after 'and'
 
     # For disjunction

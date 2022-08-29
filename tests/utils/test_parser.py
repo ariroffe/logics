@@ -62,6 +62,11 @@ class TestPropositionalParser(unittest.TestCase):
         self.assertEqual(classical_parser.parse('q then p'), f1)
         self.assertEqual(classical_parser.parse('→(q, p)'), f1)
 
+        f1b = Formula(['∧', self.q, self.p])
+        self.assertEqual(classical_parser.parse('(q and p)'), f1b)
+        self.assertEqual(classical_parser.parse('(q & p)'), f1b)
+        self.assertEqual(classical_parser.parse('(q ^ p)'), f1b)
+
         # Complex
         f2 = Formula(['∨', ['~', f1], ['~', self.p]])
         complex_formula = classical_parser.parse('~(q → p) or ~p')
