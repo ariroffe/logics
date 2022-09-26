@@ -33,7 +33,7 @@ class TestInferenceClass(unittest.TestCase):
         i4 = Inference([self.empty_inference], [self.empty_inference])
         self.assertEqual(i4.level, 2)
 
-        # Attempting to build an inference with a premise of level 1 and a conclusion of level 2 should raise exception
+        # Attempting to build an inference with a premise of level 1 and a conclusion of level 2 should raise warning
         with warnings.catch_warnings(record=True) as w:
             i = Inference([self.p__p], [self.p__q___p_pthenq__q])
             self.assertEqual(i.level, 3)
@@ -42,6 +42,11 @@ class TestInferenceClass(unittest.TestCase):
         # Same with a formula and an inference of level 1
         with warnings.catch_warnings(record=True) as w:
             i = Inference([self.p], [self.p__p])
+            self.assertEqual(i.level, 2)
+            self.assertEqual(len(w), 1)
+            assert issubclass(w[-1].category, LevelsWarning)
+        with warnings.catch_warnings(record=True) as w:
+            i = Inference([self.p__p], [self.p])
             self.assertEqual(i.level, 2)
             self.assertEqual(len(w), 1)
             assert issubclass(w[-1].category, LevelsWarning)

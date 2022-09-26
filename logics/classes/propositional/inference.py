@@ -120,13 +120,15 @@ class Inference:
             if self.declared_level:
                 return self.declared_level
             return 1
-        # Otherwise it returns the level of the conclusions (or premises) + 1
-        elif self.conclusions:
-            # If there is at least one conclusion, return the level of the first conclusion + 1
-            return self.conclusions[0].level + 1
-        elif self.premises:
-            # If there are no conclusions but there is a premise, return the level of the first premise + 1
-            return self.premises[0].level + 1
+        # Otherwise it returns maximum between the premise and conclusion levels (since they may have different ones)
+        else:
+            premises_max_level = 0
+            conclusions_max_level = 0
+            if self.premises:
+                premises_max_level = max(premise.level for premise in self.premises)
+            if self.conclusions:
+                conclusions_max_level = max(conclusion.level for conclusion in self.conclusions)
+            return max(premises_max_level, conclusions_max_level) + 1
 
     @property
     def is_metainference(self):
