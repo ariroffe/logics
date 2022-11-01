@@ -202,7 +202,7 @@ class NaturalDeductionSystem:
         >>> correct
         False
         >>> error_list
-        ['Step 3: Incorrect handling of suppositions in on_step 0, it is in a closed supposition']
+        [(3, 'Incorrect handling of suppositions in on step 0, it is in a closed supposition')]
 
         Incorrectly closing a supposition, with a rule that does not allow that
 
@@ -216,7 +216,7 @@ class NaturalDeductionSystem:
         >>> correct
         False
         >>> error_list
-        ['Step 3: Incorrect handling of suppositions']
+        [(3, 'Incorrect handling of suppositions')]
         """
         error_list = list()
 
@@ -229,22 +229,22 @@ class NaturalDeductionSystem:
                     if not return_error_list:
                         return False
                     else:
-                        error_list.append(f"Step {step_index}: {step.content} was marked as 'premise', "
-                                          f"but is not a premise of the inference given")
+                        error_list.append((step_index,
+                                           "was marked as 'premise', but is not a premise of the inference given"))
                 # premise steps need to have the same supposition level than the previous step
                 if step_index == 0:
                     if step.open_suppositions:
                         if not return_error_list:
                             return False
                         else:
-                            error_list.append(f"Step 0: Incorrect supposition handling. "
-                                              f"Premise steps do not open suppositions")
+                            error_list.append((0, "Incorrect supposition handling. "
+                                                  "Premise steps do not open suppositions"))
                 else:
                     if step.open_suppositions != derivation[step_index-1].open_suppositions:
                         if not return_error_list:
                             return False
                         else:
-                            error_list.append(f"Step {step_index}: Incorrect supposition handling")
+                            error_list.append((step_index, "Incorrect supposition handling"))
 
             # The justification is 'supposition'
             elif step.justification == 'supposition':
@@ -253,14 +253,14 @@ class NaturalDeductionSystem:
                         if not return_error_list:
                             return False
                         else:
-                            error_list.append("Step 0: Incorrect supposition handling")
+                            error_list.append((0, "Incorrect supposition handling"))
                 else:
                     if not (step.open_suppositions[:-1] == derivation[step_index - 1].open_suppositions and
                             step.open_suppositions[-1] == step_index):
                         if not return_error_list:
                             return False
                         else:
-                            error_list.append(f"Step {step_index}: Incorrect supposition handling")
+                            error_list.append((step_index, "Incorrect supposition handling"))
 
             # If the justification is the name of a specific rule
             else:
@@ -268,8 +268,8 @@ class NaturalDeductionSystem:
                     if not return_error_list:
                         return False
                     else:
-                        error_list.append(f"Step {step_index}: Justification is incorrect, must be either "
-                                          f"'premise', 'supposition', or the name of a specific axiom or rule")
+                        error_list.append((step_index, "Justification is incorrect, must be either "
+                                          "'premise', 'supposition', or the name of a specific axiom or rule"))
 
                 correct, error = self.is_correct_application(derivation=derivation[:step_index+1], step=-1,  # last step
                                                              rule=self.rules[step.justification], return_error=True)
@@ -277,14 +277,15 @@ class NaturalDeductionSystem:
                     if not return_error_list:
                         return False
                     else:
-                        error_list.append(f'Step {step_index}: {error}')
+                        error_list.append((step_index, error))
 
         # Finally, checks if the last step is the conclusion of the inference
         if inference is not None and derivation.conclusion != inference.conclusion:
             if not return_error_list:
                 return False
             else:
-                error_list.append(f"Final step of the derivation is not the conclusion of the inference given")
+                error_list.append((len(derivation)-1,
+                                   "Final step of the derivation is not the conclusion of the inference given"))
 
         # If it gets to here either there are no errors, or there are some but return_error_list is True
         if not error_list:
@@ -330,7 +331,7 @@ class NaturalDeductionSystem:
         False
         >>> classical_natural_deduction_system.is_correct_application(deriv, 3, classical_natural_deduction_system.rules['E→'],
         ...                                                           return_error=True)
-        (False, 'Incorrect handling of suppositions in on_step 0, it is in a closed supposition')
+        (False, 'Incorrect handling of suppositions in on step 0, it is in a closed supposition')
         """
         last_step = derivation[step]
 
@@ -426,13 +427,13 @@ class NaturalDeductionSystem:
                             relevant_sup_dict[relevant_step] not in derivation[step_number].open_suppositions:
                         if not return_error:
                             return False
-                        return False, f"Incorrect handling of suppositions in on_step {step_number}"
+                        return False, f"Incorrect handling of suppositions in on step {step_number}"
                     # Check that closed suppositions of the rule are not open in the derivation
                     if relevant_step not in rule_step.open_suppositions and \
                             relevant_sup_dict[relevant_step] in derivation[step_number].open_suppositions:
                         if not return_error:
                             return False
-                        return False, f"Incorrect handling of suppositions in on_step {step_number}"
+                        return False, f"Incorrect handling of suppositions in on step {step_number}"
 
                 # Outside the rule, no steps in closed suppositions are being used
                 # (if the on_step has an open supposition, it must also be present in the conclusion, otherwise we are
@@ -442,14 +443,14 @@ class NaturalDeductionSystem:
                         if open_sup not in last_step.open_suppositions:
                             if not return_error:
                                 return False
-                            return False, f"Incorrect handling of suppositions in on_step {step_number}, it " \
+                            return False, f"Incorrect handling of suppositions in on step {step_number}, it " \
                                           f"is in a closed supposition"
 
         # Conclusion again (check that it immediately follows the last step, if it corresponds)
         if prev_step is not None and derivation.index(last_step) != prev_step + 1:
             if not return_error:
                 return False
-            return False, f"On step {derivation.index(last_step)} does not immediately follow the previous on_step"
+            return False, f"On step {derivation.index(last_step)} does not immediately follow the previous on step"
 
         # Supposition checking in the conclusion
         for relevant_step in relevant_sup_dict:
