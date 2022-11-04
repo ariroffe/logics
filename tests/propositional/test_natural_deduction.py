@@ -114,9 +114,17 @@ class TestClassicalNaturalDeductionSystem(unittest.TestCase):
         self.assertFalse(nd_system.is_correct_derivation(deriv3_6, None))
 
         # -------------------------------------------------
+        # Rules with multiple versions, check that they are accepted without number
+        inf = classical_parser.parse('p and q / p')
+        deriv4 = classical_parser.parse_derivation('''
+            p and q; premise; []; []
+            p; E∧; [0]; []''', natural_deduction=True)
+        self.assertTrue(nd_system.is_correct_derivation(deriv4, inf))
+
+        # -------------------------------------------------
         # A correct derivation using all the rules
 
-        deriv4 = classical_parser.parse_derivation(
+        deriv5 = classical_parser.parse_derivation(
             """q; premise; []; []
             ~q; supposition; []; [1]
             ~q; repetition; [1]; [1]
@@ -137,7 +145,7 @@ class TestClassicalNaturalDeductionSystem(unittest.TestCase):
             """, natural_deduction=True)
         i3 = Inference([Formula(['q']), Formula(['→', ['p'], ['q']])],
                        [Formula(['q'])])
-        self.assertTrue(nd_system.is_correct_derivation(deriv4, i3))
+        self.assertTrue(nd_system.is_correct_derivation(deriv5, i3))
 
     def test_rule_order(self):
         # i1 is conjunction introduction

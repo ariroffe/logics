@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [1.1.3] - 2022-11-04
+### Changed
+- Natural deduction `is_correct_derivation` accepts rule justifications like `E∧` for
+  rules that have multiple versions (e.g. `E∧1`, `E∧2`)
+
 ### Fixed
 - Bug fix in natural deduction's `is_correct_derivation` (do not check correct application 
   of the rule if invalid rule name)

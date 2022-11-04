@@ -264,23 +264,47 @@ class NaturalDeductionSystem:
 
             # If the justification is the name of a specific rule
             else:
-                if step.justification not in self.rules:
+                # Second conjunct is for rules that have two or more versions
+                if step.justification not in self.rules and f"{step.justification}1" not in self.rules:
                     if not return_error_list:
                         return False
                     else:
                         error_list.append((step_index, "Justification is incorrect, must be either "
                                           "'premise', 'supposition', or the name of a specific axiom or rule"))
-                else:
-                    # Only check correct application of the rule if valid rule
-                    correct, error = self.is_correct_application(derivation=derivation[:step_index+1],
-                                                                 step=-1,  # last step
-                                                                 rule=self.rules[step.justification],
-                                                                 return_error=True)
+                else:  # Only check correct application of the rule if valid rule
+                    # Get the rule names we need to try (might be something like ['I∧'] or like ['E∧1', 'E∧2'])
+                    if step.justification in self.rules:
+                        rule_names_to_try = [step.justification]
+                    else:
+                        counter = 1
+                        exit_loop = False
+                        rule_names_to_try = list()
+                        while not exit_loop:
+                            if f"{step.justification}{counter}" in self.rules:
+                                rule_names_to_try.append(f"{step.justification}{counter}")
+                                counter += 1
+                            else:
+                                exit_loop = True
+
+                    # Try to apply each of the relevant rule names
+                    correct = False
+                    for rule_name in rule_names_to_try:
+                        correct, error = self.is_correct_application(derivation=derivation[:step_index+1],
+                                                                     step=-1,  # last step
+                                                                     rule=self.rules[rule_name],
+                                                                     return_error=True)
+                        if correct:
+                            break  # if one of the rules to try is correct, exit
+
                     if not correct:
                         if not return_error_list:
                             return False
                         else:
-                            error_list.append((step_index, error))
+                            if len(rule_names_to_try) == 1:
+                                error_list.append((step_index, error))
+                            else:
+                                # If there is more than one possible rule, return a generic error message
+                                error_list.append((step_index, "Incorrect application of rule"))
 
         # Finally, checks if the last step is the conclusion of the inference
         if inference is not None and derivation.conclusion != inference.conclusion:
@@ -352,12 +376,17 @@ class NaturalDeductionSystem:
 
         # Check that the conclusion and the premises of the derivation are instances of the rule
         # Conclusion
-        if rule[-1].justification is not None and last_step.justification != rule[-1].justification:
-            if not return_error:
-                return False
-            return False, f"Justification for step {derivation.index(last_step)} does not coincide with " \
-                          f"the justification in the rule conclusion"
-
+        # (justification)
+        if rule[-1].justification is not None:
+            exact_match = last_step.justification == rule[-1].justification
+            without_num_match = rule[-1].justification[-1].isdigit() and \
+                                rule[-1].justification[:-1] == last_step.justification
+            if not exact_match and not without_num_match:
+                if not return_error:
+                    return False
+                return False, f"Justification for step {derivation.index(last_step)} does not coincide with " \
+                              f"the justification in the rule conclusion"
+        # (content)
         instance, subst_dict = last_step.content.is_instance_of(rule[-1].content, self.language, return_subst_dict=True)
         if not instance:
             if not return_error:
