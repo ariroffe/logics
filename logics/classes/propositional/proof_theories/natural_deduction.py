@@ -270,14 +270,17 @@ class NaturalDeductionSystem:
                     else:
                         error_list.append((step_index, "Justification is incorrect, must be either "
                                           "'premise', 'supposition', or the name of a specific axiom or rule"))
-
-                correct, error = self.is_correct_application(derivation=derivation[:step_index+1], step=-1,  # last step
-                                                             rule=self.rules[step.justification], return_error=True)
-                if not correct:
-                    if not return_error_list:
-                        return False
-                    else:
-                        error_list.append((step_index, error))
+                else:
+                    # Only check correct application of the rule if valid rule
+                    correct, error = self.is_correct_application(derivation=derivation[:step_index+1],
+                                                                 step=-1,  # last step
+                                                                 rule=self.rules[step.justification],
+                                                                 return_error=True)
+                    if not correct:
+                        if not return_error_list:
+                            return False
+                        else:
+                            error_list.append((step_index, error))
 
         # Finally, checks if the last step is the conclusion of the inference
         if inference is not None and derivation.conclusion != inference.conclusion:
