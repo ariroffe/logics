@@ -142,7 +142,7 @@ class NaturalDeductionSystem:
         self.language = language
         self.rules = rules
 
-    def is_correct_derivation(self, derivation, inference=None, return_error_list=False):
+    def is_correct_derivation(self, derivation, inference=None, return_error_list=False, exit_on_first_error=False):
         """Determines if a derivation has been correctly performed.
 
         Will check that the steps with a justification of 'premise' are premises of inference, that every other step
@@ -160,6 +160,8 @@ class NaturalDeductionSystem:
         return_error_list: bool, optional
             If False, will just return True or False (exits when it finds an error, more efficient) If True, will return
             a tuple (boolean, [error_list]) (computes all errors, does not exit on the first, less efficient)
+        exit_on_first_error: bool, optional
+            If `return_error_list` and this are both true, it will return a list with a single error instead of many.
 
         Examples
         --------
@@ -217,6 +219,20 @@ class NaturalDeductionSystem:
         False
         >>> error_list
         [(3, 'Incorrect handling of suppositions')]
+
+        Notes
+        --------
+        For rules that have more than one variant (e.g. ``E∧1`` and ``E∧2``) you can omit the number. E.g.:
+
+        >>> from logics.utils.parsers import classical_parser
+        >>> from logics.instances.propositional.natural_deduction import classical_natural_deduction_system
+        >>> inf = classical_parser.parse('p and q / p')
+        >>> deriv = classical_parser.parse_derivation('''
+        ... p and q; premise; []; []
+        ... p; E∧; [0]; []''',
+        ... natural_deduction=True)
+        >>> classical_natural_deduction_system.is_correct_derivation(deriv, inf)
+        True
         """
         error_list = list()
 
@@ -231,6 +247,8 @@ class NaturalDeductionSystem:
                     else:
                         error_list.append((step_index,
                                            "was marked as 'premise', but is not a premise of the inference given"))
+                        if exit_on_first_error:
+                            return False, error_list
                 # premise steps need to have the same supposition level than the previous step
                 if step_index == 0:
                     if step.open_suppositions:
@@ -239,12 +257,16 @@ class NaturalDeductionSystem:
                         else:
                             error_list.append((0, "Incorrect supposition handling. "
                                                   "Premise steps do not open suppositions"))
+                            if exit_on_first_error:
+                                return False, error_list
                 else:
                     if step.open_suppositions != derivation[step_index-1].open_suppositions:
                         if not return_error_list:
                             return False
                         else:
                             error_list.append((step_index, "Incorrect supposition handling"))
+                            if exit_on_first_error:
+                                return False, error_list
 
             # The justification is 'supposition'
             elif step.justification == 'supposition':
@@ -254,6 +276,8 @@ class NaturalDeductionSystem:
                             return False
                         else:
                             error_list.append((0, "Incorrect supposition handling"))
+                            if exit_on_first_error:
+                                return False, error_list
                 else:
                     if not (step.open_suppositions[:-1] == derivation[step_index - 1].open_suppositions and
                             step.open_suppositions[-1] == step_index):
@@ -261,6 +285,8 @@ class NaturalDeductionSystem:
                             return False
                         else:
                             error_list.append((step_index, "Incorrect supposition handling"))
+                            if exit_on_first_error:
+                                return False, error_list
 
             # If the justification is the name of a specific rule
             else:
@@ -271,6 +297,8 @@ class NaturalDeductionSystem:
                     else:
                         error_list.append((step_index, "Justification is incorrect, must be either "
                                           "'premise', 'supposition', or the name of a specific axiom or rule"))
+                        if exit_on_first_error:
+                            return False, error_list
                 else:  # Only check correct application of the rule if valid rule
                     # Get the rule names we need to try (might be something like ['I∧'] or like ['E∧1', 'E∧2'])
                     if step.justification in self.rules:
@@ -305,6 +333,8 @@ class NaturalDeductionSystem:
                             else:
                                 # If there is more than one possible rule, return a generic error message
                                 error_list.append((step_index, "Incorrect application of rule"))
+                            if exit_on_first_error:
+                                    return False, error_list
 
         # Finally, checks if the last step is the conclusion of the inference
         if inference is not None and derivation.conclusion != inference.conclusion:
@@ -313,6 +343,8 @@ class NaturalDeductionSystem:
             else:
                 error_list.append((len(derivation)-1,
                                    "Final step of the derivation is not the conclusion of the inference given"))
+                if exit_on_first_error:
+                    return False, error_list
 
         # If it gets to here either there are no errors, or there are some but return_error_list is True
         if not error_list:

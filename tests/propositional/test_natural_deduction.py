@@ -122,6 +122,21 @@ class TestClassicalNaturalDeductionSystem(unittest.TestCase):
         self.assertTrue(nd_system.is_correct_derivation(deriv4, inf))
 
         # -------------------------------------------------
+        # Test for exit_on_first_error
+        inf = classical_parser.parse('(p and q) and q / p')
+        deriv = classical_parser.parse_derivation('''
+            (p and q) and q; premise; []; []
+            p and p; E∧; [0]; []
+            q; E∧; [1]; []''', natural_deduction=True)
+        correct, errors = nd_system.is_correct_derivation(deriv, inf, return_error_list=True, exit_on_first_error=False)
+        self.assertFalse(correct)
+        self.assertEqual(len(errors), 3)
+
+        correct, errors = nd_system.is_correct_derivation(deriv, inf, return_error_list=True, exit_on_first_error=True)
+        self.assertFalse(correct)
+        self.assertEqual(len(errors), 1)
+
+        # -------------------------------------------------
         # A correct derivation using all the rules
 
         deriv5 = classical_parser.parse_derivation(

@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [1.1.4] - 2022-11-04
+### Added
+- Option to `exit_on_first_error` in natural deduction `is_correct_derivation`
+
 ## [1.1.3] - 2022-11-04
 ### Changed
 - Natural deduction `is_correct_derivation` accepts rule justifications like `E∧` for
