@@ -524,7 +524,7 @@ class TableauxSystem:
                 return False
             return False, subst_dict
 
-    def is_correct_tree(self, tree, inference=None, return_error_list=False):
+    def is_correct_tree(self, tree, inference=None, return_error_list=False, parser=None):
         """Checks if a given tableaux (a node and its descendants) is correctly derived, given the rules of the system.
 
         Parameters
@@ -537,6 +537,10 @@ class TableauxSystem:
         return_error_list: bool, optional
             If False, will just return True or False (exits when it finds an error, more efficient) If True, will return
             a tuple (boolean, [error_list]) (computes all errors, does not exit on the first, less efficient)
+        parser: logics.utils.parsers.standard_parser.StandardParser, optional
+            If present, will return the error list with unparsed instead of parsed formulae.
+            Can be of another class that implements ``unparse`` for ``Formula``.
+            Can be the ``classical_parser`` or some other parser defined by the user.
 
         Examples
         --------
@@ -564,7 +568,11 @@ class TableauxSystem:
         False
         >>> classical_tableaux_system.is_correct_tree(n1, inference=classical_parser.parse('~~p ∧ q / ~p'),
         ...                                           return_error_list=True)
-        ["Node ['~', ['p']] is an incorrect premise node", "Nodes {['~', ['p']]} are not accounted for in the derivation"]
+        ["Node ['~', ['p']] is an incorrect premise node", "Node {['~', ['p']]} is not accounted for in the derivation"]
+        >>> from logics.utils.parsers import classical_parser
+        >>> classical_tableaux_system.is_correct_tree(n1, inference=classical_parser.parse('~~p ∧ q / ~p'),
+        ...                                           return_error_list=True, parser=classical_parser)
+        ["Node ~p is an incorrect premise node", "Nodes {~p} are not accounted for in the derivation"]
         """
         # Implementation works top-down, as follows. Will walk the tree from root to leaves, looking at:
         # - If the justification of the node is None (premise node), if inference is not None, will check that the
@@ -591,7 +599,7 @@ class TableauxSystem:
                     else:
                         if not return_error_list:
                             return False
-                        error_list.append(f'Node {node} is an incorrect premise node')
+                        error_list.append(f'Node {node._self_string(parser)} is an incorrect premise node')
                 else:
                     correctly_derived_nodes.add(node)
 
@@ -614,7 +622,7 @@ class TableauxSystem:
                     if not correct:
                         if not return_error_list:
                             return False
-                        error_list.append(f'Rule {rule_name} was not applied to node {node}')
+                        error_list.append(f'Rule {rule_name} was not applied to node {node._self_string(parser)}')
                     else:
                         correctly_derived_nodes |= result3[1]
 
@@ -624,7 +632,8 @@ class TableauxSystem:
         if unaccounted_nodes:
             if not return_error_list:
                 return False
-            error_list.append(f'Nodes {unaccounted_nodes} are not accounted for in the derivation')
+            for node in unaccounted_nodes:
+                error_list.append(f'Node {node._self_string(parser)} is not accounted for in the derivation')
             return False, error_list
 
         # If it got to here, everything is all right
