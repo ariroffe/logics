@@ -1,7 +1,7 @@
 import unittest
 
 from logics.classes.propositional.proof_theories.tableaux import TableauxNode, ConstructiveTreeSystem
-from logics.classes.propositional import Formula
+from logics.classes.propositional import Formula, Inference
 from logics.instances.propositional.languages import classical_infinite_language as lang
 from logics.instances.propositional.tableaux import classical_tableaux_system
 
@@ -131,6 +131,52 @@ class TestTableauxSystem(unittest.TestCase):
         └── ~p, 0
             └── ~~~p, 0 (R~~)
                 └── p, 0 (R~~)
+        '''
+        self.assertFalse(classical_tableaux_system.is_correct_tree(n1))
+
+        # Incomplete tableaux (missing the negation of the conclusion)
+        n1 = TableauxNode(content=Formula(['p']))
+        inf = Inference(premises=[Formula(['p'])], conclusions=[Formula(['∨', ['p'], ['q']])])
+        self.assertFalse(classical_tableaux_system.is_correct_tree(n1, inference=inf))
+
+        # Incorrect tableaux (premise node comes after applying a rule)
+        n1 = TableauxNode(content=Formula(['~', ['~', ['p']]]))
+        n2 = TableauxNode(content=Formula(['p']), justification='R~~', parent=n1)
+        n3 = TableauxNode(content=Formula(['q']), parent=n2)
+        self.assertFalse(classical_tableaux_system.is_correct_tree(n1))
+
+        # Incomplete tableaux (~~p premise node is present only in one branch)
+        n1 = TableauxNode(content=Formula(['∨', ['p'], ['~', ['p']]]))
+        n2 = TableauxNode(content=Formula(['p']), parent=n1)
+        n3 = TableauxNode(content=Formula(['~', ['q']]), parent=n2)
+        n4 = TableauxNode(content=Formula(['~', ['~', ['p']]]), parent=n3)
+        n5 = TableauxNode(content=Formula(['p']), justification='R∨', parent=n4)
+        n6 = TableauxNode(content=Formula(['p']), justification='R~~', parent=n5)
+        n7 = TableauxNode(content=Formula(['~', ['p']]), justification='R∨', parent=n3)
+        '''
+        p ∨ ~p
+        └── p
+            └── ~q
+                ├── ~~p
+                │   └── p (R∨)
+                │       └── p (R~~)
+                └── ~p (R∨)
+        '''
+        # p ∨ ~p, p, ~~p / q
+        inf = Inference(premises=[Formula(['∨', ['p'], ['~', ['p']]]), Formula(['p']), Formula(['~', ['~', ['p']]])],
+                        conclusions=[Formula(['q'])])
+        self.assertFalse(classical_tableaux_system.is_correct_tree(n1, inference=inf))
+
+        # A premise node that has a sibling (no need for an inference)
+        n1 = TableauxNode(content=Formula(['p']))
+        n2 = TableauxNode(content=Formula(['~', ['q']]), parent=n1)
+        n3 = TableauxNode(content=Formula(['p']), parent=n2)
+        n4 = TableauxNode(content=Formula(['p']), parent=n2)
+        '''
+        p
+        └── ~q
+            ├── p
+            └── p
         '''
         self.assertFalse(classical_tableaux_system.is_correct_tree(n1))
         # More extensive tests (with the random argument generator) are made in tests/utils/test_tableaux_solver

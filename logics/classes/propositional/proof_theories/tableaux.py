@@ -530,17 +530,18 @@ class TableauxSystem:
         Parameters
         ----------
         tree: logics.classes.propositional.proof_theories.TableauxNode
+            A ``TableauxNode``, posssibly with children.
         inference: logics.classes.propositional.Inference or None, optional
             If ``None``, will just check correct application of the rules. If an inference, will check that the steps
             with no justification are either premises or the negation of the conclusion (this behavior can be overriden
             for other systems, see the source code).
         return_error_list: bool, optional
-            If False, will just return True or False (exits when it finds an error, more efficient) If True, will return
-            a tuple (boolean, [error_list]) (computes all errors, does not exit on the first, less efficient)
+            If False, will just return True or False (exits when it finds an error, more efficient). If True, will
+            return a tuple (boolean, [error_list]) (computes all errors, does not exit on the first, less efficient)
         parser: logics.utils.parsers.standard_parser.StandardParser, optional
             If present, will return the error list with unparsed instead of parsed formulae.
             Can be of another class that implements ``unparse`` for ``Formula``.
-            Can be the ``classical_parser`` or some other parser defined by the user.
+            Can be the ``classical_parser`` (see below in the Examples) or some other parser defined by the user.
 
         Examples
         --------
@@ -568,11 +569,16 @@ class TableauxSystem:
         False
         >>> classical_tableaux_system.is_correct_tree(n1, inference=classical_parser.parse('~~p ∧ q / ~p'),
         ...                                           return_error_list=True)
-        ["Node ['~', ['p']] is an incorrect premise node", "Node {['~', ['p']]} is not accounted for in the derivation"]
+        (False, ["Node ['~', ['p']] is an incorrect premise node", "Negation of conclusion ['~', ['p']] is not present in the tree"])
         >>> from logics.utils.parsers import classical_parser
         >>> classical_tableaux_system.is_correct_tree(n1, inference=classical_parser.parse('~~p ∧ q / ~p'),
         ...                                           return_error_list=True, parser=classical_parser)
-        ["Node ~p is an incorrect premise node", "Nodes {~p} are not accounted for in the derivation"]
+        (False, ['Node ~p is an incorrect premise node', 'Negation of conclusion ~p is not present in the tree'])
+
+        Notes
+        -----
+        All premise nodes (including negations of conclusions) must come at the beginning of the tableaux, before
+        any other rules are applied and before branching. Otherwise the tableaux will be marked as incorrect.
         """
         # Implementation works top-down, as follows. Will walk the tree from root to leaves, looking at:
         # - If the justification of the node is None (premise node), if inference is not None, will check that the
@@ -587,24 +593,39 @@ class TableauxSystem:
 
         error_list = list()
         correctly_derived_nodes = set()
+        present_premises = set()
+        present_conclusions = set()
+        traversing_premises = True
         for node in PreOrderIter(tree):
             # PREMISE NODES
-            # Add them to the correctly derived nodes
-            if node.justification is None:
+            if node.justification is not None:
+                traversing_premises = False
+            else:
+                # Premises must come at the beggining of the tableaux (to avoid premises present in only one branch)
+                if not traversing_premises:
+                    if not return_error_list:
+                        return False
+                    error_list.append(f'Premise nodes must be at the beggining of the tableaux, '
+                                      f'before applying any rule and before opening any new branch')
+
                 # If an inference was given
                 if inference is not None:
-                    # Check that the node is a premise of the inference
-                    if self._is_correct_premise_node(node, inference):
-                        correctly_derived_nodes.add(node)
+                    # Check that the node is a premise or negated conclusion of the inference
+                    is_premise_idx, is_conclusion_idx = self._is_correct_premise_node(node, inference)
+                    if is_premise_idx or is_conclusion_idx:
+                        present_premises |= is_premise_idx
+                        present_conclusions |= is_conclusion_idx
+                        correctly_derived_nodes.add(node)  # Not really necessary but leave it just in case
                     else:
                         if not return_error_list:
                             return False
                         error_list.append(f'Node {node._self_string(parser)} is an incorrect premise node')
                 else:
-                    correctly_derived_nodes.add(node)
+                    correctly_derived_nodes.add(node)  # Not really necessary but leave it just in case
+            if len(node.children) > 1:
+                traversing_premises = False  # Cannot contain any further premises after opening a new branch
 
-            # NON PREMISE NODES
-            # Check that the rule that applies to them is correctly applied in the tree
+            # Check if a rule applies to the node and is correctly applied in the tree
             # e.g. if the node is a conjunction, see that both conjuncts are below in the tree, and save both conjuncts
             # as correctly derived nodes
             for rule_name in self.rules:
@@ -626,33 +647,72 @@ class TableauxSystem:
                     else:
                         correctly_derived_nodes |= result3[1]
 
+        # After visiting all nodes, check that all premises and conclusions are present in the tableaux
+        if inference is not None:
+            # returns a bool, MUTATES ERROR_LIST
+            all_premises_present = self._all_premises_present(inference, present_premises, present_conclusions,
+                                                              return_error_list, error_list, parser)
+            if not all_premises_present and not return_error_list:
+                return False
+
         # After checking all nodes and all rules that can be applied to it, the correctly derived nodes should be
-        # all the tree nodes, otherwise there is some node which is unnacounted for by its previous nodes & the rules
-        unaccounted_nodes = {n for n in PreOrderIter(tree) if n not in correctly_derived_nodes}
+        # all the tree nodes (that are not premises),
+        # otherwise there is some node which is unnacounted for by its previous nodes & the rules
+        unaccounted_nodes = {n for n in PreOrderIter(tree) if
+                             (n not in correctly_derived_nodes and n.justification is not None)}
         if unaccounted_nodes:
             if not return_error_list:
                 return False
             for node in unaccounted_nodes:
-                error_list.append(f'Node {node._self_string(parser)} is not accounted for in the derivation')
-            return False, error_list
+                error_list.append(f'Rule incorrectly applied in node {node._self_string(parser)}')
 
-        # If it got to here, everything is all right
+        # If you got to here with return_error_list = False, then everything is alright
         if not return_error_list:
             return True
+        # Oterwise, check if there are errors
+        if error_list:
+            return False, error_list
         return True, []
 
     def _is_correct_premise_node(self, node, inference):
         """
         For classical logic (default here) a premise node is correct if it is a premise or the negation of a conclusion
         May need to be overwritten for other non-classical systems
+
+        Returns
+        -------
+        Two sets. Each may be empty (if the node is neither a premise nor a negated conclusion).
+        Or it may contain a number/s. E.g. {0,1}, {} means that the node is the node is premises number 0 and 1 of the
+        inference (both premises are the same, e.g. p, p / q)
         """
         # Check that the node is a premise of the inference
-        if node.content in inference.premises:
-            return True
-        # Or the negation of a conclusion of the inference
-        elif node.content.main_symbol == '~' and node.content[1] in inference.conclusions:
-            return True
-        return False
+        premises = {idx for idx in range(len(inference.premises)) if inference.premises[idx] == node.content}
+        conclusions = {idx for idx in range(len(inference.conclusions)) if
+                       (node.content.main_symbol == '~' and inference.conclusions[idx] == node.content[1])}
+        return premises, conclusions
+
+    def _all_premises_present(self, inference, present_premises, present_conclusions, return_error_list, error_list,
+                              parser):
+        """After visiting all nodes, check that all premises and negated conclusions are present"""
+        not_present_premises = set(range(len(inference.premises))) - present_premises
+        not_present_conclusions = set(range(len(inference.conclusions))) - present_conclusions
+        if not_present_premises:
+            if not return_error_list:
+                return False
+            for not_present_premise_idx in not_present_premises:
+                prem = inference.premises[not_present_premise_idx]
+                if parser:
+                    prem = parser.unparse(prem)
+                error_list.append(f'Premise {prem} is not present in the tree')
+        if not_present_conclusions:
+            if not return_error_list:
+                return False
+            for not_present_conclusion_idx in not_present_conclusions:
+                concl = inference.conclusions[not_present_conclusion_idx]
+                if parser:
+                    concl = parser.unparse(concl)
+                error_list.append(f'Negation of conclusion {concl} is not present in the tree')
+        return True
 
     def _is_correctly_applied(self, start_node, rule_subtree, correctly_derived_nodes, subst_dict=None):
         """
@@ -832,12 +892,11 @@ class ManyValuedTableauxSystem(TableauxSystem):
 
     def _is_correct_premise_node(self, node, inference):
         """A premise A must be initialized as A, 1, a conclusion B as B, 0"""
-        if node.content in inference.premises and node.index == 1:
-            return True
-        # Or the negation of a conclusion of the inference
-        elif node.content in inference.conclusions and node.index == 0:
-            return True
-        return False
+        premises = {idx for idx in range(len(inference.premises)) if
+                    (node.index == 1 and inference.premises[idx] == node.content)}
+        conclusions = {idx for idx in range(len(inference.conclusions)) if
+                       (node.index == 0 and inference.conclusions[idx] == node.content)}
+        return premises, conclusions
 
 
 # ----------------------------------------------------------------------------------------------------------------------

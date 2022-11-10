@@ -65,10 +65,10 @@ class TestTableauxSolver(unittest.TestCase):
             try:
                 self.assertTrue(classical_tableaux_system.is_correct_tree(tableaux, inf))
             except Exception as e:
-                print(classical_parser.unparse(inf))
+                print("ERROR WITH INFERENCE:", classical_parser.unparse(inf))
                 tableaux.print_tree(classical_parser)
-                correct, error_list = classical_tableaux_system.is_correct_tree(tableaux, inf)
-                print(error_list)
+                correct, error_list = classical_tableaux_system.is_correct_tree(tableaux, inf, return_error_list=True)
+                print("ERROR LIST:", error_list)
                 raise e
 
         # Test with invalid arguments
@@ -89,10 +89,10 @@ class TestTableauxSolver(unittest.TestCase):
             try:
                 self.assertTrue(classical_tableaux_system.is_correct_tree(tableaux, inf))
             except Exception as e:
-                print(classical_parser.unparse(inf))
+                print("ERROR WITH INFERENCE:", classical_parser.unparse(inf))
                 tableaux.print_tree(classical_parser)
-                correct, error_list = classical_tableaux_system.is_correct_tree(tableaux, inf)
-                print(error_list)
+                correct, error_list = classical_tableaux_system.is_correct_tree(tableaux, inf, return_error_list=True)
+                print("ERROR LIST:", error_list)
                 raise e
 
     def test_mvl_tableaux(self):
@@ -108,10 +108,10 @@ class TestTableauxSolver(unittest.TestCase):
             try:
                 self.assertTrue(LP_tableaux_system.is_correct_tree(tableaux, inf))
             except Exception as e:
-                print(classical_parser.unparse(inf))
+                print("ERROR WITH INFERENCE:", classical_parser.unparse(inf))
                 tableaux.print_tree(classical_parser)
-                correct, error_list = LP_tableaux_system.is_correct_tree(tableaux, inf)
-                print(error_list)
+                correct, error_list = LP_tableaux_system.is_correct_tree(tableaux, inf, return_error_list=True)
+                print("ERROR LIST:", error_list)
                 raise e
 
         # Test with invalid arguments
@@ -126,10 +126,10 @@ class TestTableauxSolver(unittest.TestCase):
             try:
                 self.assertTrue(LP_tableaux_system.is_correct_tree(tableaux, inf))
             except Exception as e:
-                print(classical_parser.unparse(inf))
+                print("ERROR WITH INFERENCE:", classical_parser.unparse(inf))
                 tableaux.print_tree(classical_parser)
-                correct, error_list = LP_tableaux_system.is_correct_tree(tableaux, inf)
-                print(error_list)
+                correct, error_list = LP_tableaux_system.is_correct_tree(tableaux, inf, return_error_list=True)
+                print("ERROR LIST:", error_list)
                 raise e
 
 
