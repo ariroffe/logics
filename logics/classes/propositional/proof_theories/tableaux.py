@@ -564,7 +564,8 @@ class TableauxSystem:
             for other systems, see the source code).
         return_error_list: bool, optional
             If False, will just return True or False (exits when it finds an error, more efficient). If True, will
-            return a tuple (boolean, [error_list]) (computes all errors, does not exit on the first, less efficient)
+            return a tuple (boolean, [error_list]) (computes all errors, does not exit on the first, less efficient).
+            The error list contains tuples (index path to node, str), see the examples below.
         parser: logics.utils.parsers.standard_parser.StandardParser, optional
             If present, will return the error list with unparsed instead of parsed formulae.
             Can be of another class that implements ``unparse`` for ``Formula``.
@@ -596,11 +597,11 @@ class TableauxSystem:
         False
         >>> classical_tableaux_system.is_correct_tree(n1, inference=classical_parser.parse('~~p ∧ q / ~p'),
         ...                                           return_error_list=True)
-        (False, ["Node ['~', ['p']] is an incorrect premise node", "Negation of conclusion ['~', ['p']] is not present in the tree"])
+        (False, [((0, 0), "Node ['~', ['p']] is an incorrect premise node"), ((), "Negation of conclusion ['~', ['p']] is not present in the tree")])
         >>> from logics.utils.parsers import classical_parser
         >>> classical_tableaux_system.is_correct_tree(n1, inference=classical_parser.parse('~~p ∧ q / ~p'),
         ...                                           return_error_list=True, parser=classical_parser)
-        (False, ['Node ~p is an incorrect premise node', 'Negation of conclusion ~p is not present in the tree'])
+        (False, [((0, 0), 'Node ~p is an incorrect premise node'), ((), 'Negation of conclusion ~p is not present in the tree')])
 
         Notes
         -----
