@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2022-11-14
+### Added
+- `child_index` property to `TableauxNode`.
+- More extensive tests for `TableauxSystem`'s `is_correct_tree` method.
+
+### Changed
+- Error messages on `logics.classes.propositional.proof_theories.tableaux`.
+  `TableauxSystem`'s `is_correct_tree` method now returns a list of tuples 
+  as `error_list`, where the first member is the tuple of indexes (`int`) leading to the 
+  node from the root and the second is an `str` with the error, instead of a list of `str`.
+
 ## [1.1.6] - 2022-11-10
 ### Fixed
 - Various bugs with TableauxSystem's `is_correct_tree` (no missing premises -avoids

@@ -4,7 +4,7 @@ Because of how AnyTree works, the root node of a tableaux IS the tableaux.
 """
 from copy import copy, deepcopy
 
-from anytree import NodeMixin, RenderTree, PreOrderIter
+from anytree import NodeMixin, RenderTree, PreOrderIter, LevelOrderIter
 
 from logics.classes.propositional import Formula
 
@@ -203,6 +203,33 @@ class TableauxNode(NodeMixin):
 
         return new_tableaux
 
+    @property
+    def child_index(self):
+        """Returns the index of the node among the parent's children. E.g. if the node is the second sibling, returns 1.
+        For the root it will return 0
+
+        Examples
+        --------
+        >>> from logics.classes.propositional.proof_theories import TableauxNode
+        >>> from logics.utils.parsers import classical_parser
+        >>> n1 = TableauxNode(content=classical_parser.parse('~(A ∧ B)'))
+        >>> n2 = TableauxNode(content=classical_parser.parse('~A'), justification='R∧', parent=n1)
+        >>> n3 = TableauxNode(content=classical_parser.parse('~B'), justification='R∧', parent=n1)
+        >>> n1.print_tree(classical_parser)  # For illustration purposes
+        ~(A ∧ B)
+        ├── ~A (R∧)
+        └── ~B (R∧)
+        >>> n2.child_index
+        0
+        >>> n3.child_index
+        1
+        >>> n1.child_index  # root node
+        0
+        """
+        if self.is_root:
+            return 0
+        return self.parent.children.index(self)
+
     # ------------------------------------------------------------------------------------------------------------------
     # Methods to print the node / tree to the console
 
@@ -327,12 +354,12 @@ class TableauxSystem:
     └── A (R∧)
         └── B (R∧)
     >>> neg_conjunction_rule = TableauxNode(content=classical_parser.parse('~(A ∧ B)'))
-    >>> TableauxNode(content=classical_parser.parse('~A'), justification='R∧', parent=neg_conjunction_rule)
-    >>> TableauxNode(content=classical_parser.parse('~B'), justification='R∧', parent=neg_conjunction_rule)
+    >>> TableauxNode(content=classical_parser.parse('~A'), justification='R~∧', parent=neg_conjunction_rule)
+    >>> TableauxNode(content=classical_parser.parse('~B'), justification='R~∧', parent=neg_conjunction_rule)
     >>> neg_conjunction_rule.print_tree(classical_parser)  # For illustration purposes
     ~(A ∧ B)
-    ├── ~A (R∧)
-    └── ~B (R∧)
+    ├── ~A (R~∧)
+    └── ~B (R~∧)
 
     Now we can define the system:
 
@@ -596,7 +623,7 @@ class TableauxSystem:
         present_premises = set()
         present_conclusions = set()
         traversing_premises = True
-        for node in PreOrderIter(tree):
+        for node in LevelOrderIter(tree):
             # PREMISE NODES
             if node.justification is not None:
                 traversing_premises = False
@@ -605,8 +632,9 @@ class TableauxSystem:
                 if not traversing_premises:
                     if not return_error_list:
                         return False
-                    error_list.append(f'Premise nodes must be at the beggining of the tableaux, '
-                                      f'before applying any rule and before opening any new branch')
+                    error_list.append((tuple(n.child_index for n in node.path),
+                                       f'Premise nodes must be at the beggining of the tableaux, '
+                                       f'before applying any rule and before opening any new branch'))
 
                 # If an inference was given
                 if inference is not None:
@@ -619,7 +647,8 @@ class TableauxSystem:
                     else:
                         if not return_error_list:
                             return False
-                        error_list.append(f'Node {node._self_string(parser)} is an incorrect premise node')
+                        error_list.append((tuple(n.child_index for n in node.path),
+                                           f'Node {node._self_string(parser)} is an incorrect premise node'))
                 else:
                     correctly_derived_nodes.add(node)  # Not really necessary but leave it just in case
             if len(node.children) > 1:
@@ -643,7 +672,8 @@ class TableauxSystem:
                     if not correct:
                         if not return_error_list:
                             return False
-                        error_list.append(f'Rule {rule_name} was not applied to node {node._self_string(parser)}')
+                        error_list.append((tuple(n.child_index for n in node.path),
+                                           f'Rule {rule_name} was not applied to node {node._self_string(parser)}'))
                     else:
                         correctly_derived_nodes |= result3[1]
 
@@ -664,7 +694,8 @@ class TableauxSystem:
             if not return_error_list:
                 return False
             for node in unaccounted_nodes:
-                error_list.append(f'Rule incorrectly applied in node {node._self_string(parser)}')
+                error_list.append((tuple(n.child_index for n in node.path),
+                                   f'Rule incorrectly applied in node {node._self_string(parser)}'))
 
         # If you got to here with return_error_list = False, then everything is alright
         if not return_error_list:
@@ -703,7 +734,7 @@ class TableauxSystem:
                 prem = inference.premises[not_present_premise_idx]
                 if parser:
                     prem = parser.unparse(prem)
-                error_list.append(f'Premise {prem} is not present in the tree')
+                error_list.append((tuple(), f'Premise {prem} is not present in the tree'))
         if not_present_conclusions:
             if not return_error_list:
                 return False
@@ -711,7 +742,7 @@ class TableauxSystem:
                 concl = inference.conclusions[not_present_conclusion_idx]
                 if parser:
                     concl = parser.unparse(concl)
-                error_list.append(f'Negation of conclusion {concl} is not present in the tree')
+                error_list.append((tuple(), f'Negation of conclusion {concl} is not present in the tree'))
         return True
 
     def _is_correctly_applied(self, start_node, rule_subtree, correctly_derived_nodes, subst_dict=None):

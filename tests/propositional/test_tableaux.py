@@ -55,6 +55,12 @@ class TestTableauxSystem(unittest.TestCase):
         self.assertEqual(self.n1.depth, 0)
         self.assertEqual(self.n1.height, 3)
 
+    def test_child_idx(self):
+        self.assertEqual(self.n1.child_index, 0)
+        self.assertEqual(self.n2.child_index, 0)
+        self.assertEqual(self.n7.child_index, 0)
+        self.assertEqual(self.n8.child_index, 1)
+
     def test_is_closed(self):
         self.assertTrue(classical_tableaux_system.node_is_closed(self.n4))
         self.assertTrue(classical_tableaux_system.node_is_closed(self.n3))
@@ -138,12 +144,17 @@ class TestTableauxSystem(unittest.TestCase):
         n1 = TableauxNode(content=Formula(['p']))
         inf = Inference(premises=[Formula(['p'])], conclusions=[Formula(['∨', ['p'], ['q']])])
         self.assertFalse(classical_tableaux_system.is_correct_tree(n1, inference=inf))
+        correct, error_list = classical_tableaux_system.is_correct_tree(n1, inference=inf, return_error_list=True)
+        self.assertEqual(error_list, [((), "Negation of conclusion ['∨', ['p'], ['q']] is not present in the tree")])
 
         # Incorrect tableaux (premise node comes after applying a rule)
         n1 = TableauxNode(content=Formula(['~', ['~', ['p']]]))
         n2 = TableauxNode(content=Formula(['p']), justification='R~~', parent=n1)
         n3 = TableauxNode(content=Formula(['q']), parent=n2)
         self.assertFalse(classical_tableaux_system.is_correct_tree(n1))
+        correct, error_list = classical_tableaux_system.is_correct_tree(n1, return_error_list=True)
+        self.assertEqual(error_list, [((0, 0, 0), 'Premise nodes must be at the beggining of the tableaux, '
+                                                  'before applying any rule and before opening any new branch')])
 
         # Incomplete tableaux (~~p premise node is present only in one branch)
         n1 = TableauxNode(content=Formula(['∨', ['p'], ['~', ['p']]]))
@@ -179,6 +190,48 @@ class TestTableauxSystem(unittest.TestCase):
             └── p
         '''
         self.assertFalse(classical_tableaux_system.is_correct_tree(n1))
+        correct, error_list = classical_tableaux_system.is_correct_tree(n1, return_error_list=True)
+        self.assertEqual(error_list, [((0, 0, 0), 'Premise nodes must be at the beggining of the tableaux, '
+                                                  'before applying any rule and before opening any new branch'),
+                                      ((0, 0, 1), 'Premise nodes must be at the beggining of the tableaux, '
+                                                  'before applying any rule and before opening any new branch')])
+
+        # Non-applied rule
+        n1 = TableauxNode(content=Formula(['p']))
+        n2 = TableauxNode(content=Formula(['~', ['~', ['~', ['p']]]]), parent=n1)
+        n3 = TableauxNode(content=Formula(['~', ['q']]), parent=n2)
+        """
+        p
+        └── ~~~p
+            └── ~q
+        """
+        inf = Inference(premises=[Formula(['p']), Formula(['~', ['~', ['~', ['p']]]])],
+                        conclusions=[Formula(['q'])])
+        self.assertFalse(classical_tableaux_system.is_correct_tree(n1))
+        correct, error_list = classical_tableaux_system.is_correct_tree(n1, return_error_list=True)
+        self.assertEqual(error_list, [((0, 0), "Rule R~~ was not applied to node ['~', ['~', ['~', ['p']]]]")])
+
+        # Incorrectly applied rule
+        n1 = TableauxNode(content=Formula(['↔', ['p'], ['q']]))
+        n2 = TableauxNode(content=Formula(['p']), parent=n1, justification='R↔')
+        n3 = TableauxNode(content=Formula(['q']), parent=n2, justification='R↔')
+        n4 = TableauxNode(content=Formula(['~', ['p']]), parent=n1, justification='R↔')
+        n5 = TableauxNode(content=Formula(['q']), parent=n4, justification='R↔')  # This node is wrong
+        """
+        p ↔ q
+        ├── p
+        │   └── q
+        └── ~p
+            └── q
+        """
+        self.assertFalse(classical_tableaux_system.is_correct_tree(n1))
+        correct, error_list = classical_tableaux_system.is_correct_tree(n1, return_error_list=True)
+        self.assertEqual(error_list, [((0,), "Rule R↔ was not applied to node ['↔', ['p'], ['q']]"),
+                                      ((0, 1), "Rule incorrectly applied in node ['~', ['p']] (R↔)"),
+                                      ((0, 0), "Rule incorrectly applied in node ['p'] (R↔)"),
+                                      ((0, 1, 0), "Rule incorrectly applied in node ['q'] (R↔)"),
+                                      ((0, 0, 0), "Rule incorrectly applied in node ['q'] (R↔)")])
+
         # More extensive tests (with the random argument generator) are made in tests/utils/test_tableaux_solver
 
 
