@@ -118,7 +118,7 @@ classical_natural_deduction_system = NaturalDeductionSystem(language=classical_i
 # ------------------------------------------------------------
 # Another usual presentation of the classical ND system (E~ is double negation), no repetition and EFSQ as primitives
 classical_natural_deduction_system2 = deepcopy(classical_natural_deduction_system)
-# Negation introduction is with the conjunction
+# Negation introduction is with the conjunction instead of Falsum
 classical_natural_deduction_system2.rules['I~'] = NaturalDeductionRule([
     '(...)',
     NaturalDeductionStep(Formula(['A']), 'supposition', open_suppositions=[0]),
