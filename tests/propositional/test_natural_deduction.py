@@ -4,6 +4,7 @@ from logics.classes.propositional import Inference, Formula
 from logics.classes.propositional.proof_theories import NaturalDeductionStep, NaturalDeductionRule
 from logics.utils.parsers import classical_parser
 from logics.instances.propositional.natural_deduction import classical_natural_deduction_system as nd_system
+from logics.instances.propositional.natural_deduction import classical_natural_deduction_system2 as nd_system2
 
 
 class TestClassicalNaturalDeductionSystem(unittest.TestCase):
@@ -161,6 +162,37 @@ class TestClassicalNaturalDeductionSystem(unittest.TestCase):
         i3 = Inference([Formula(['q']), Formula(['→', ['p'], ['q']])],
                        [Formula(['q'])])
         self.assertTrue(nd_system.is_correct_derivation(deriv5, i3))
+
+    def test_nd_system2(self):
+        # Test the new E~ rule
+        deriv1 = classical_parser.parse_derivation(
+            """
+            ~~p; premise; []; []
+            p; E~; [0]; []
+            """, natural_deduction=True
+        )
+        inf = classical_parser.parse("~~p / p")
+        correct, error_list = nd_system2.is_correct_derivation(deriv1, inf, return_error_list=True)
+        self.assertTrue(nd_system2.is_correct_derivation(deriv1, inf))
+
+        deriv5 = classical_parser.parse_derivation(
+            """q; premise; []; []
+            ~q; supposition; []; [1]
+            (q ∧ ~q); I∧; [0, 1]; [1]
+            ~~q; I~; [1, 2]; []
+            q; E~; [3]; []
+            q; supposition; []; [5]
+            (q ∧ q); I∧; [4, 5]; [5]
+            q; E∧1; [6]; [5]
+            (q → q); I→; [5, 7]; []
+            q; E→; [8, 4]; []
+            (q ∨ p); I∨1; [9]; []
+            (p → q); premise; []; []
+            q; E∨; [10, 8, 11]; []
+            """, natural_deduction=True)
+        i3 = Inference([Formula(['q']), Formula(['→', ['p'], ['q']])],
+                       [Formula(['q'])])
+        self.assertTrue(nd_system2.is_correct_derivation(deriv5, i3))
 
     def test_rule_order(self):
         # i1 is conjunction introduction

@@ -1,4 +1,4 @@
-from copy import copy
+from copy import copy, deepcopy
 
 from logics.classes.propositional import Formula, Inference
 from logics.classes.propositional.proof_theories import Derivation, NaturalDeductionStep
@@ -276,7 +276,7 @@ class NaturalDeductionSolver:
         derivation = self._delete_unused_steps(derivation, used_steps)
 
         # Second, replace the derived rules with their hardcoded demonstration
-        derivation = self._replace_derived_rules(derivation)
+        derivation = self._replace_derived_rules(derivation, self.derived_rules_derivations)
 
         return derivation
 
@@ -313,7 +313,7 @@ class NaturalDeductionSolver:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def _replace_derived_rules(self, derivation):
+    def _replace_derived_rules(self, derivation, hardcoded_rules):
         """Replaces the derived rule steps with their hardcoded derivation"""
 
         derivation2 = Derivation([])
@@ -332,14 +332,20 @@ class NaturalDeductionSolver:
             on_steps_iterator = iter(step.on_steps)
 
             derived_rule = False
-            for derived_rule_name in self.derived_rules_derivations:
+            for derived_rule_name in hardcoded_rules:
                 if step.justification == derived_rule_name:
                     derived_rule = True
-                    derived_rule_derivation = self.derived_rules_derivations[derived_rule_name]
-                    subst_dict = dict()
+                    derived_rule_derivation = hardcoded_rules[derived_rule_name]
                     step_correspondence_dict = dict()
                     new_jump_steps = 0  # How many you will jump by adding the derivation of this rule
                     num_premises = 0
+
+                    # Look at the current step and check that it is an instance of the conclusion of the derivation
+                    instance, subst_dict = step.content.is_instance_of(derived_rule_derivation[-1].content,
+                                                                       cl_language,
+                                                                       return_subst_dict=True)
+                    if not instance:
+                        raise SolverError(f"Formula {step.content} is not an instance of the derived rule's conclusion")
 
                     # Go step by step in the derivation of the derived rule
                     step2_index = -1
@@ -1012,6 +1018,83 @@ standard_derived_rules_derivations = {
 classical_natural_deduction_solver = NaturalDeductionSolver(language=cl_language,
                                                         simplification_rules=standard_simplification_rules,
                                                         derived_rules_derivations=standard_derived_rules_derivations,
+                                                        heuristics=[efsq_heuristic,
+                                                                    conjunction_heuristic,
+                                                                    conditional_heuristic,
+                                                                    disjunction_heuristic,
+                                                                    reductio_heuristic])
+
+
+# ----------------------------------------------------------------------------
+# Classical system 2 (see instances.propositional.natural_deduction)
+
+class AltNaturalDeductionSolver(NaturalDeductionSolver):
+    def __init__(self, extra_derived_rules_derivations, *args, **kwargs):
+        self.extra_derived_rules_derivations = extra_derived_rules_derivations
+        super().__init__(*args, **kwargs)
+
+    def _clean_derivation(self, derivation, inference):
+        derivation = super()._clean_derivation(derivation, inference)
+        # Before replacing the instances of ESFQ we need to change the justifications (esp for EFSQ, changes content)
+        derivation = self._replace_justifications(derivation)
+        derivation = self._replace_derived_rules(derivation, self.extra_derived_rules_derivations)
+        return derivation
+
+    def _replace_justifications(self, derivation):
+        """replace ~~ for E~, E~ for I∧"""
+        for step in derivation:
+            # Negation elim -> conjunction intro
+            if step.justification == "E~" and len(step.on_steps) == 2:
+                # Change the content, put the negated formula in second place
+                formula1 = derivation[step.on_steps[0]].content
+                formula2 = derivation[step.on_steps[1]].content
+                if formula2 == Formula(['~', formula1]):
+                    # The second formula is the negated one, no need to change the on_steps
+                    step.content = Formula(['∧', formula1, formula2])
+                elif formula1 == Formula(['~', formula2]):
+                    # The first formula is the negated one, invert the on_steps
+                    step.content = Formula(['∧', formula2, formula1])
+                    step.on_steps = [step.on_steps[1], step.on_steps[0]]
+                step.justification = 'I∧'
+            # Double negation -> E~
+            elif step.justification == '~~':
+                step.justification = 'E~'
+
+        return derivation
+
+
+# Repetition and EFSQ are derived rules in this system
+repetition_derivation = Derivation([
+    NaturalDeductionStep(content=Formula(['A']), justification='premise', open_suppositions=[]),
+    NaturalDeductionStep(content=Formula(['~', ['A']]), justification='supposition', open_suppositions=[1]),
+    NaturalDeductionStep(content=Formula(['∧', ['A'], ['~', ['A']]]), justification='I∧', on_steps=[0, 1],
+                         open_suppositions=[1]),
+    NaturalDeductionStep(content=Formula(['~', ['~', ['A']]]), justification='I~', on_steps=[1, 2],
+                         open_suppositions=[]),
+    NaturalDeductionStep(content=Formula(['A']), justification='E~', on_steps=[3], open_suppositions=[]),
+])
+EFSQ_derivation = Derivation([
+    NaturalDeductionStep(content=Formula(['∧', ['A'], ['~', ['A']]]), justification='premise', on_steps=[],
+                         open_suppositions=[]),
+    NaturalDeductionStep(content=Formula(['~', ['B']]), justification='supposition', on_steps=[],
+                         open_suppositions=[1]),
+    NaturalDeductionStep(content=Formula(['∧', ['∧', ['A'], ['~', ['A']]], ['~', ['B']]]), justification='I∧',
+                         on_steps=[0, 1], open_suppositions=[1]),
+    NaturalDeductionStep(content=Formula(['∧', ['A'], ['~', ['A']]]), justification='E∧1', on_steps=[2],
+                         open_suppositions=[1]),
+    NaturalDeductionStep(content=Formula(['~', ['~', ['B']]]), justification='I~', on_steps=[1, 3],
+                         open_suppositions=[]),
+    NaturalDeductionStep(content=Formula(['B']), justification='E~', on_steps=[4], open_suppositions=[]),
+])
+extra_derived_rules = {
+    "repetition": repetition_derivation,
+    "EFSQ": EFSQ_derivation,
+}
+
+classical_natural_deduction_solver2 = AltNaturalDeductionSolver(language=cl_language,
+                                                        simplification_rules=standard_simplification_rules,
+                                                        derived_rules_derivations=standard_derived_rules_derivations,
+                                                        extra_derived_rules_derivations=extra_derived_rules,
                                                         heuristics=[efsq_heuristic,
                                                                     conjunction_heuristic,
                                                                     conditional_heuristic,

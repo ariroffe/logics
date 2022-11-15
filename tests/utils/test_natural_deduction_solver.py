@@ -2,12 +2,14 @@ import unittest
 
 from logics.classes.exceptions import SolverError
 from logics.utils.parsers import classical_parser
-from logics.utils.solvers import classical_natural_deduction_solver
+from logics.utils.solvers import classical_natural_deduction_solver, classical_natural_deduction_solver2
 from logics.utils.formula_generators.generators_biased import random_formula_generator
 from logics.instances.propositional.languages import classical_infinite_language_with_sent_constants_nobiconditional \
     as cl_language
+from logics.instances.propositional.languages import classical_infinite_language_nobiconditional
 from logics.instances.propositional.many_valued_semantics import classical_mvl_semantics
 from logics.instances.propositional.natural_deduction import classical_natural_deduction_system as nd_system
+from logics.instances.propositional.natural_deduction import classical_natural_deduction_system2 as nd_system2
 
 
 class TestNaturalDeductionSolver(unittest.TestCase):
@@ -67,10 +69,21 @@ class TestNaturalDeductionSolver(unittest.TestCase):
     def test_replace_derived_rules(self):
         for inference in self.derived_rules:
             derivation = classical_natural_deduction_solver._solve_derivation(inference)
-            # print('ORIGNAL\n', derivation)
+            # print('ORIGINAL\n', derivation)
 
-            derivation = classical_natural_deduction_solver._replace_derived_rules(derivation)
+            derivation = classical_natural_deduction_solver._replace_derived_rules(
+                derivation, classical_natural_deduction_solver.derived_rules_derivations
+            )
             # print('REPLACED\n', derivation)
+            # print('\n')
+
+            derivation2 = classical_natural_deduction_solver2._solve_derivation(inference)
+            # print('ORIGINAL\n', derivation2)
+
+            derivation2 = classical_natural_deduction_solver2._replace_derived_rules(
+                derivation, classical_natural_deduction_solver2.derived_rules_derivations
+            )
+            # print('REPLACED\n', derivation2)
             # print('\n')
 
     def test_with_generator(self):
@@ -122,6 +135,57 @@ class TestNaturalDeductionSolver(unittest.TestCase):
 
         # print(f'Could not find invalid inference in {not_found_invalid} cases')
 
+    def test_alt_solver(self):
+        # Test with valid arguments and see that they are solved correctly
+        unsolved = 0
+        for _ in range(1000):
+            # No Falsum in the generator
+            inf = random_formula_generator.random_valid_inference(num_premises=2, num_conclusions=1,
+                                                                  max_depth=3, atomics=['p', 'q', 'r'],
+                                                                  language=classical_infinite_language_nobiconditional,
+                                                                  validity_apparatus=classical_mvl_semantics)
+            could_solve = False
+            try:
+                derivation = classical_natural_deduction_solver2.solve(inf)
+                could_solve = True
+            except SolverError:
+                # warnings.warn(f'Could not solve the derivation of {classical_parser.unparse(inf)}', SolverWarning)
+                unsolved += 1
+            except Exception as e:
+                print("Could not solve inference:")
+                print(classical_parser.unparse(inf))
+                raise e
+
+            if could_solve:
+                try:
+                    self.assertTrue(nd_system2.is_correct_derivation(derivation, inf))
+                except Exception as e:
+                    print("Solution to the following inference is incorrect:")
+                    print(classical_parser.unparse(inf))
+                    print(derivation)
+                    correct, error_list = nd_system2.is_correct_derivation(derivation, inf, return_error_list=True)
+                    print(error_list)
+                    raise e
+
+        # print(f'ND solver unsolved inferences = {unsolved}/1000')
+
+        # Test with invalid arguments and see that they raise SolverError
+        not_found_invalid = 0
+        for _ in range(100):
+            invalid = False
+            for x in range(100):
+                inf = random_formula_generator.random_inference(num_premises=2, num_conclusions=1, max_depth=3,
+                                                                atomics=['p', 'q', 'r'], language=cl_language)
+                if not classical_mvl_semantics.is_valid(inf):
+                    invalid = True
+                if invalid:
+                    break
+                if x == 99:
+                    not_found_invalid += 1
+
+            self.assertRaises(SolverError, classical_natural_deduction_solver2.solve, inf)
+
+        # print(f'Could not find invalid inference in {not_found_invalid} cases')
 
 if __name__ == '__main__':
     unittest.main()

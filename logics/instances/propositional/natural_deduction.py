@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from logics.classes.propositional import Formula
 from logics.classes.propositional.proof_theories import NaturalDeductionStep, NaturalDeductionRule, \
     NaturalDeductionSystem
@@ -112,3 +114,26 @@ classical_primitive_rules = {
 
 classical_natural_deduction_system = NaturalDeductionSystem(language=classical_infinite_language_with_sent_constants,
                                                             rules=classical_primitive_rules)
+
+# ------------------------------------------------------------
+# Another usual presentation of the classical ND system (E~ is double negation), no repetition and EFSQ as primitives
+classical_natural_deduction_system2 = deepcopy(classical_natural_deduction_system)
+# Negation introduction is with the conjunction
+classical_natural_deduction_system2.rules['I~'] = NaturalDeductionRule([
+    '(...)',
+    NaturalDeductionStep(Formula(['A']), 'supposition', open_suppositions=[0]),
+    '(...)',
+    NaturalDeductionStep(Formula(['∧', ['B'], ['~', ['B']]]), open_suppositions=[0]),
+    NaturalDeductionStep(Formula(['~', ['A']]), 'I~', [0, 1], open_suppositions=[])
+])
+# Negation elimination is double negation
+classical_natural_deduction_system2.rules['E~'] = NaturalDeductionRule([
+    '(...)',
+    NaturalDeductionStep(Formula(['~', ['~', ['A']]])),
+    '(...)',
+    NaturalDeductionStep(Formula(['A']), 'E~', [0], open_suppositions=[])
+])
+# The following are taken as derived rules
+del classical_natural_deduction_system2.rules['~~']
+del classical_natural_deduction_system2.rules['repetition']
+del classical_natural_deduction_system2.rules['EFSQ']
