@@ -703,7 +703,7 @@ class TableauxSystem:
             return True
         # Oterwise, check if there are errors
         if error_list:
-            return False, error_list
+            return False, sorted(error_list, key=lambda e: (len(e[0]), e[0]))  # errors sorted by LevelOrder
         return True, []
 
     def _is_correct_premise_node(self, node, inference):

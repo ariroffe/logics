@@ -227,10 +227,10 @@ class TestTableauxSystem(unittest.TestCase):
         self.assertFalse(classical_tableaux_system.is_correct_tree(n1))
         correct, error_list = classical_tableaux_system.is_correct_tree(n1, return_error_list=True)
         self.assertEqual(error_list, [((0,), "Rule R↔ was not applied to node ['↔', ['p'], ['q']]"),
-                                      ((0, 1), "Rule incorrectly applied in node ['~', ['p']] (R↔)"),
                                       ((0, 0), "Rule incorrectly applied in node ['p'] (R↔)"),
-                                      ((0, 1, 0), "Rule incorrectly applied in node ['q'] (R↔)"),
-                                      ((0, 0, 0), "Rule incorrectly applied in node ['q'] (R↔)")])
+                                      ((0, 1), "Rule incorrectly applied in node ['~', ['p']] (R↔)"),
+                                      ((0, 0, 0), "Rule incorrectly applied in node ['q'] (R↔)"),
+                                      ((0, 1, 0), "Rule incorrectly applied in node ['q'] (R↔)")])
 
         # More extensive tests (with the random argument generator) are made in tests/utils/test_tableaux_solver
 
