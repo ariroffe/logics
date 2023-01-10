@@ -18,7 +18,11 @@ class PredicateLanguage(Language):
     individual_constants: list of str, optional
         A list of strings (valid letters for individual constants). Can also be a callable (a function).
     variables: list of str, optional
-        A list of strings (valid letters for variables). Will consider any variable + a digit a valid variable.
+        A list of strings (valid letters for variables). Will consider any variable + a digit a valid variable. Are part
+        of the base language, can appear quantified over in non-schematic formulae.
+    individual_metavariables: list of str, optional
+        A list of strings. Can be instantiated with either variables or ind cts. Are part of the metalanguage, any
+        formula containing them is schematic. Useful for formulating rules.
     quantifiers: list of str, optional
         A list of strings (valid letters for quantifiers)
     metavariables: list of str, optional
@@ -29,7 +33,12 @@ class PredicateLanguage(Language):
         a dictionary that contains `str` (predicate letter symbols) as keys, and positive `int` (arities) as values
     predicate_variables: dict, optional
         a dictionary that contains `str` (predicate variable symbols) as keys, and positive `int` (arities) as values.
-        Will consider any variable + a digit a valid variable.
+        Will consider any variable + a digit a valid variable. Are part of the base language, , can appear quantified
+        over in non-schematic formulae.
+    predicate_metavariables: dict, optional
+        a dictionary that contains `str` (predicate variable symbols) as keys, and positive `int` (arities) as values.
+        Can be instantiated with either predicate letters or predicate variables. Are part of the metalanguage, any
+        formula containing them is schematic. Useful for formulating rules.
     function_symbols: dict, optional
         a dictionary that contains `str` (function symbols) as keys, and positive `int` (arities) as values
     sentential_constants: list of str, optional
@@ -112,17 +121,20 @@ class PredicateLanguage(Language):
     """
 
 
-    def __init__(self, individual_constants=None, variables=None, quantifiers=None, metavariables=None,
-                 constant_arity_dict=None, predicate_letters=None, predicate_variables=None, function_symbols=None,
-                 sentential_constants=None, allow_predicates_as_terms = False):
+    def __init__(self, individual_constants=None, variables=None, individual_metavariables=None, quantifiers=None,
+                 metavariables=None, constant_arity_dict=None, predicate_letters=None, predicate_variables=None,
+                 predicate_metavariables=None, function_symbols=None, sentential_constants=None,
+                 allow_predicates_as_terms=False):
         self.atomics = None  # Used in (propositional) Language but not here
         self.individual_constants = individual_constants or []
         self.variables = variables or []
+        self.individual_metavariables = individual_metavariables or []
         self.quantifiers = quantifiers
         self.metavariables = metavariables or []
         self.constant_arity_dict = constant_arity_dict or {}
         self.predicate_letters = predicate_letters or {}
         self.predicate_variables = predicate_variables or {}
+        self.predicate_metavariables = predicate_metavariables or {}
         self.function_symbols = function_symbols or {}
         self.sentential_constants = sentential_constants or []
         self.allow_predicates_as_terms = allow_predicates_as_terms  # To be able to say things like ∀x ∈ P (Formula)
@@ -144,7 +156,8 @@ class PredicateLanguage(Language):
             return {c for c in self.predicate_letters if self.predicate_letters[c] == arity}
 
     def arity(self, string):
-        """Overriden from the base class to include the arities of predicate letters/variables and sentential constants
+        """Overriden from the base class to include the arities of predicate letters/variables/metavariables and
+        function symbols
 
         Raises
         ------
@@ -169,8 +182,11 @@ class PredicateLanguage(Language):
             return self.constant_arity_dict[string]
         elif string in self.predicate_letters:
             return self.predicate_letters[string]
+        elif string in self.predicate_metavariables:
+            return self.predicate_metavariables[string]
         elif string in self.function_symbols:
             return self.function_symbols[string]
+        # Predicate variables can contain a digit afterwards
         for v in self.predicate_variables:
             if string == v:
                 return self.predicate_variables[v]
@@ -255,12 +271,16 @@ class PredicateLanguage(Language):
         return super()._is_molecular_well_formed(formula, return_error)
 
     def _is_valid_predicate(self, string):
-        return self._is_valid_variable(string, only_predicate=True) or string in self.predicate_letters
+        return self._is_valid_variable(string, only_predicate=True) or \
+            string in self.predicate_letters or \
+            string in self.predicate_metavariables
 
     def _is_valid_function_symbol(self, string):
         return string in self.function_symbols
 
     def is_valid_individual_constant(self, string):
+        if string in self.individual_metavariables:
+            return True
         if callable(self.individual_constants):
             return self.individual_constants(string)
         return string in self.individual_constants
@@ -271,15 +291,22 @@ class PredicateLanguage(Language):
             raise ValueError("only_individual and only_predicate parameters cannot be both True")
         elif only_individual:
             bound = self.variables
+            meta_bound = self.individual_metavariables
         elif only_predicate:
             bound = self.predicate_variables
+            meta_bound = self.predicate_metavariables
         else:
             bound = chain(self.variables, self.predicate_variables)
+            meta_bound = chain(self.individual_metavariables, self.predicate_metavariables)
         for vv in bound:
             if string == vv:
                 return True
             if string[:len(vv)] == vv and string[len(vv):].isdigit():
                 return True
+        for mv in meta_bound:
+            if string == mv:
+                return True
+            # these canot have digits after
         return False
 
     def _is_valid_individual_constant_or_variable(self, string):
@@ -322,6 +349,8 @@ class InfinitePredicateLanguage(PredicateLanguage, InfiniteLanguage):
         return super().arity(string)
 
     def _is_valid_predicate(self, string):
+        if string in self.predicate_metavariables:
+            return True
         for pred in chain(self.predicate_letters, self.predicate_variables):
             if string == pred:
                 return True

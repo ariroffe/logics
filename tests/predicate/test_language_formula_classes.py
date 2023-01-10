@@ -9,20 +9,24 @@ class TestLanguageFormulaClasses(unittest.TestCase):
     def setUp(self):
         individual_constants = ['a', 'b']
         variables = ['x']
+        individual_metavariables = ['α', 'β']
         quantifiers = ['∀']
         metavariables = ['A', 'B']
         constant_arity_dict = {'~': 1, '∧': 2}
         predicate_letters = {'P': 1, 'R': 2, 'S': 3}
         predicate_variables = {'X': 1}
+        predicate_metavariables = {'Π': 1, 'Φ': 2, 'Ψ': 3}
         sentential_constants = ['⊥', '⊤']
         function_symbols = {'f': 1, 'g': 2}
         self.function_language = InfinitePredicateLanguage(individual_constants=individual_constants,
                                                            variables=variables,
+                                                           individual_metavariables=individual_metavariables,
                                                            quantifiers=quantifiers,
                                                            metavariables=metavariables,
                                                            constant_arity_dict=constant_arity_dict,
                                                            predicate_letters=predicate_letters,
                                                            predicate_variables=predicate_variables,
+                                                           predicate_metavariables=predicate_metavariables,
                                                            sentential_constants=sentential_constants,
                                                            function_symbols=function_symbols,
                                                            allow_predicates_as_terms=True)
@@ -58,7 +62,34 @@ class TestLanguageFormulaClasses(unittest.TestCase):
         self.assertEqual(cl_language.arity('~'), 1)
         self.assertEqual(cl_language.arity('∧'), 2)
         self.assertEqual(cl_language.arity('P'), 1)
+        self.assertEqual(cl_language.arity('W'), 1)  # predicate variable
+        self.assertEqual(cl_language.arity('Φ'), 2)  # predicate metavariable
         self.assertEqual(self.function_language.arity('f'), 1)
+
+    def test_individual_predicate_metavariables(self):
+        # is_valid_predicate
+        self.assertTrue(cl_language._is_valid_predicate('P'))   # predicate
+        self.assertTrue(cl_language._is_valid_predicate('W'))   # predicate variable
+        self.assertTrue(cl_language._is_valid_predicate('Φ'))   # predicate metavariable
+        self.assertFalse(cl_language._is_valid_predicate('A'))  # formula metavariable
+
+        # is_valid_individual_constant
+        self.assertTrue(cl_language.is_valid_individual_constant('a'))   # ind constant
+        self.assertTrue(cl_language.is_valid_individual_constant('α'))   # ind metavariable
+        self.assertFalse(cl_language.is_valid_individual_constant('x'))  # ind variable
+
+        # is_valid_variable
+        self.assertTrue(cl_language._is_valid_variable('x'))   # ind variable
+        self.assertTrue(cl_language._is_valid_variable('x1'))  # ind variable
+        self.assertTrue(cl_language._is_valid_variable('X'))   # pred variable
+        self.assertTrue(cl_language._is_valid_variable('X1'))  # pred variable
+        self.assertTrue(cl_language._is_valid_variable('α'))   # ind metavariable
+        self.assertTrue(cl_language._is_valid_variable('Φ'))   # pred metavariable
+        self.assertFalse(cl_language._is_valid_variable('α1'))  # these do not admit digits at the end
+        self.assertFalse(cl_language._is_valid_variable('Φ1'))  # these do not admit digits at the end
+        self.assertFalse(cl_language._is_valid_variable('a'))  # ind constant
+        self.assertFalse(cl_language._is_valid_variable('A'))  # formula metavariable
+
 
     def test_is_well_formed(self):
         self.assertTrue(self.function_language.is_well_formed(self.a1))
@@ -169,6 +200,12 @@ class TestLanguageFormulaClasses(unittest.TestCase):
                                                       return_subst_dict=True)
         self.assertTrue(instance)
         self.assertEqual(subst_dict['A'], ['∀', 'X', ['P', 'x']])
+
+        # Predicate and individual metavariables
+
+        # Formula metavariables should not be taken as predicate metavariables
+        self.assertFalse(PredicateFormula(['P', 'a']).is_instance_of(PredicateFormula(['A', 'x']),
+                                                                     self.function_language))
 
     def test_arithmetic_language(self):
         self.assertTrue(arithmetic._is_term_well_formed('1'))
