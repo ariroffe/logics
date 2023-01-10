@@ -202,7 +202,7 @@ class PredicateLanguage(Language):
                     (term in self.predicate_letters or term in self.predicate_variables or
                      term in self.function_symbols):
                 return True
-            return self._is_valid_individual_constant_or_variable(term)
+            return self._is_valid_individual_constant_or_variable(term)  # includes individual metavariables
 
         # If not a string, it must be a tuple, of the form ('f', term, term, ...)
         else:
@@ -221,8 +221,8 @@ class PredicateLanguage(Language):
             return True
 
     def _is_atomic_well_formed(self, formula, return_error):
-        # Metavariables or sentential constants
-        if self.is_metavariable_string(formula[0]) or self.is_sentential_constant_string(formula[0]):
+        # Sentential metavariables and constants
+        if formula[0] in self.metavariables or self.is_sentential_constant_string(formula[0]):
             if not return_error:
                 return True
             return True, ''
@@ -311,6 +311,12 @@ class PredicateLanguage(Language):
 
     def _is_valid_individual_constant_or_variable(self, string):
         return self.is_valid_individual_constant(string) or self._is_valid_variable(string, only_individual=True)
+
+    def is_metavariable_string(self, string):
+        """Determines if a string is among the (individual/predicate/formula) metavariables of the language."""
+        return string in self.metavariables or \
+            string in self.individual_metavariables or \
+            string in self.predicate_metavariables
 
 
 class InfinitePredicateLanguage(PredicateLanguage, InfiniteLanguage):

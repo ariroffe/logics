@@ -90,6 +90,12 @@ class TestLanguageFormulaClasses(unittest.TestCase):
         self.assertFalse(cl_language._is_valid_variable('a'))  # ind constant
         self.assertFalse(cl_language._is_valid_variable('A'))  # formula metavariable
 
+        # is metavariable string
+        self.assertTrue(cl_language.is_metavariable_string('A'))   # formula metavariable
+        self.assertTrue(cl_language.is_metavariable_string('α'))   # ind metavariable
+        self.assertTrue(cl_language.is_metavariable_string('Φ'))   # pred metavariable
+        self.assertFalse(cl_language.is_metavariable_string('P'))  # common predicate
+        self.assertFalse(cl_language.is_metavariable_string('a'))  # common ind constant
 
     def test_is_well_formed(self):
         self.assertTrue(self.function_language.is_well_formed(self.a1))
@@ -113,6 +119,21 @@ class TestLanguageFormulaClasses(unittest.TestCase):
         self.assertFalse(self.function_language.is_well_formed(self.m4))
         self.assertTrue(cl_language.is_well_formed(self.m6))
         self.assertFalse(cl_language.is_well_formed(self.m8))
+
+        # formulae with individual and predicate metavariables
+        self.assertTrue(cl_language.is_well_formed(PredicateFormula(['P', 'α'])))
+        self.assertTrue(cl_language.is_well_formed(PredicateFormula(['Π', 'a'])))
+        self.assertTrue(cl_language.is_well_formed(PredicateFormula(['Π', 'α'])))
+        self.assertFalse(cl_language.is_well_formed(PredicateFormula(['α', 'α'])))
+        self.assertFalse(cl_language.is_well_formed(PredicateFormula(['Π', 'Π'])))
+        self.assertFalse(cl_language.is_well_formed(PredicateFormula(['Φ', 'α'])))  # binary
+        self.assertTrue(cl_language.is_well_formed(PredicateFormula(['Φ', 'α', 'a'])))
+        self.assertTrue(cl_language.is_well_formed(PredicateFormula(['Φ', 'α', 'β'])))
+        self.assertTrue(cl_language.is_well_formed(PredicateFormula(['∀', 'x', ['P', 'α']])))
+        self.assertTrue(cl_language.is_well_formed(PredicateFormula(['∀', 'α', ['P', 'α']])))
+        self.assertTrue(cl_language.is_well_formed(PredicateFormula(['∀', 'x', ['Π', 'α']])))
+        self.assertTrue(cl_language.is_well_formed(PredicateFormula(['∀', 'X', ['Π', 'α']])))
+        self.assertTrue(cl_language.is_well_formed(PredicateFormula(['∀', 'Π', ['Π', 'α']])))  # second-order
 
     def test_free_variables(self):
         self.assertEqual(self.a1.free_variables(self.function_language), {'x'})
