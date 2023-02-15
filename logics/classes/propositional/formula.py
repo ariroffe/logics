@@ -424,7 +424,7 @@ class Formula(list):
         # If there is no previous substitution, it is an instance
         if not return_subst_dict:
             return True
-        # If you have to return a substitution dict, add this substitution instance
+        # Add this substitution instance
         subst_dict[formula[0]] = self
         return True, subst_dict
 

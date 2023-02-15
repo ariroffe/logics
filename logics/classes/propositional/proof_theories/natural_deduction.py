@@ -271,6 +271,7 @@ class NaturalDeductionSystem:
             # The justification is 'supposition'
             elif step.justification == 'supposition':
                 if step_index == 0:
+                    # We are at the first step of the derivation, so open_sups can only be [0]
                     if step.open_suppositions != [0]:
                         if not return_error_list:
                             return False
@@ -279,6 +280,7 @@ class NaturalDeductionSystem:
                             if exit_on_first_error:
                                 return False, error_list
                 else:
+                    # We are at a later step. open_sups needs to be equal to the previous step's open_steps plus the idx
                     if not (step.open_suppositions[:-1] == derivation[step_index - 1].open_suppositions and
                             step.open_suppositions[-1] == step_index):
                         if not return_error_list:
@@ -290,7 +292,7 @@ class NaturalDeductionSystem:
 
             # If the justification is the name of a specific rule
             else:
-                # Second conjunct is for rules that have two or more versions
+                # The rule does not exist. Second conjunct is for rules that have two or more versions
                 if step.justification not in self.rules and f"{step.justification}1" not in self.rules:
                     if not return_error_list:
                         return False
@@ -410,9 +412,9 @@ class NaturalDeductionSystem:
         # Conclusion
         # (justification)
         if rule[-1].justification is not None:
-            exact_match = last_step.justification == rule[-1].justification
+            exact_match = last_step.justification == rule[-1].justification  # e.g. 'I∧'
             without_num_match = rule[-1].justification[-1].isdigit() and \
-                                rule[-1].justification[:-1] == last_step.justification
+                                rule[-1].justification[:-1] == last_step.justification  # e.g. 'E∧1'
             if not exact_match and not without_num_match:
                 if not return_error:
                     return False

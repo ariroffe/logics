@@ -308,6 +308,82 @@ class PredicateFormula(Formula):
                                                       _bound_variables=_bound_variables))
         return new_formula
 
+    def _is_atomic_instance_of(self, formula, language, subst_dict, return_subst_dict):
+        # We can assume that formula is schematic atomic (may be something like 'A' or like 'R(α, b)')
+
+        # The case of atomic sententials (e.g., 'A') is handled in the superclass
+        if len(formula) == 1 and formula[0] in language.metavariables:
+            return super()._is_atomic_instance_of(formula, language, subst_dict, return_subst_dict)
+
+        # Here we need to check the case of atomics with a schematic individual and/or predicate metavariable
+        # First, check that the formulae have the same length
+        if len(self) != len(formula):
+            if not return_subst_dict:
+                return False
+            return False, subst_dict
+
+        # Second, check the predicate term
+        formula_predicate = formula[0]
+        self_predicate = self[0]
+        if formula_predicate in language.predicate_metavariables:
+            # Check if there was a previous substitution of the same predicate
+            if formula_predicate in subst_dict and subst_dict[formula_predicate] != self_predicate:
+                if not return_subst_dict:
+                    return False
+                return False, subst_dict
+
+            # If there is no previous substitution, check that the arities concide
+            if language.arity(formula_predicate) != language.arity(self_predicate):
+                if not return_subst_dict:
+                    return False
+                return False, subst_dict
+            # They coincide, add the predicate to the subst dict
+            subst_dict[formula_predicate] = self_predicate
+
+        # Third, check the terms
+        for idx in range(len(formula)-1):  # minus one to remove the predicate, plus one below for the same reason
+            term_is_instance, subst_dict = self._is_term_instance_of(self[idx+1], formula[idx+1], language, subst_dict)
+            if not term_is_instance:
+                if not return_subst_dict:
+                    return False
+                return False, subst_dict
+
+        # If you reach here, all is good
+        if not return_subst_dict:
+            return True
+        return True, subst_dict
+
+    def _is_term_instance_of(self, self_term, formula_term, language, subst_dict):
+        # base case, you get a string
+        if type(formula_term) == str:
+            # If the string is an individual metavariable, check instance
+            if formula_term in language.individual_metavariables:
+                if formula_term in subst_dict:
+                    if subst_dict[formula_term] == self_term:
+                        return True, subst_dict
+                    return False, subst_dict
+                else:  # not in the subst dict, add it
+                    subst_dict[formula_term] = self_term
+                    return True, subst_dict
+
+            # If not an individual metavariable, then they have to be equal
+            else:
+                return formula_term == self_term, subst_dict
+
+        # We got a complex term - e.g. (f, (g, a))
+        else:
+            # Check that the length of the terms coincides
+            if len(formula_term) != len(self_term):
+                return False, subst_dict
+
+            # They do coincide, check each member of the tuple recursively
+            for idx in range(len(formula_term)):
+                term_is_instance, subst_dict = \
+                    self._is_term_instance_of(self_term[idx], formula_term[idx], language, subst_dict)
+                if not term_is_instance:
+                    return False, subst_dict
+            return True, subst_dict
+
     def _is_molecular_instance_of(self, formula, language, subst_dict, return_subst_dict):
         # We only need the quantifier case here, for the rest call the super method
         if self.main_symbol == formula.main_symbol and self.main_symbol in language.quantifiers:

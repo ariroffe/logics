@@ -242,10 +242,29 @@ class TestLanguageFormulaClasses(unittest.TestCase):
 
         # Predicate and individual metavariables
         m = PredicateFormula(['P', 'α'])
-        f1 = PredicateFormula(['P', 'a'])
-        f2 = PredicateFormula(['P', 'b'])
+        self.assertTrue(PredicateFormula(['P', 'a']).is_instance_of(m, self.function_language))
+        self.assertTrue(PredicateFormula(['P', 'b']).is_instance_of(m, self.function_language))
+
+        m = PredicateFormula(['∧', ['P', 'α'], ['R', 'b', 'α']])
+        f1 = PredicateFormula(['∧', ['P', 'a'], ['R', 'b', 'a']])
+        f2 = PredicateFormula(['∧', ['P', 'α'], ['R', 'b', 'c']])
         self.assertTrue(f1.is_instance_of(m, self.function_language))
-        self.assertTrue(f2.is_instance_of(m, self.function_language))
+        self.assertFalse(f2.is_instance_of(m, self.function_language))
+        inst, subst_dict = f1.is_instance_of(m, self.function_language, return_subst_dict=True)
+        self.assertEqual(subst_dict, {'α': 'a'})
+
+        m = PredicateFormula(['Π', 'α'])
+        self.assertTrue(PredicateFormula(['P', 'a']).is_instance_of(m, self.function_language))
+        self.assertFalse(PredicateFormula(['R', 'a', 'b']).is_instance_of(m, self.function_language))
+        self.assertTrue(PredicateFormula(['P', 'α']).is_instance_of(m, self.function_language))
+        self.assertTrue(PredicateFormula(['Π', 'a']).is_instance_of(m, self.function_language))
+
+        m = PredicateFormula(['P', ('f', 'α', ('f' ,'α'))])
+        f1 = PredicateFormula(['P', ('f', 'a', ('f', 'a'))])
+        self.assertTrue(f1.is_instance_of(m, self.function_language))
+        self.assertFalse(PredicateFormula(['P', ('f', 'a', ('f', 'b'))]).is_instance_of(m, self.function_language))
+        inst, subst_dict = f1.is_instance_of(m, self.function_language, return_subst_dict=True)
+        self.assertEqual(subst_dict, {'α': 'a'})
 
 
     def test_arithmetic_language(self):
