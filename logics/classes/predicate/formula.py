@@ -101,6 +101,47 @@ class PredicateFormula(Formula):
             return self[2:]
         return super().arguments()
 
+    def is_schematic(self, language):
+        """Returns ``True`` if the formula contains an (individual, predicate or sentential) metavariable of the
+        language, ``False`` otherwise
+
+        Examples
+        --------
+        >>> from logics.classes.predicate import PredicateFormula
+        >>> from logics.instances.predicate.languages import classical_predicate_language
+        >>> PredicateFormula(['P', 'a']).is_schematic(classical_predicate_language)
+        False
+        >>> PredicateFormula(['P', 'α']).is_schematic(classical_predicate_language)
+        True
+        >>> PredicateFormula(['Π', 'a']).is_schematic(classical_predicate_language)
+        True
+        >>> PredicateFormula(['∧', ['P', 'x'], ['A']]).is_schematic(classical_predicate_language)
+        True
+        """
+        if self.is_atomic:
+            for term in self:
+                if self._is_schematic_term(term, language):
+                    return True
+            return False
+        else:
+            for argument in self.arguments(language.quantifiers):
+                if argument.is_schematic(language):
+                    return True
+            return False
+
+    @staticmethod
+    def _is_schematic_term(term, language):
+        # base case
+        if type(term) == str:
+            return language.is_metavariable_string(term)  # will check for ind, pred and sentence metavariables
+        # nested subterms
+        elif type(term) == tuple:
+            for subterm in term:
+                if PredicateFormula._is_schematic_term(subterm, language):
+                    return True
+            return False
+        raise ValueError("A term should be either a string or a tuple")
+
     def free_variables(self, language, term=None, _bound_variables=None):
         """Returns the set of free variables inside a predicate formula or term
 
@@ -128,10 +169,10 @@ class PredicateFormula(Formula):
 
         # Term
         if term is not None:
-            # If you are evaluating a particular term (e.g. 'a' or ('f', ('g', 'x'))
+            # If you are evaluating a particular term, e.g. 'a' or ('f', ('g', 'x'))
             # Atomic term, e.g. 'a'
             if type(term) == str:
-                if language._is_valid_variable(term) and term not in _bound_variables:
+                if language._is_valid_variable(term, allow_metavariables=False) and term not in _bound_variables:
                     return {term}
                 return set()
             # Molecular term ('f', ('g', 'x'))

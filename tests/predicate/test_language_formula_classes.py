@@ -152,9 +152,11 @@ class TestLanguageFormulaClasses(unittest.TestCase):
         self.assertEqual(PredicateFormula(['∀', 'x', '∈', 'a', ['P', 'x']]).free_variables(self.function_language),
                          set())
 
+        # Check that ind metavariables are not registered as free variables
+        self.assertEqual(PredicateFormula(['P', 'α']).free_variables(self.function_language), set())
+        self.assertEqual(PredicateFormula(['P', ('f', 'α')]).free_variables(self.function_language), set())
+
     def test_some_base_formula_methods(self):
-        self.assertFalse(PredicateFormula(['P', 'x']).is_schematic(cl_language))
-        self.assertTrue(PredicateFormula(['∧', ['P', 'x'], ['A']]).is_schematic(cl_language))
         self.assertEqual(PredicateFormula(['∧', ['P', 'x'], ['A']]).main_symbol, '∧')
         self.assertEqual(PredicateFormula(['∃', 'x', ['∀', 'X', ['X', 'x']]]).depth, 2)
         subf = [
@@ -163,6 +165,22 @@ class TestLanguageFormulaClasses(unittest.TestCase):
             PredicateFormula(['∃', 'x', ['∀', 'X', ['X', 'x']]])
         ]
         self.assertEqual(PredicateFormula(['∃', 'x', ['∀', 'X', ['X', 'x']]]).subformulae, subf)
+
+    def test_is_schematic(self):
+        self.assertFalse(PredicateFormula._is_schematic_term('a', cl_language))
+        self.assertTrue(PredicateFormula._is_schematic_term('α', cl_language))
+        self.assertTrue(PredicateFormula._is_schematic_term('Π', cl_language))
+        self.assertFalse(PredicateFormula._is_schematic_term(('f', 'a'), self.function_language))
+        self.assertFalse(PredicateFormula._is_schematic_term(('f', ('g', 'a')), self.function_language))
+        self.assertTrue(PredicateFormula._is_schematic_term(('f', 'α'), self.function_language))
+        self.assertTrue(PredicateFormula._is_schematic_term(('f', ('g', 'α')), self.function_language))
+
+        self.assertFalse(PredicateFormula(['P', 'x']).is_schematic(cl_language))
+        self.assertTrue(PredicateFormula(['P', 'α']).is_schematic(cl_language))
+        self.assertTrue(PredicateFormula(['Π', 'a']).is_schematic(cl_language))
+        self.assertTrue(PredicateFormula(['Π', 'α']).is_schematic(cl_language))
+        self.assertTrue(PredicateFormula(['∧', ['P', 'x'], ['A']]).is_schematic(cl_language))
+        self.assertTrue(PredicateFormula(['P', ('f', 'α')]).is_schematic(self.function_language))
 
     def test_base_substitute_instantiate(self):
         # Substitute
@@ -223,10 +241,12 @@ class TestLanguageFormulaClasses(unittest.TestCase):
         self.assertEqual(subst_dict['A'], ['∀', 'X', ['P', 'x']])
 
         # Predicate and individual metavariables
+        m = PredicateFormula(['P', 'α'])
+        f1 = PredicateFormula(['P', 'a'])
+        f2 = PredicateFormula(['P', 'b'])
+        self.assertTrue(f1.is_instance_of(m, self.function_language))
+        self.assertTrue(f2.is_instance_of(m, self.function_language))
 
-        # Formula metavariables should not be taken as predicate metavariables
-        self.assertFalse(PredicateFormula(['P', 'a']).is_instance_of(PredicateFormula(['A', 'x']),
-                                                                     self.function_language))
 
     def test_arithmetic_language(self):
         self.assertTrue(arithmetic._is_term_well_formed('1'))

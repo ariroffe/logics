@@ -87,7 +87,7 @@ class Formula(list):
         if self.is_atomic:
             return language.is_metavariable_string(self[0])
         else:
-            for argument in self.arguments(language.quantifiers):
+            for argument in self.arguments():
                 if argument.is_schematic(language):
                     return True
             return False
@@ -421,7 +421,7 @@ class Formula(list):
                 return subst_dict[formula[0]] == self
             return subst_dict[formula[0]] == self, subst_dict
 
-        # If there is not previous substitution, it is an instance
+        # If there is no previous substitution, it is an instance
         if not return_subst_dict:
             return True
         # If you have to return a substitution dict, add this substitution instance

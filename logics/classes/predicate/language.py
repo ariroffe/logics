@@ -177,6 +177,8 @@ class PredicateLanguage(Language):
         2
         >>> classical_function_language.arity('f')  # function symbol
         1
+        >>> classical_function_language.arity('Π')  # predicate metavariable
+        1
         """
         if string in self.constant_arity_dict:
             return self.constant_arity_dict[string]
@@ -252,7 +254,7 @@ class PredicateLanguage(Language):
     def _is_molecular_well_formed(self, formula, return_error):
         # We only need to take into account the case of quantified formulae, the rest is the same
         if formula.main_symbol in self.quantifiers:
-            if not self._is_valid_variable(formula[1]):
+            if not self._is_valid_variable(formula[1], allow_metavariables=True):  # includes ind and pred metavariables
                 if not return_error:
                     return False
                 return False, f'{formula} is not well-formed: {formula[1]} is not a valid variable'
@@ -270,8 +272,11 @@ class PredicateLanguage(Language):
         # Non-quantified cases, call the super method
         return super()._is_molecular_well_formed(formula, return_error)
 
+    def is_atomic_string(self, string):
+        raise ValueError('Method only available in propositional languages')
+
     def _is_valid_predicate(self, string):
-        return self._is_valid_variable(string, only_predicate=True) or \
+        return self._is_valid_variable(string, only_predicate=True, allow_metavariables=True) or \
             string in self.predicate_letters or \
             string in self.predicate_metavariables
 
@@ -285,7 +290,7 @@ class PredicateLanguage(Language):
             return self.individual_constants(string)
         return string in self.individual_constants
 
-    def _is_valid_variable(self, string, only_individual=False, only_predicate=False):
+    def _is_valid_variable(self, string, only_individual=False, only_predicate=False, allow_metavariables=True):
         """There is always an infinite supply of both individual and predicate variables"""
         if only_individual and only_predicate:
             raise ValueError("only_individual and only_predicate parameters cannot be both True")
@@ -303,14 +308,16 @@ class PredicateLanguage(Language):
                 return True
             if string[:len(vv)] == vv and string[len(vv):].isdigit():
                 return True
-        for mv in meta_bound:
-            if string == mv:
-                return True
-            # these canot have digits after
+        if allow_metavariables:
+            for mv in meta_bound:
+                if string == mv:
+                    return True
+                # these canot have digits after
         return False
 
     def _is_valid_individual_constant_or_variable(self, string):
-        return self.is_valid_individual_constant(string) or self._is_valid_variable(string, only_individual=True)
+        return self.is_valid_individual_constant(string) or self._is_valid_variable(string, only_individual=True,
+                                                                                    allow_metavariables=True)
 
     def is_metavariable_string(self, string):
         """Determines if a string is among the (individual/predicate/formula) metavariables of the language."""
