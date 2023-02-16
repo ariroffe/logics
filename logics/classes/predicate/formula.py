@@ -113,8 +113,6 @@ class PredicateFormula(Formula):
         False
         >>> PredicateFormula(['P', 'α']).is_schematic(classical_predicate_language)
         True
-        >>> PredicateFormula(['Π', 'a']).is_schematic(classical_predicate_language)
-        True
         >>> PredicateFormula(['∧', ['P', 'x'], ['A']]).is_schematic(classical_predicate_language)
         True
         """
@@ -124,6 +122,13 @@ class PredicateFormula(Formula):
                     return True
             return False
         else:
+            # Quantified case, check the variable and bound
+            if self[0] in language.quantifiers:
+                if self[1] in language.variable_metavariables:
+                    return True
+                if self[2] == '∈' and self._is_schematic_term(self[3], language):
+                    return True
+
             for argument in self.arguments(language.quantifiers):
                 if argument.is_schematic(language):
                     return True
@@ -133,7 +138,7 @@ class PredicateFormula(Formula):
     def _is_schematic_term(term, language):
         # base case
         if type(term) == str:
-            return language.is_metavariable_string(term)  # will check for ind, pred and sentence metavariables
+            return language.is_metavariable_string(term)  # will check for ind, var and sentence metavariables
         # nested subterms
         elif type(term) == tuple:
             for subterm in term:
@@ -172,7 +177,7 @@ class PredicateFormula(Formula):
             # If you are evaluating a particular term, e.g. 'a' or ('f', ('g', 'x'))
             # Atomic term, e.g. 'a'
             if type(term) == str:
-                if language._is_valid_variable(term, allow_metavariables=False) and term not in _bound_variables:
+                if language._is_valid_variable(term, allow_metavariables=True) and term not in _bound_variables:
                     return {term}
                 return set()
             # Molecular term ('f', ('g', 'x'))
@@ -322,23 +327,11 @@ class PredicateFormula(Formula):
                 return False
             return False, subst_dict
 
-        # Second, check the predicate term
-        formula_predicate = formula[0]
-        self_predicate = self[0]
-        if formula_predicate in language.predicate_metavariables:
-            # Check if there was a previous substitution of the same predicate
-            if formula_predicate in subst_dict and subst_dict[formula_predicate] != self_predicate:
-                if not return_subst_dict:
-                    return False
-                return False, subst_dict
-
-            # If there is no previous substitution, check that the arities concide
-            if language.arity(formula_predicate) != language.arity(self_predicate):
-                if not return_subst_dict:
-                    return False
-                return False, subst_dict
-            # They coincide, add the predicate to the subst dict
-            subst_dict[formula_predicate] = self_predicate
+        # Second, check that the predicate term is the same
+        if formula[0] != self[0]:
+            if not return_subst_dict:
+                return False
+            return False, subst_dict
 
         # Third, check the terms
         for idx in range(len(formula)-1):  # minus one to remove the predicate, plus one below for the same reason
@@ -356,8 +349,11 @@ class PredicateFormula(Formula):
     def _is_term_instance_of(self, self_term, formula_term, language, subst_dict):
         # base case, you get a string
         if type(formula_term) == str:
-            # If the string is an individual metavariable, check instance
-            if formula_term in language.individual_metavariables:
+            # If the string is an individual metavariable or variable metavariable, check instance
+            if (formula_term in language.individual_metavariables and language.is_valid_individual_constant(self_term)) \
+                    or (formula_term in language.variable_metavariables and
+                        language._is_valid_variable(self_term, only_individual=True)):
+                # There is a previous substitution instance
                 if formula_term in subst_dict:
                     if subst_dict[formula_term] == self_term:
                         return True, subst_dict
@@ -366,7 +362,7 @@ class PredicateFormula(Formula):
                     subst_dict[formula_term] = self_term
                     return True, subst_dict
 
-            # If not an individual metavariable, then they have to be equal
+            # If not an individual/variable metavariable, then they have to be equal
             else:
                 return formula_term == self_term, subst_dict
 
@@ -387,16 +383,18 @@ class PredicateFormula(Formula):
     def _is_molecular_instance_of(self, formula, language, subst_dict, return_subst_dict):
         # We only need the quantifier case here, for the rest call the super method
         if self.main_symbol == formula.main_symbol and self.main_symbol in language.quantifiers:
-            # Check that the variable is the same
-            if self[1] != formula[1]:
+            # Check that the variable is an instance
+            instance, subst_dict = self._is_term_instance_of(self[1], formula[1], language, subst_dict)
+            if not instance:
                 if not return_subst_dict:
                     return False
                 return False, subst_dict
 
             # Bounded quantifier case
             if formula[2] == '∈':
-                # The bounds must be equal (we do not presently have metavariables for terms)
-                if self[2] != '∈' or self[3] != formula[3]:
+                # The bound must be an instance
+                instance, subst_dict = self._is_term_instance_of(self[3], formula[3], language, subst_dict)
+                if self[2] != '∈' or not instance:
                     if not return_subst_dict:
                         return False
                     return False, subst_dict
