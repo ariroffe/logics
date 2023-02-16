@@ -17,16 +17,16 @@ classical_primitive_rules = {
 
     'E~': NaturalDeductionRule([
         '(...)',
-        NaturalDeductionStep(Formula(['~', ['A']])),
+        NaturalDeductionStep(Formula(['~', ['A']]), open_suppositions=[]),
         '(...)',
-        NaturalDeductionStep(Formula(['A'])),
+        NaturalDeductionStep(Formula(['A']), open_suppositions=[]),
         '(...)',
         NaturalDeductionStep(Formula(['⊥']), 'E~', [0, 1], open_suppositions=[])
     ]),
 
     '~~': NaturalDeductionRule([
         '(...)',
-        NaturalDeductionStep(Formula(['~', ['~', ['A']]])),
+        NaturalDeductionStep(Formula(['~', ['~', ['A']]]), open_suppositions=[]),
         '(...)',
         NaturalDeductionStep(Formula(['A']), '~~', [0], open_suppositions=[])
     ]),
@@ -41,71 +41,71 @@ classical_primitive_rules = {
 
     'E→': NaturalDeductionRule([
         '(...)',
-        NaturalDeductionStep(Formula(['→', ['A'], ['B']])),
+        NaturalDeductionStep(Formula(['→', ['A'], ['B']]), open_suppositions=[]),
         '(...)',
-        NaturalDeductionStep(Formula(['A'])),
+        NaturalDeductionStep(Formula(['A']), open_suppositions=[]),
         '(...)',
         NaturalDeductionStep(Formula(['B']), 'E→', [0, 1], open_suppositions=[])
     ]),
 
     'I∧': NaturalDeductionRule([
         '(...)',
-        NaturalDeductionStep(Formula(['A'])),
+        NaturalDeductionStep(Formula(['A']), open_suppositions=[]),
         '(...)',
-        NaturalDeductionStep(Formula(['B'])),
+        NaturalDeductionStep(Formula(['B']), open_suppositions=[]),
         '(...)',
         NaturalDeductionStep(Formula(['∧', ['A'], ['B']]), 'I∧', [0, 1], open_suppositions=[])
     ]),
 
     'E∧1': NaturalDeductionRule([
         '(...)',
-        NaturalDeductionStep(Formula(['∧', ['A'], ['B']])),
+        NaturalDeductionStep(Formula(['∧', ['A'], ['B']]), open_suppositions=[]),
         '(...)',
         NaturalDeductionStep(Formula(['A']), 'E∧1', [0], open_suppositions=[])
     ]),
 
     'E∧2': NaturalDeductionRule([
         '(...)',
-        NaturalDeductionStep(Formula(['∧', ['A'], ['B']])),
+        NaturalDeductionStep(Formula(['∧', ['A'], ['B']]), open_suppositions=[]),
         '(...)',
         NaturalDeductionStep(Formula(['B']), 'E∧2', [0], open_suppositions=[])
     ]),
 
     'I∨1': NaturalDeductionRule([
         '(...)',
-        NaturalDeductionStep(Formula(['A'])),
+        NaturalDeductionStep(Formula(['A']), open_suppositions=[]),
         '(...)',
         NaturalDeductionStep(Formula(['∨', ['A'], ['B']]), 'I∨1', [0], open_suppositions=[])
     ]),
 
     'I∨2': NaturalDeductionRule([
         '(...)',
-        NaturalDeductionStep(Formula(['A'])),
+        NaturalDeductionStep(Formula(['A']), open_suppositions=[]),
         '(...)',
         NaturalDeductionStep(Formula(['∨', ['B'], ['A']]), 'I∨2', [0], open_suppositions=[])
     ]),
 
     'E∨': NaturalDeductionRule([
         '(...)',
-        NaturalDeductionStep(Formula(['∨', ['A'], ['B']])),
+        NaturalDeductionStep(Formula(['∨', ['A'], ['B']]), open_suppositions=[]),
         '(...)',
-        NaturalDeductionStep(Formula(['→', ['A'], ['C']])),
+        NaturalDeductionStep(Formula(['→', ['A'], ['C']]), open_suppositions=[]),
         '(...)',
-        NaturalDeductionStep(Formula(['→', ['B'], ['C']])),
+        NaturalDeductionStep(Formula(['→', ['B'], ['C']]), open_suppositions=[]),
         '(...)',
         NaturalDeductionStep(Formula(['C']), 'E∨', [0, 1, 2], open_suppositions=[])
     ]),
 
     'repetition': NaturalDeductionRule([
         '(...)',
-        NaturalDeductionStep(Formula(['A'])),
+        NaturalDeductionStep(Formula(['A']), open_suppositions=[]),
         '(...)',
         NaturalDeductionStep(Formula(['A']), 'repetition', [0], open_suppositions=[])
     ]),
 
     'EFSQ': NaturalDeductionRule([
         '(...)',
-        NaturalDeductionStep(Formula(['⊥'])),
+        NaturalDeductionStep(Formula(['⊥']), open_suppositions=[]),
         '(...)',
         NaturalDeductionStep(Formula(['A']), 'EFSQ', [0], open_suppositions=[])
     ]),
@@ -129,7 +129,7 @@ classical_natural_deduction_system2.rules['I~'] = NaturalDeductionRule([
 # Negation elimination is double negation
 classical_natural_deduction_system2.rules['E~'] = NaturalDeductionRule([
     '(...)',
-    NaturalDeductionStep(Formula(['~', ['~', ['A']]])),
+    NaturalDeductionStep(Formula(['~', ['~', ['A']]]), open_suppositions=[]),
     '(...)',
     NaturalDeductionStep(Formula(['A']), 'E~', [0], open_suppositions=[])
 ])

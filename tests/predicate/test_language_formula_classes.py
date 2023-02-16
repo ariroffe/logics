@@ -274,6 +274,12 @@ class TestLanguageFormulaClasses(unittest.TestCase):
         self.assertFalse(PredicateFormula(['∀', 'x', ['P', 'y']]).is_instance_of(m, self.function_language))
         self.assertFalse(PredicateFormula(['∀', 'x', ['P', 'a']]).is_instance_of(m, self.function_language))
 
+        m = PredicateFormula(['∀', 'χ', ['A']])
+        instance, subst_dict = PredicateFormula(['∀', 'x', ['P', 'x']]).is_instance_of(m, self.function_language,
+                                                                                       return_subst_dict=True)
+        self.assertTrue(instance)
+        self.assertEqual(subst_dict, {'χ': 'x', 'A': PredicateFormula(['P', 'x'])})
+
         m = PredicateFormula(['P', ('f', 'α', ('f' ,'α'))])
         f1 = PredicateFormula(['P', ('f', 'a', ('f', 'a'))])
         self.assertTrue(f1.is_instance_of(m, self.function_language))
