@@ -36,7 +36,7 @@ class PredicateNaturalDeductionRule(NaturalDeductionRule):
 
 class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
     """The differences between this class and the propositional one stem from rules with given constants as arbitrary
-    up to that point in the derivation, and things like [a/x]A
+    up to that point in the derivation, and things like [α/χ]A
     """
     def substitute_rule(self, derivation, step, rule):
         """Gets rid of things of form [α/χ] in the rules, by vsubstituting the χ's for α's and returning the modified
@@ -125,6 +125,12 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
             return rule
 
     def check_arbitrary_constants(self, derivation, step, rule):
+        """For a rule that requires an arbitrary constant, determines what that constant is and determines if it is so
+
+        Notes
+        -----
+        Requires the modified version of the rule (by ``substitute_rule``); that is, one that does not contain [α/χ]
+        """
         if rule.arbitrary_cts is None:
             return True, ""
 
@@ -139,22 +145,36 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
             arbitrary_constant = subst_dict['α']
             possible_error = f"Constant '{arbitrary_constant}' is not arbitrary"
 
-            # 1) Check that arbitrary_constant is not in the formula at the current step
-            if derivation[step].content.contains_string(arbitrary_constant):
+        elif rule[-1].justification == "E∃":
+            # Now the constant that we need to check is present as antecedent of the second premise of the modified rule
+            step_premise2 = derivation[derivation[step].on_steps[1]].content
+            instance, subst_dict = step_premise2.is_instance_of(rule[3].content, self.language, return_subst_dict=True)
+            arbitrary_constant = subst_dict['α']
+            possible_error = f"Constant '{arbitrary_constant}' is not arbitrary"
+
+            # In this case, we also need to check that the existential does not contain the constant as well
+            if derivation[derivation[step].on_steps[0]].content.contains_string(arbitrary_constant):
+                return False, possible_error
+        else:
+            raise NotImplementedError("No arbitrary constant checking for the rule given yet")
+
+
+        # 1) Check that arbitrary_constant is not in the formula at the current step
+        if derivation[step].content.contains_string(arbitrary_constant):
+            return False, possible_error
+
+        open_sups = derivation[step].open_suppositions
+        for step2_idx in range(step):  # Go up to (but not including) the current step of the derivation
+            step2 = derivation[step2_idx]
+
+            # 2) Check that arbitrary_constant it is not in a premise
+            if step2.justification == "premise" and step2.content.contains_string(arbitrary_constant):
                 return False, possible_error
 
-            open_sups = derivation[step].open_suppositions
-            for step2_idx in range(step):  # Go up to (but not including) the current step of the derivation
-                step2 = derivation[step2_idx]
-
-                # 2) Check that arbitrary_constant it is not in a premise
-                if step2.justification == "premise" and step2.content.contains_string(arbitrary_constant):
-                    return False, possible_error
-
-                # 3) Check that arbitrary_constant it is not in an open supposition
-                if step2.justification == "supposition" and step2_idx in open_sups and \
-                        step2.content.contains_string(arbitrary_constant):
-                    return False, possible_error
+            # 3) Check that arbitrary_constant it is not in an open supposition
+            if step2.justification == "supposition" and step2_idx in open_sups and \
+                    step2.content.contains_string(arbitrary_constant):
+                return False, possible_error
 
         return True, ""
 
