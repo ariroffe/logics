@@ -129,7 +129,7 @@ classical_primitive_rules = {
         '(...)',
         PredicateNaturalDeductionStep(Formula(['[α/χ]A']), open_suppositions=[]),
         '(...)',
-        PredicateNaturalDeductionStep(Formula(['∃', 'χ', ['A']]), 'I∀', [0], open_suppositions=[])
+        PredicateNaturalDeductionStep(Formula(['∃', 'χ', ['A']]), 'I∃', [0], open_suppositions=[])
     ]),
 }
 

@@ -47,13 +47,16 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
 
         # For both introduction rules we need to begin by looking at the conclusion
         if step_conclusion.justification == 'I∀' or step_conclusion.justification == 'I∃':
-            instance, subst_dict = step_conclusion.content.is_instance_of(rule[-1], return_subst_dict=True)
+            instance, subst_dict = step_conclusion.content.is_instance_of(rule[-1].content, self.language,
+                                                                          return_subst_dict=True)
             if not instance:
                 raise ValueError("Conclusion not an instance of the rule's conclusion")
 
             # The subst dict should now contain something like {'χ': 'y', 'A': ['R', 'y', 'x']}
-            new_rule_conclusion = rule[-1].content.vsubstitute('χ', subst_dict['χ']).vsubstitute('A', subst_dict['A'])
-            # the rule conclusion is not something like ['∀', 'y' ['R', 'y', 'x']]
+            new_rule_conclusion = deepcopy(rule[-1].content)
+            new_rule_conclusion[-1] = subst_dict['A']
+            new_rule_conclusion[1] = subst_dict['χ']
+            # the new rule conclusion is now something like ['∀', 'y' ['R', 'y', 'x']]
 
             # For the rule premise, we must now take A from there, and vsubstitute χ for α
             new_rule_premise = new_rule_conclusion[-1].vsubstitute(subst_dict['χ'], 'α')

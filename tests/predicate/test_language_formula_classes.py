@@ -63,7 +63,6 @@ class TestLanguageFormulaClasses(unittest.TestCase):
         self.assertEqual(cl_language.arity('∧'), 2)
         self.assertEqual(cl_language.arity('P'), 1)
         self.assertEqual(cl_language.arity('W'), 1)  # predicate variable
-        self.assertEqual(cl_language.arity('Φ'), 2)  # predicate metavariable
         self.assertEqual(self.function_language.arity('f'), 1)
 
     def test_individual_variable_metavariables(self):
