@@ -47,20 +47,23 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
 
         # For both introduction rules we need to begin by looking at the conclusion
         if step_conclusion.justification == 'I∀' or step_conclusion.justification == 'I∃':
+            # In both these cases we need to begin by looking at the conclusion
             instance, subst_dict = step_conclusion.content.is_instance_of(rule[-1].content, self.language,
                                                                           return_subst_dict=True)
             if not instance:
                 raise ValueError("Conclusion not an instance of the rule's conclusion")
 
-            # The subst dict should now contain something like {'χ': 'y', 'A': ['R', 'y', 'x']}
+            # Suppose the inference is Rab / ∃y Ryb
+            # The rule states [α/χ]A / ∃χ A
+            # The subst dict should now contain something like {'χ': 'y', 'A': ['R', 'y', 'b']}
             new_rule_conclusion = deepcopy(rule[-1].content)
             new_rule_conclusion[-1] = subst_dict['A']
             new_rule_conclusion[1] = subst_dict['χ']
-            # the new rule conclusion is now something like ['∀', 'y' ['R', 'y', 'x']]
+            # the new rule conclusion is now something like ['∃', 'y' ['R', 'y', 'b']]
 
-            # For the rule premise, we must now take A from there, and vsubstitute χ for α
+            # For the rule premise, we must now take A from there, and vsubstitute y for α
             new_rule_premise = new_rule_conclusion[-1].vsubstitute(subst_dict['χ'], 'α')
-            # in the above example, the rule premise now says ['R', 'α', 'y']
+            # in the above example, the rule premise now says ['R', 'α', 'b']
 
             new_rule = deepcopy(rule)
             new_rule[1].content = new_rule_premise
@@ -68,8 +71,27 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
             return new_rule
 
         elif step_conclusion.justification == "E∀":
-            # todo DO THIS
+            # Here we need to begin by looking at the premise
+            step_premise = derivation[step_conclusion.on_steps[0]]
+            instance, subst_dict = step_premise.content.is_instance_of(rule[1].content, self.language,
+                                                                       return_subst_dict=True)
+            if not instance:
+                raise ValueError("On step formula not an instance of the rule's premise")
+
+            # Suppose the inference is ∀y Ryb / Rab
+            # The rule states ∀χ A / [α/χ]A
+            # The subst dict should now contain something like {'χ': 'y', 'A': ['R', 'y', 'b']}
+            new_rule_premise = deepcopy(rule[1].content)
+            new_rule_premise[-1] = subst_dict['A']
+            new_rule_premise[1] = subst_dict['χ']
+            # the new rule premise is now something like ['∀', 'y' ['R', 'y', 'b']]
+
+            new_rule_conclusion = new_rule_premise[-1].vsubstitute(subst_dict['χ'], 'α')
+            # in the above example, the rule conclusion now says ['R', 'α', 'b']
+
             new_rule = deepcopy(rule)
+            new_rule[1].content = new_rule_premise
+            new_rule[-1].content = new_rule_conclusion
             return new_rule
 
         elif step_conclusion.justification == "E∃":

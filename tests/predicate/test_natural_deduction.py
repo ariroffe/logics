@@ -9,7 +9,7 @@ class TestNaturalDeduction(unittest.TestCase):
     def setUp(self):
         pass
 
-    def test_substitute_rule(self):
+    def test_substitute_rule_intro_rules(self):
         # Existential intro (unary)
         deriv = parser.parse_derivation("""
             P(a); premise; []; []
@@ -55,7 +55,53 @@ class TestNaturalDeduction(unittest.TestCase):
             PredicateNaturalDeductionStep(Formula(['∀', 'y', ['R', 'y', 'a']]), 'I∀', [0], open_suppositions=[])
         ]))
 
-    def test_is_correct_application(self):
+    def test_substitute_rule_univ_elim(self):
+        # Universal elimination (unary)
+        deriv = parser.parse_derivation("""
+            ∀x (P(x)); premise; []; []
+            P(a); E∀; [0]; []
+        """, natural_deduction=True)
+        rule = nd_system.rules['E∀']
+        new_rule = nd_system.substitute_rule(deriv, 1, rule)
+        # New rule should be ∀x Px / Pα
+        self.assertEqual(new_rule, PredicateNaturalDeductionRule([
+            '(...)',
+            PredicateNaturalDeductionStep(Formula(['∀', 'x', ['P', 'x']]), open_suppositions=[]),
+            '(...)',
+            PredicateNaturalDeductionStep(Formula(['P', 'α']), 'E∀', [0], open_suppositions=[]),
+        ]))
+
+        # Universal elimination (binary)
+        deriv = parser.parse_derivation("""
+                ∀x (R(x, a)); premise; []; []
+                R(a, a); E∀; [0]; []
+            """, natural_deduction=True)
+        rule = nd_system.rules['E∀']
+        new_rule = nd_system.substitute_rule(deriv, 1, rule)
+        # New rule should be ∀x Rxa / Rαa
+        self.assertEqual(new_rule, PredicateNaturalDeductionRule([
+            '(...)',
+            PredicateNaturalDeductionStep(Formula(['∀', 'x', ['R', 'x', 'a']]), open_suppositions=[]),
+            '(...)',
+            PredicateNaturalDeductionStep(Formula(['R', 'α', 'a']), 'E∀', [0], open_suppositions=[]),
+        ]))
+
+        deriv = parser.parse_derivation("""
+                ∀x (R(x, x)); premise; []; []
+                R(a, a); E∀; [0]; []
+            """, natural_deduction=True)
+        rule = nd_system.rules['E∀']
+        new_rule = nd_system.substitute_rule(deriv, 1, rule)
+        # New rule should be ∀x Rxx / Rαα
+        self.assertEqual(new_rule, PredicateNaturalDeductionRule([
+            '(...)',
+            PredicateNaturalDeductionStep(Formula(['∀', 'x', ['R', 'x', 'x']]), open_suppositions=[]),
+            '(...)',
+            PredicateNaturalDeductionStep(Formula(['R', 'α', 'α']), 'E∀', [0], open_suppositions=[]),
+
+        ]))
+
+    def test_is_correct_application_exist_intro(self):
         # Existential intro (unary)
         deriv = parser.parse_derivation("""
                 P(a); premise; []; []
@@ -87,3 +133,34 @@ class TestNaturalDeduction(unittest.TestCase):
                 ∃y (R(a, x)); I∃; [0]; []
             """, natural_deduction=True)
         self.assertFalse(nd_system.is_correct_application(deriv, 1, nd_system.rules['I∃']))
+
+        deriv = parser.parse_derivation("""
+                R(a, a); premise; []; []
+                ∃x (R(x, a)); I∃; [0]; []
+            """, natural_deduction=True)
+        self.assertTrue(nd_system.is_correct_application(deriv, 1, nd_system.rules['I∃']))
+
+    def test_is_correct_application_univ_elim(self):
+        deriv = parser.parse_derivation("""
+                ∀x (P(x)); premise; []; []
+                P(a); E∀; [0]; []
+            """, natural_deduction=True)
+        self.assertTrue(nd_system.is_correct_application(deriv, 1, nd_system.rules['E∀']))
+
+        deriv = parser.parse_derivation("""
+                ∀x (R(x, b)); premise; []; []
+                R(a, b); E∀; [0]; []
+            """, natural_deduction=True)
+        self.assertTrue(nd_system.is_correct_application(deriv, 1, nd_system.rules['E∀']))
+
+        deriv = parser.parse_derivation("""
+                ∀x (R(x, x)); premise; []; []
+                R(a, a); E∀; [0]; []
+            """, natural_deduction=True)
+        self.assertTrue(nd_system.is_correct_application(deriv, 1, nd_system.rules['E∀']))
+
+        deriv = parser.parse_derivation("""
+                ∀x (R(x, x)); premise; []; []
+                R(a, b); E∀; [0]; []
+            """, natural_deduction=True)
+        self.assertFalse(nd_system.is_correct_application(deriv, 1, nd_system.rules['E∀']))
