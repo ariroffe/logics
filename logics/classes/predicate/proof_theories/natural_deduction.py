@@ -124,10 +124,58 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
             # If none of the above rules, just return the original
             return rule
 
+    def check_arbitrary_constants(self, derivation, step, rule):
+        if rule.arbitrary_cts is None:
+            return True, ""
+
+        # rule is the modified version (by the above method), it does not contain things of the form [α/χ]
+        # but does contain things of the form α. We also know by now that, except for this, the application is correct
+
+        if rule[-1].justification == "I∀":
+            # The modified rule has something of the form, e.g., ['R', 'α', 'b'] as premise
+            # We need to find out what α is
+            step_premise = derivation[derivation[step].on_steps[0]].content
+            instance, subst_dict = step_premise.is_instance_of(rule[1].content, self.language, return_subst_dict=True)
+            arbitrary_constant = subst_dict['α']
+            possible_error = f"Constant '{arbitrary_constant}' is not arbitrary"
+
+            # 1) Check that arbitrary_constant is not in the formula at the current step
+            if derivation[step].content.contains_string(arbitrary_constant):
+                return False, possible_error
+
+            open_sups = derivation[step].open_suppositions
+            for step2_idx in range(step):  # Go up to (but not including) the current step of the derivation
+                step2 = derivation[step2_idx]
+
+                # 2) Check that arbitrary_constant it is not in a premise
+                if step2.justification == "premise" and step2.content.contains_string(arbitrary_constant):
+                    return False, possible_error
+
+                # 3) Check that arbitrary_constant it is not in an open supposition
+                if step2.justification == "supposition" and step2_idx in open_sups and \
+                        step2.content.contains_string(arbitrary_constant):
+                    return False, possible_error
+
+        return True, ""
+
     def is_correct_application(self, derivation, step, rule, return_error=False):
         # Get rid of the [a/x]A sorts of things in the rules by doing the replacement directly
-        rule = self.substitute_rule(derivation, step, rule)
+        try:
+            rule = self.substitute_rule(derivation, step, rule)
+        except ValueError as e:
+            if not return_error:
+                return False
+            return False, str(e)
 
-        # todo Somewhere around here put a new method to check if the constant is arbitrary
+        # Super method
+        correct, error = super().is_correct_application(derivation, step, rule, return_error=True)
+        if not correct:
+            if not return_error:
+                return False
+            return False, error
 
-        return super().is_correct_application(derivation, step, rule, return_error=False)
+        # Check if the constants are arbitrary
+        correct, error = self.check_arbitrary_constants(derivation, step, rule)
+        if not return_error:
+            return correct
+        return correct, error

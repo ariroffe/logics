@@ -232,6 +232,60 @@ class PredicateFormula(Formula):
         """
         return not self.is_closed(language)
 
+    def contains_string(self, string):
+        """Determines if a formula constains a given string (useful, e.g., checking arbitrary cts in natural deduction),
+        excluding connectives and base language
+
+        Examples
+        --------
+        >>> from logics.utils.parsers.predicate_parser import classical_predicate_parser as parser
+        >>> f = parser.parse("forall x (P(x)) and ~R(a, f(b))")
+        >>> f.contains_string('R')
+        True
+        >>> f.contains_string('a')
+        True
+        >>> f.contains_string('x')
+        True
+        >>> f.contains_string('c')
+        False
+        >>> f.contains_string('y')
+        False
+        >>> f.contains_string('f')
+        True
+        """
+        if self.is_atomic:
+            for term in self:  # the relation itself is counted as a term here
+                if self._term_contains_string(term, string):
+                    return True
+            return False
+        else:
+            # If the formula is a quantifier
+            if self[0] == "∀" or self[0] == "∃":
+                # Check the variable
+                if self[1] == string:
+                    return True
+
+                # If the formula is a bounded quantifier check the bound
+                if self[2] == "∈":
+                    if self._term_contains_string(self[3], string):
+                        return True
+
+            for argument in self.arguments():
+                if argument.contains_string(string):
+                    return True
+
+            return False
+
+    def _term_contains_string(self, term, string):
+        if type(term) == str:
+            return term == string
+        elif type(term) == tuple:
+            for subterm in term:
+                if self._term_contains_string(subterm, string):
+                    return True
+            return False
+        raise ValueError(f"Incorrect term {term}")
+
     def vsubstitute(self, variable, substitution, quantifiers=('∀', '∃'), term=None, _bound_variables=None):
         """Variable substitution method.
 

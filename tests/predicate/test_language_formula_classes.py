@@ -1,5 +1,6 @@
 import unittest
 
+from logics.utils.parsers.predicate_parser import classical_predicate_parser as parser
 from logics.classes.predicate import InfinitePredicateLanguage, PredicateFormula
 from logics.instances.predicate.languages import classical_infinite_predicate_language as cl_language
 from logics.instances.predicate.languages import real_number_arithmetic_language as arithmetic
@@ -95,6 +96,15 @@ class TestLanguageFormulaClasses(unittest.TestCase):
         self.assertTrue(cl_language.is_metavariable_string('χ'))   # var metavariable
         self.assertFalse(cl_language.is_metavariable_string('P'))  # common predicate
         self.assertFalse(cl_language.is_metavariable_string('a'))  # common ind constant
+
+    def test_contains_string(self):
+        f = parser.parse("forall x (P(x)) and ~R(a, f(b))")
+        self.assertTrue(f.contains_string('R'))
+        self.assertTrue(f.contains_string('a'))
+        self.assertTrue(f.contains_string('x'))
+        self.assertFalse(f.contains_string('c'))
+        self.assertFalse(f.contains_string('y'))
+        self.assertTrue(f.contains_string('f'))
 
     def test_is_well_formed(self):
         self.assertTrue(self.function_language.is_well_formed(self.a1))

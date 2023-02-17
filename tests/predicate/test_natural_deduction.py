@@ -217,3 +217,56 @@ class TestNaturalDeduction(unittest.TestCase):
                 R(a, b); E∀; [0]; []
             """, natural_deduction=True)
         self.assertFalse(nd_system.is_correct_application(deriv, 1, nd_system.rules['E∀']))
+
+    def test_arbitrary_constants_univ_intro(self):
+        # Universal introduction
+        deriv = parser.parse_derivation("""
+                P(a); premise; []; []
+                ∀x (P(x)); I∀; [0]; []
+            """, natural_deduction=True)
+        rule = nd_system.substitute_rule(deriv, 1, nd_system.rules['I∀'])
+        arbitrary, error = nd_system.check_arbitrary_constants(deriv, 1, rule)
+        self.assertFalse(arbitrary)
+        self.assertEqual(error, "Constant 'a' is not arbitrary")
+
+        deriv = parser.parse_derivation("""
+                P(a); DN; []; []
+                ∀x (P(x)); I∀; [0]; []
+            """, natural_deduction=True)
+        rule = nd_system.substitute_rule(deriv, 1, nd_system.rules['I∀'])
+        arbitrary, error = nd_system.check_arbitrary_constants(deriv, 1, rule)
+        self.assertTrue(arbitrary)
+
+        deriv = parser.parse_derivation("""
+                R(a, a); DN; []; []
+                ∀x (R(x, x)); I∀; [0]; []
+            """, natural_deduction=True)
+        rule = nd_system.substitute_rule(deriv, 1, nd_system.rules['I∀'])
+        arbitrary, error = nd_system.check_arbitrary_constants(deriv, 1, rule)
+        self.assertTrue(arbitrary)
+
+        deriv = parser.parse_derivation("""
+                R(a, a); DN; []; []
+                ∀x (R(x, a)); I∀; [0]; []
+            """, natural_deduction=True)
+        rule = nd_system.substitute_rule(deriv, 1, nd_system.rules['I∀'])
+        arbitrary, error = nd_system.check_arbitrary_constants(deriv, 1, rule)
+        self.assertFalse(arbitrary)
+        self.assertEqual(error, "Constant 'a' is not arbitrary")
+
+        deriv = parser.parse_derivation("""
+                P(a); supposition; []; [0]
+                ∀x (P(x)); I∀; [0]; [0]
+            """, natural_deduction=True)
+        rule = nd_system.substitute_rule(deriv, 1, nd_system.rules['I∀'])
+        arbitrary, error = nd_system.check_arbitrary_constants(deriv, 1, rule)
+        self.assertFalse(arbitrary)
+        self.assertEqual(error, "Constant 'a' is not arbitrary")
+
+        deriv = parser.parse_derivation("""
+                P(a); supposition; []; [0]
+                ∀x (P(x)); I∀; [0]; []
+            """, natural_deduction=True)
+        rule = nd_system.substitute_rule(deriv, 1, nd_system.rules['I∀'])
+        arbitrary, error = nd_system.check_arbitrary_constants(deriv, 1, rule)
+        self.assertTrue(arbitrary)  # because the supposition is closed (incorrectly, but that doesn't matter here)
