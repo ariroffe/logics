@@ -95,8 +95,29 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
             return new_rule
 
         elif step_conclusion.justification == "E∃":
-            # todo DO THIS
+            # This rule has 3 steps, we need to modify the first and second
+            step_first_premise = derivation[step_conclusion.on_steps[0]]
+            instance, subst_dict = step_first_premise.content.is_instance_of(rule[1].content, self.language,
+                                                                             return_subst_dict=True)
+            if not instance:
+                raise ValueError("On step formula not an instance of the rule's first premise")
+
+            # Suppose the inference is ∃y Ryb, Rab → Pc / Pc
+            # The rule states ∃χ A, [α/χ]A → B / B
+            # The subst dict should now contain something like {'χ': 'y', 'A': ['R', 'y', 'b']}
+            new_rule_first_premise = deepcopy(rule[1].content)
+            new_rule_first_premise[-1] = subst_dict['A']
+            new_rule_first_premise[1] = subst_dict['χ']
+            # the new rule premise is now something like ['∃', 'y' ['R', 'y', 'b']]
+
+            # What we need to modify now is not the conclusion of the rule, but the antecedent of the second premise
+            new_rule_second_premise = rule[3].content
+            new_rule_second_premise[1] = new_rule_first_premise[-1].vsubstitute(subst_dict['χ'], 'α')
+            # in the above example, the rule's second premise now says ['→', ['R', 'α', 'b'], 'B']
+
             new_rule = deepcopy(rule)
+            new_rule[1].content = new_rule_first_premise
+            new_rule[3].content = new_rule_second_premise
             return new_rule
 
         else:
@@ -104,6 +125,9 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
             return rule
 
     def is_correct_application(self, derivation, step, rule, return_error=False):
+        # Get rid of the [a/x]A sorts of things in the rules by doing the replacement directly
         rule = self.substitute_rule(derivation, step, rule)
+
         # todo Somewhere around here put a new method to check if the constant is arbitrary
+
         return super().is_correct_application(derivation, step, rule, return_error=False)
