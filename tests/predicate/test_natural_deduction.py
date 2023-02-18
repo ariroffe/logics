@@ -40,6 +40,20 @@ class TestNaturalDeduction(unittest.TestCase):
             PredicateNaturalDeductionStep(Formula(['∃', 'x', ['R', 'x', 'x']]), 'I∃', [0], open_suppositions=[])
         ]))
 
+        # Existential intro (nested)
+        deriv = parser.parse_derivation("""
+                ∃x (R(x, a)); premise; []; []
+                ∃y (∃x (R(x, y))); I∃; [0]; []
+            """, natural_deduction=True)
+        rule = nd_system.rules['I∃']
+        new_rule = nd_system.substitute_rule(deriv, 1, rule)
+        self.assertEqual(new_rule, PredicateNaturalDeductionRule([
+            '(...)',
+            PredicateNaturalDeductionStep(Formula(['∃', 'x', ['R', 'x', 'α']]), open_suppositions=[]),
+            '(...)',
+            PredicateNaturalDeductionStep(Formula(['∃', 'y', ['∃', 'x', ['R', 'x', 'y']]]), 'I∃', [0], open_suppositions=[])
+        ]))
+
         # Universal intro
         deriv = parser.parse_derivation("""
             R(b, a); premise; []; []
@@ -193,6 +207,13 @@ class TestNaturalDeduction(unittest.TestCase):
             """, natural_deduction=True)
         self.assertTrue(nd_system.is_correct_application(deriv, 1, nd_system.rules['I∃']))
 
+        # Nested quantifiers
+        deriv = parser.parse_derivation("""
+                ∃x (R(x, a)); premise; []; []
+                ∃y (∃x (R(x, y))); I∃; [0]; []
+            """, natural_deduction=True)
+        self.assertTrue(nd_system.is_correct_application(deriv, 1, nd_system.rules['I∃']))
+
     def test_is_correct_application_univ_elim(self):
         deriv = parser.parse_derivation("""
                 ∀x (P(x)); premise; []; []
@@ -270,6 +291,18 @@ class TestNaturalDeduction(unittest.TestCase):
         arbitrary, error = nd_system.check_arbitrary_constants(deriv, 1, rule)
         self.assertTrue(arbitrary)  # because the supposition is closed (incorrectly, but that doesn't matter here)
 
+        # A longer derivation
+        deriv = parser.parse_derivation("""
+            P(a); premise; []; []
+            ∀x (R(x, x)); premise; []; []
+            R(a, a); E∀; [1]; []
+            ∀y (R(y, y)); I∀; [2]; []
+        """, natural_deduction=True)
+        rule = nd_system.substitute_rule(deriv, 3, nd_system.rules['I∀'])
+        arbitrary, error = nd_system.check_arbitrary_constants(deriv, 3, rule)
+        self.assertFalse(arbitrary)
+        self.assertEqual(error, "Constant 'a' is not arbitrary")
+
     def test_arbitrary_constants_exist_elim(self):
         deriv = parser.parse_derivation("""
                 ∃x (P(x)); premise; []; []
@@ -321,4 +354,85 @@ class TestNaturalDeduction(unittest.TestCase):
         self.assertEqual(error, "Constant 'a' is not arbitrary")
 
     def test_is_correct_derivation(self):
-        pass
+        # Let's try one with the easy rules first
+        deriv = parser.parse_derivation("""
+                ∀x (R(x, x)); premise; []; []
+                R(a, a); E∀; [0]; []
+                ∃x (R(x, a)); I∃; [1]; []
+                ∃y (∃x (R(x, y))); I∃; [2]; []
+            """, natural_deduction=True)
+        self.assertTrue(nd_system.is_correct_derivation(deriv))
+
+        # Now a couple of incorrect ones
+        deriv = parser.parse_derivation("""
+                ∀x (R(x, x)); premise; []; []
+                R(a, b); E∀; [0]; []
+                ∃x (R(x, b)); I∃; [1]; []
+                ∃y (∃x (R(x, y))); I∃; [2]; []
+            """, natural_deduction=True)
+        correct, error = nd_system.is_correct_derivation(deriv, return_error_list=True)
+        self.assertFalse(correct)
+
+        deriv = parser.parse_derivation("""
+                ∀x (R(x, x)); premise; []; []
+                R(a, a); E∀; [0]; []
+                ∃x (R(x, a)); I∃; [1]; []
+                ∃y (∃x (R(y, x))); I∃; [2]; []
+            """, natural_deduction=True)
+        correct, error = nd_system.is_correct_derivation(deriv, return_error_list=True)
+        self.assertFalse(correct)
+
+        # A couple with univ intro
+        deriv = parser.parse_derivation("""
+            ∀x (R(x, x)); premise; []; []
+            R(a, a); E∀; [0]; []
+            ∀y (R(y, y)); I∀; [1]; []
+        """, natural_deduction=True)
+        self.assertTrue(nd_system.is_correct_derivation(deriv))
+
+        deriv = parser.parse_derivation("""
+            P(a); premise; []; []
+            ∀x (R(x, x)); premise; []; []
+            R(a, a); E∀; [1]; []
+            ∀y (R(y, y)); I∀; [2]; []
+        """, natural_deduction=True)
+        correct, error = nd_system.is_correct_derivation(deriv, return_error_list=True)
+        self.assertFalse(correct)
+        self.assertEqual(error, [(3, "Constant 'a' is not arbitrary")])
+
+        deriv = parser.parse_derivation("""
+                ∀x (R(x, a)); premise; []; []
+                R(a, a); E∀; [0]; []
+                ∀y (R(y, y)); I∀; [1]; []
+            """, natural_deduction=True)
+        correct, error = nd_system.is_correct_derivation(deriv, return_error_list=True)
+        self.assertFalse(correct)
+        self.assertEqual(error, [(2, "Constant 'a' is not arbitrary")])
+
+        deriv = parser.parse_derivation("""
+                ∀x (R(x, a)); premise; []; []
+                R(b, a); E∀; [0]; []
+                ∀y (R(y, a)); I∀; [1]; []
+            """, natural_deduction=True)
+        self.assertTrue(nd_system.is_correct_derivation(deriv))
+
+        # A couple with exist elim
+        deriv = parser.parse_derivation("""
+                ∃x (R(x, x)); premise; []; []
+                R(a, a); supposition; []; [1]
+                ∃y (R(y, y)); I∃; [1]; [1]
+                R(a, a) → ∃y (R(y, y)); I→; [1,2]; []
+                ∃y (R(y, y)); E∃; [0, 3]; []
+            """, natural_deduction=True)
+        self.assertTrue(nd_system.is_correct_derivation(deriv))
+
+        deriv = parser.parse_derivation("""
+                ∃x (R(x, x)); premise; []; []
+                R(a, a); supposition; []; [1]
+                ∃y (R(y, a)); I∃; [1]; [1]
+                R(a, a) → ∃y (R(y, a)); I→; [1,2]; []
+                ∃y (R(y, a)); E∃; [0, 3]; []
+            """, natural_deduction=True)
+        correct, error = nd_system.is_correct_derivation(deriv, return_error_list=True)
+        self.assertFalse(correct)
+        self.assertEqual(error, [(4, "Constant 'a' is not arbitrary")])

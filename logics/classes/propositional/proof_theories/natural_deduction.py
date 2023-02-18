@@ -320,7 +320,7 @@ class NaturalDeductionSystem:
                     correct = False
                     for rule_name in rule_names_to_try:
                         correct, error = self.is_correct_application(derivation=derivation[:step_index+1],
-                                                                     step=-1,  # last step
+                                                                     step=step_index,  # last step
                                                                      rule=self.rules[rule_name],
                                                                      return_error=True)
                         if correct:
