@@ -3,7 +3,7 @@ from copy import deepcopy
 from logics.classes.propositional.proof_theories.natural_deduction import (
     NaturalDeductionRule,
     NaturalDeductionSystem,
-    NaturalDeductionStep as PredicateNaturalDeductionStep,  # To have it available as an import from here
+    NaturalDeductionStep,  # To have it available as an import from here
 )
 
 
@@ -14,19 +14,19 @@ class PredicateNaturalDeductionRule(NaturalDeductionRule):
     Examples
     --------
     >>> from logics.classes.predicate import PredicateFormula as Formula
-    >>> from logics.classes.predicate.proof_theories.natural_deduction import PredicateNaturalDeductionStep, PredicateNaturalDeductionRule
+    >>> from logics.classes.predicate.proof_theories.natural_deduction import NaturalDeductionStep, PredicateNaturalDeductionRule
     >>> univ_intro = PredicateNaturalDeductionRule([
     ...     '(...)',
-    ...     PredicateNaturalDeductionStep(Formula(['[α/x]A']), 'I∨1', [0], open_suppositions=[]),
+    ...     NaturalDeductionStep(Formula(['[α/x]A']), 'I∨1', [0], open_suppositions=[]),
     ...     '(...)',
-    ...     PredicateNaturalDeductionStep(Formula(['∀', 'x', ['A']]), open_suppositions=[])
+    ...     NaturalDeductionStep(Formula(['∀', 'x', ['A']]), open_suppositions=[])
     ... ], arbitrary_cts=['α'])
     >>> univ_intro.arbitrary_cts
     ['α']
     >>> # The rest works the same than in the propositional case
     >>> univ_intro.premises
     [['[α/x]A']]
-    >>> univ_intro.index(PredicateNaturalDeductionStep(Formula(['∀', 'x', ['A']]), open_suppositions=[]))
+    >>> univ_intro.index(NaturalDeductionStep(Formula(['∀', 'x', ['A']]), open_suppositions=[]))
     1
     """
     def __init__(self, rule, arbitrary_cts=None):
