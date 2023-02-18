@@ -56,9 +56,7 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
             # Suppose the inference is Rab / ∃y Ryb
             # The rule states [α/χ]A / ∃χ A
             # The subst dict should now contain something like {'χ': 'y', 'A': ['R', 'y', 'b']}
-            new_rule_conclusion = deepcopy(rule[-1].content)
-            new_rule_conclusion[-1] = subst_dict['A']
-            new_rule_conclusion[1] = subst_dict['χ']
+            new_rule_conclusion = rule[-1].content.instantiate(self.language, subst_dict)
             # the new rule conclusion is now something like ['∃', 'y' ['R', 'y', 'b']]
 
             # For the rule premise, we must now take A from there, and vsubstitute y for α
@@ -81,9 +79,7 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
             # Suppose the inference is ∀y Ryb / Rab
             # The rule states ∀χ A / [α/χ]A
             # The subst dict should now contain something like {'χ': 'y', 'A': ['R', 'y', 'b']}
-            new_rule_premise = deepcopy(rule[1].content)
-            new_rule_premise[-1] = subst_dict['A']
-            new_rule_premise[1] = subst_dict['χ']
+            new_rule_premise = rule[1].content.instantiate(self.language, subst_dict)
             # the new rule premise is now something like ['∀', 'y' ['R', 'y', 'b']]
 
             new_rule_conclusion = new_rule_premise[-1].vsubstitute(subst_dict['χ'], 'α')
@@ -105,9 +101,7 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
             # Suppose the inference is ∃y Ryb, Rab → Pc / Pc
             # The rule states ∃χ A, [α/χ]A → B / B
             # The subst dict should now contain something like {'χ': 'y', 'A': ['R', 'y', 'b']}
-            new_rule_first_premise = deepcopy(rule[1].content)
-            new_rule_first_premise[-1] = subst_dict['A']
-            new_rule_first_premise[1] = subst_dict['χ']
+            new_rule_first_premise = rule[1].content.instantiate(self.language, subst_dict)
             # the new rule premise is now something like ['∃', 'y' ['R', 'y', 'b']]
 
             # What we need to modify now is not the conclusion of the rule, but the antecedent of the second premise

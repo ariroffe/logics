@@ -66,7 +66,7 @@ class TestLanguageFormulaClasses(unittest.TestCase):
         self.assertEqual(cl_language.arity('W'), 1)  # predicate variable
         self.assertEqual(self.function_language.arity('f'), 1)
 
-    def test_individual_variable_metavariables(self):
+    def test_individual_and_variable_metavariables(self):
         # is_valid_predicate
         self.assertTrue(cl_language._is_valid_predicate('P'))   # predicate
         self.assertTrue(cl_language._is_valid_predicate('W'))   # predicate variable
@@ -235,6 +235,35 @@ class TestLanguageFormulaClasses(unittest.TestCase):
         self.assertEqual(PredicateFormula(['P', 'χ']).vsubstitute('χ', 'a'), PredicateFormula(['P', 'a']))
         f = PredicateFormula(['∀', 'χ', ['P', 'χ']])
         self.assertEqual(f.vsubstitute('χ', 'a'), f)
+
+    def test_instantiate(self):
+        # Terms
+        f = PredicateFormula(['P', 'a'])
+        self.assertEqual(f._term_instantiate('a', cl_language, {'α': 'b'}), 'a')
+        self.assertEqual(f._term_instantiate('α', cl_language, {'α': 'b'}), 'b')
+        self.assertEqual(f._term_instantiate(('f', 'α', 'a'), cl_language, {'α': 'b'}), ('f', 'b', 'a'))
+        self.assertEqual(f._term_instantiate(('f', ('g', 'α'), 'a'), cl_language, {'α': 'b'}), ('f', ('g', 'b'), 'a'))
+
+        # Atomics
+        inst = PredicateFormula(['P', 'a'])._atomic_instantiate(cl_language, {'α': 'b'})
+        self.assertEqual(inst, PredicateFormula(['P', 'a']))
+
+        inst = PredicateFormula(['P', 'α'])._atomic_instantiate(cl_language, {'α': 'b'})
+        self.assertEqual(inst, PredicateFormula(['P', 'b']))
+
+        inst = PredicateFormula(['P', ('f', 'α')])._atomic_instantiate(cl_language, {'α': 'b'})
+        self.assertEqual(inst, PredicateFormula(['P', ('f', 'b')]))
+
+        # Quantified
+        inst = PredicateFormula(['∀', 'x', ['P', 'x']]).instantiate(cl_language, {'x': 'y'})
+        self.assertEqual(inst, PredicateFormula(['∀', 'x', ['P', 'x']]))  # Should remain the same, x not a mv
+
+        inst = PredicateFormula(['∀', 'χ', ['P', 'χ']]).instantiate(cl_language, {'χ': 'x'})
+        self.assertEqual(inst, PredicateFormula(['∀', 'x', ['P', 'x']]))
+
+        # Sentential mvs
+        subst_dict = {"A": PredicateFormula(['P', 'a'])}
+        self.assertEqual(PredicateFormula(['A']).instantiate(cl_language, subst_dict), PredicateFormula(['P', 'a']))
 
     def test_is_instance_of(self):
         A = PredicateFormula(['A'])

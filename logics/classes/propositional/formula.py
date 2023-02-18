@@ -265,15 +265,21 @@ class Formula(list):
         """
         # Atomic
         if self.is_atomic:
-            # Schematic atomic
-            if language.is_metavariable_string(self[0]):
-                if self[0] in subst_dict:
-                    return subst_dict[self[0]]
-                raise ValueError(f'Metavariable {self[0]} not present in substitution dict given')
-            # Non-schematic atomic
-            return deepcopy(self)
+            return self._atomic_instantiate(language, subst_dict)
 
         # Molecular
+        return self._molecular_instantiate(language, subst_dict)
+
+    def _atomic_instantiate(self, language, subst_dict):
+        # Schematic atomic
+        if language.is_metavariable_string(self[0]):
+            if self[0] in subst_dict:
+                return subst_dict[self[0]]
+            raise ValueError(f'Metavariable {self[0]} not present in substitution dict given')
+        # Non-schematic atomic
+        return deepcopy(self)
+
+    def _molecular_instantiate(self, language, subst_dict):
         instantiation = self.__class__([self.main_symbol])
         for subelement in self[1:]:
             if isinstance(subelement, self.__class__):

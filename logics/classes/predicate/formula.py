@@ -367,6 +367,47 @@ class PredicateFormula(Formula):
                                                       _bound_variables=_bound_variables))
         return new_formula
 
+    def _molecular_instantiate(self, language, subst_dict):
+        # Handle only the case of quantifiers, the rest is done by the super method
+        if self[0] in language.quantifiers:
+            instantiation = self.__class__([self[0]])
+            instantiation.append(self._term_instantiate(self[1], language, subst_dict))  # variable
+            if self[2] == '∈':  # bounded quantifier
+                instantiation.extend(['∈', self._term_instantiate(self[3], language, subst_dict)])
+                instantiation.append(self[4].instantiate(language, subst_dict))
+            else:  # non-bounded
+                instantiation.append(self[2].instantiate(language, subst_dict))
+            return instantiation
+        return super()._molecular_instantiate(language, subst_dict)
+
+    def _atomic_instantiate(self, language, subst_dict):
+        # Same as the propositional formula method but includes instantiation of variable and ind constant metavars
+        # Sentential metavar is covered in the super method
+        if language.is_metavariable_string(self[0]):
+            return super()._atomic_instantiate(language, subst_dict)
+
+        # Else, look for individual or variable metavars
+        f = self.__class__([self[0]])
+        for term in self[1:]:
+            f.append(self._term_instantiate(term, language, subst_dict))  # _term_instantiate returns a deepcopy
+        return f
+
+    def _term_instantiate(self, term, language, subst_dict):
+        if type(term) == str:
+            if language.is_metavariable_string(term):  # is_mv_string checks for both ind and var mvs
+                if term in subst_dict:
+                    return subst_dict[term]
+                raise ValueError(f'Metavariable {term} not present in substitution dict given')
+            return term
+
+        elif type(term) == tuple:
+            new_terms = list()
+            for subterm in term[1:]:
+                new_terms.append(self._term_instantiate(subterm, language, subst_dict))
+            return (term[0], *new_terms)
+
+        raise ValueError("A term should be either a string or a tuple")
+
     def _is_atomic_instance_of(self, formula, language, subst_dict, return_subst_dict):
         # We can assume that formula is schematic atomic (may be something like 'A' or like 'R(α, b)')
 
