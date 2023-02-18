@@ -17,7 +17,7 @@ class PredicateNaturalDeductionRule(NaturalDeductionRule):
     >>> from logics.classes.predicate.proof_theories.natural_deduction import NaturalDeductionStep, PredicateNaturalDeductionRule
     >>> univ_intro = PredicateNaturalDeductionRule([
     ...     '(...)',
-    ...     NaturalDeductionStep(Formula(['[α/x]A']), 'I∨1', [0], open_suppositions=[]),
+    ...     NaturalDeductionStep(Formula(['[α/χ]A']), 'I∨1', [0], open_suppositions=[]),
     ...     '(...)',
     ...     NaturalDeductionStep(Formula(['∀', 'x', ['A']]), open_suppositions=[])
     ... ], arbitrary_cts=['α'])
@@ -25,7 +25,7 @@ class PredicateNaturalDeductionRule(NaturalDeductionRule):
     ['α']
     >>> # The rest works the same than in the propositional case
     >>> univ_intro.premises
-    [['[α/x]A']]
+    [['[α/χ]A']]
     >>> univ_intro.index(NaturalDeductionStep(Formula(['∀', 'x', ['A']]), open_suppositions=[]))
     1
     """

@@ -21,30 +21,47 @@ first_order_simplification_rules = deepcopy(standard_simplification_rules)
 first_order_simplification_rules["E∀"] = Inference(premises=[PredicateFormula(['∀', 'χ', ['A']])],
                                                    conclusions=[PredicateFormula(['[α/χ]A'])])
 first_order_simplification_rules["Neg∀"] = Inference(premises=[PredicateFormula(['~', ['∀', 'χ', ['A']]])],
-                                                   conclusions=[PredicateFormula(['∃', 'χ', ['~', ['A']]])])
+                                                     conclusions=[PredicateFormula(['∃', 'χ', ['~', ['A']]])])
 first_order_simplification_rules["Neg∃"] = Inference(premises=[PredicateFormula(['~', ['∃', 'χ', ['A']]])],
-                                                   conclusions=[PredicateFormula(['∀', 'χ', ['~', ['A']]])])
+                                                     conclusions=[PredicateFormula(['∀', 'χ', ['~', ['A']]])])
 
 first_order_derived_rules_derivations = deepcopy(standard_derived_rules_derivations)
 NegUniv_derivation = Derivation([
-    NaturalDeductionStep(content=PredicateFormula(['∨', ['A'], ['A']]), justification='premise', open_suppositions=[]),
-    NaturalDeductionStep(content=PredicateFormula(['A']), justification='supposition', open_suppositions=[1]),
-    NaturalDeductionStep(content=PredicateFormula(['A']), justification='repetition', on_steps=[1], open_suppositions=[1]),
-    NaturalDeductionStep(content=PredicateFormula(['→', ['A'], ['A']]), justification='I→', on_steps=[1, 2],
+    NaturalDeductionStep(content=PredicateFormula(['~', ['∀', 'χ', ['A']]]), justification='premise',
                          open_suppositions=[]),
-    NaturalDeductionStep(content=PredicateFormula(['→', ['A'], ['A']]), justification='repetition', on_steps=[3],
+    NaturalDeductionStep(content=PredicateFormula(['~', ['∃', 'χ', ['~', 'A']]]), justification='supposition',
+                         open_suppositions=[1]),
+    NaturalDeductionStep(content=PredicateFormula(['~', ['[α/χ]A']]), justification='supposition',
+                         open_suppositions=[1, 2]),
+    #3
+    NaturalDeductionStep(content=PredicateFormula(['∃', 'χ', ['~', 'A']]), justification='I∃', on_steps=[2],
+                         open_suppositions=[1, 2]),
+    NaturalDeductionStep(content=PredicateFormula(['⊥']), justification='E~', on_steps=[1, 3], open_suppositions=[1,2]),
+    #5
+    NaturalDeductionStep(content=PredicateFormula(['~', ['~', ['[α/χ]A']]]), justification='I~', on_steps=[2, 4],
+                         open_suppositions=[1]),
+    NaturalDeductionStep(content=PredicateFormula(['[α/χ]A']), justification='DN', on_steps=[5], open_suppositions=[1]),
+    NaturalDeductionStep(content=PredicateFormula(['∀', 'χ', ['A']]), justification='I∀', on_steps=[6],
+                         open_suppositions=[1]),
+    #8
+    NaturalDeductionStep(content=PredicateFormula(['⊥']), justification='E~', on_steps=[1, 3], open_suppositions=[1]),
+    NaturalDeductionStep(content=PredicateFormula(['~', ['~', ['∃', 'χ', ['~', 'A']]]]), justification='I~',
+                         on_steps=[1, 8], open_suppositions=[]),
+    NaturalDeductionStep(content=PredicateFormula(['∃', 'χ', ['~', 'A']]), justification='DN', on_steps=[9],
                          open_suppositions=[]),
-    NaturalDeductionStep(content=PredicateFormula(['A']), justification='E∨', on_steps=[0, 3, 4], open_suppositions=[]),
 ])
 NegExist_derivation = Derivation([
-    NaturalDeductionStep(content=PredicateFormula(['∨', ['A'], ['A']]), justification='premise', open_suppositions=[]),
-    NaturalDeductionStep(content=PredicateFormula(['A']), justification='supposition', open_suppositions=[1]),
-    NaturalDeductionStep(content=PredicateFormula(['A']), justification='repetition', on_steps=[1], open_suppositions=[1]),
-    NaturalDeductionStep(content=PredicateFormula(['→', ['A'], ['A']]), justification='I→', on_steps=[1, 2],
+    NaturalDeductionStep(content=PredicateFormula(['~', ['∃', 'χ', ['A']]]), justification='premise',
                          open_suppositions=[]),
-    NaturalDeductionStep(content=PredicateFormula(['→', ['A'], ['A']]), justification='repetition', on_steps=[3],
+    NaturalDeductionStep(content=PredicateFormula(['[α/χ]A']), justification='supposition', open_suppositions=[1]),
+    NaturalDeductionStep(content=PredicateFormula(['∃', 'χ', ['A']]), justification='I∃', on_steps=[1],
+                         open_suppositions=[1]),
+    NaturalDeductionStep(content=PredicateFormula(['⊥']), justification='E~', on_steps=[0, 2], open_suppositions=[1]),
+    #4
+    NaturalDeductionStep(content=PredicateFormula(['~', ['[α/χ]A']]), justification='I~', on_steps=[1, 3],
                          open_suppositions=[]),
-    NaturalDeductionStep(content=PredicateFormula(['A']), justification='E∨', on_steps=[0, 3, 4], open_suppositions=[]),
+    NaturalDeductionStep(content=PredicateFormula(['∀', 'χ', ['~', ['A']]]), justification='I∀', on_steps=[4],
+                         open_suppositions=[])
 ])
 
 # We need to turn Formula into PredicateFormula for this solver
