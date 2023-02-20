@@ -1,5 +1,6 @@
 import unittest
 
+from logics.classes.predicate import PredicateFormula
 from logics.utils.parsers.predicate_parser import classical_predicate_parser as parser
 from logics.utils.solvers.first_order_natural_deduction import first_order_natural_deduction_solver as solver
 
@@ -7,6 +8,80 @@ from logics.utils.solvers.first_order_natural_deduction import first_order_natur
 class TestPredicateNaturalDeductionSolver(unittest.TestCase):
     def setUp(self):
         pass
+
+    def test_get_formulae_to_add(self):
+        subst_dict = {'χ': 'x', 'A': PredicateFormula(['P', 'x'])}
+        fs = solver._get_formulae_to_add(PredicateFormula(['[α/χ]A']), subst_dict)
+        self.assertEqual(fs, [
+            PredicateFormula(['P', 'a']),
+            PredicateFormula(['P', 'b']),
+            PredicateFormula(['P', 'c']),
+            PredicateFormula(['P', 'd']),
+            PredicateFormula(['P', 'e'])
+        ])
+
+        subst_dict = {'χ': 'x', 'A': PredicateFormula(['R', 'x', 'a'])}
+        fs = solver._get_formulae_to_add(PredicateFormula(['[α/χ]A']), subst_dict)
+        self.assertEqual(fs, [
+            PredicateFormula(['R', 'a', 'a']),
+            PredicateFormula(['R', 'b', 'a']),
+            PredicateFormula(['R', 'c', 'a']),
+            PredicateFormula(['R', 'd', 'a']),
+            PredicateFormula(['R', 'e', 'a'])
+        ])
+
+        subst_dict = {'χ': 'x', 'A': PredicateFormula(['R', 'x', 'x'])}
+        fs = solver._get_formulae_to_add(PredicateFormula(['[α/χ]A']), subst_dict)
+        self.assertEqual(fs, [
+            PredicateFormula(['R', 'a', 'a']),
+            PredicateFormula(['R', 'b', 'b']),
+            PredicateFormula(['R', 'c', 'c']),
+            PredicateFormula(['R', 'd', 'd']),
+            PredicateFormula(['R', 'e', 'e'])
+        ])
+
+    def test_apply_simplification_rules(self):
+        deriv = parser.parse_derivation("""
+            ∀x (P(x)); premise; []; []
+        """, natural_deduction=True)
+        new_deriv = solver._apply_simplification_rules(deriv, goal=PredicateFormula(['R', 'a', 'b']))
+        solution = parser.parse_derivation("""
+            ∀x (P(x)); premise; []; []
+            P(a); E∀; [0]; []
+            P(b); E∀; [0]; []
+            P(c); E∀; [0]; []
+            P(d); E∀; [0]; []
+            P(e); E∀; [0]; []
+        """, natural_deduction=True)
+        self.assertEqual(new_deriv, solution)
+
+        deriv = parser.parse_derivation("""
+            ∀x (R(x, x)); premise; []; []
+        """, natural_deduction=True)
+        new_deriv = solver._apply_simplification_rules(deriv, goal=PredicateFormula(['R', 'a', 'b']))
+        solution = parser.parse_derivation("""
+            ∀x (R(x, x)); premise; []; []
+            R(a, a); E∀; [0]; []
+            R(b, b); E∀; [0]; []
+            R(c, c); E∀; [0]; []
+            R(d, d); E∀; [0]; []
+            R(e, e); E∀; [0]; []
+        """, natural_deduction=True)
+        self.assertEqual(new_deriv, solution)
+
+        deriv = parser.parse_derivation("""
+            ∀x (R(x, a)); premise; []; []
+        """, natural_deduction=True)
+        new_deriv = solver._apply_simplification_rules(deriv, goal=PredicateFormula(['R', 'a', 'b']))
+        solution = parser.parse_derivation("""
+            ∀x (R(x, a)); premise; []; []
+            R(a, a); E∀; [0]; []
+            R(b, a); E∀; [0]; []
+            R(c, a); E∀; [0]; []
+            R(d, a); E∀; [0]; []
+            R(e, a); E∀; [0]; []
+        """, natural_deduction=True)
+        self.assertEqual(new_deriv, solution)
 
     def test_get_arbitrary_constant(self):
         deriv = parser.parse_derivation("""

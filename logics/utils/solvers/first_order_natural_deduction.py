@@ -21,6 +21,17 @@ from logics.utils.etc.upgrade import upgrade_inference, upgrade_derivation
 # First order classical ND solver
 
 class FirstOrderNaturalDeductionSolver(NaturalDeductionSolver):
+    def _get_formulae_to_add(self, rule_conclusion, subst_dict):
+        if rule_conclusion.contains_string('[α/χ]A'):
+            # Here just add every possible instance (this is mainly for instantiating E∀)
+            new_subst_dict = copy(subst_dict)
+            formulae_to_add = list()
+            for ind_ct in self.language.individual_constants:
+                new_subst_dict['α'] = ind_ct
+                formulae_to_add.append(rule_conclusion.instantiate(self.language, new_subst_dict))
+            return formulae_to_add
+        return super()._get_formulae_to_add(rule_conclusion, subst_dict)
+
     def get_arbitrary_constant(self, derivation):
         """Given a derivation, returns an individual constant that is arbitrary up to the last step
 
@@ -35,13 +46,14 @@ class FirstOrderNaturalDeductionSolver(NaturalDeductionSolver):
         return possible_ind_constants[0]
 
     def _get_non_premise_replacement(self, hardcoded_derivation_step, subst_dict, derivation):
+        # Simply add an abritrary ind constant as an instance of α and then call the super method
         if hardcoded_derivation_step.contains_string('[α/χ]A'):
             if 'α' not in subst_dict:
                 arbitrary_ct = self.get_arbitrary_constant(derivation)
                 if arbitrary_ct is None:
                     raise SolverError(f'Could not find arbitrary constant for step {len(derivation)}')
                 subst_dict['α'] = arbitrary_ct
-        return hardcoded_derivation_step.instantiate(self.language, subst_dict)  # instantiate returns a deepcopy
+        return super()._get_non_premise_replacement(hardcoded_derivation_step, subst_dict, derivation)
 
 
 first_order_simplification_rules = deepcopy(standard_simplification_rules)

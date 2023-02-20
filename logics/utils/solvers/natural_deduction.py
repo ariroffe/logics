@@ -241,28 +241,34 @@ class NaturalDeductionSolver:
                                 # We first need to get what the instance of the conclusion would look like
                                 # We will basically take the rule conclusion (which is something like A ∧ B) and
                                 # substitute the metavariables for the formulae in subst_dict
-                                rule_conclusion = rule.conclusions[0]
-                                rule_conclusion = rule_conclusion.instantiate(self.language, subst_dict)
+                                formulae_to_add = self._get_formulae_to_add(rule.conclusions[0], subst_dict)
+                                # Is a list bc the predicate solver sometimes adds multiple formulae
 
                                 # See that the conclusion is not already in the derivation (avoids freezing), and add it
-                                if rule_conclusion not in formulas_list:
-                                    formulas_list.append(rule_conclusion)
-                                    derivation.append(NaturalDeductionStep(content=rule_conclusion,
-                                                                           justification=rule_name,
-                                                                           on_steps=self._steps(rule_steps, jump_steps),
-                                                                           open_suppositions=copy(open_sups)))
+                                for formula_to_add in formulae_to_add:
+                                    if formula_to_add not in formulas_list:
+                                        formulas_list.append(formula_to_add)
+                                        derivation.append(NaturalDeductionStep(content=formula_to_add,
+                                                                               justification=rule_name,
+                                                                               on_steps=self._steps(rule_steps, jump_steps),
+                                                                               open_suppositions=copy(open_sups)))
 
-                                    if goal == rule_conclusion:
-                                        return derivation
-                                    if self.exit_on_falsum and rule_conclusion == Formula(['⊥']):
-                                        return derivation
+                                        if goal == formula_to_add:
+                                            return derivation
+                                        if self.exit_on_falsum and formula_to_add == Formula(['⊥']):
+                                            return derivation
 
-                                    # Register that we applied this rule to this step, so that we don't repeat
-                                    modif = True
-                                    applied_rules[rule_name].append(step_number)
+                                        # Register that we applied this rule to this step, so that we don't repeat
+                                        modif = True
+                                        if step_number not in applied_rules[rule_name]:
+                                            applied_rules[rule_name].append(step_number)
 
         # When it reaches here, it has exited the loop (not made any modifications during an iteration)
         return derivation
+
+    def _get_formulae_to_add(self, rule_conclusion, subst_dict):
+        # Overriden in the predicate solver
+        return [rule_conclusion.instantiate(self.language, subst_dict)]
 
     # ------------------------------------------------------------------------------------------------------------------
     # ------------------------------------------------------------------------------------------------------------------
