@@ -12,7 +12,7 @@ class TestLanguageFormulaClasses(unittest.TestCase):
         variables = ['x']
         individual_metavariables = ['α', 'β']
         variable_metavariables = ['χ', 'ψ']
-        quantifiers = ['∀']
+        quantifiers = ['∀', '∃']
         metavariables = ['A', 'B']
         constant_arity_dict = {'~': 1, '∧': 2}
         predicate_letters = {'P': 1, 'R': 2, 'S': 3}
@@ -195,6 +195,7 @@ class TestLanguageFormulaClasses(unittest.TestCase):
         self.assertTrue(PredicateFormula(['∧', ['P', 'x'], ['A']]).is_schematic(cl_language))
         self.assertTrue(PredicateFormula(['P', ('f', 'α')]).is_schematic(self.function_language))
         self.assertTrue(PredicateFormula(['∀', 'χ', ['P', 'a']]).is_schematic(self.function_language))
+        self.assertTrue(PredicateFormula(['∃', 'χ', ['~', ['A']]]).is_schematic(self.function_language))
 
     def test_base_substitute_instantiate(self):
         # Substitute
@@ -265,6 +266,14 @@ class TestLanguageFormulaClasses(unittest.TestCase):
         subst_dict = {"A": PredicateFormula(['P', 'a'])}
         self.assertEqual(PredicateFormula(['A']).instantiate(cl_language, subst_dict), PredicateFormula(['P', 'a']))
 
+        # Formulae of the form [α/χ]A
+        subst_dict = {'A': PredicateFormula(['R', 'x', 'b']), 'χ': 'x', 'α':'a'}
+        inst = PredicateFormula(['[α/χ]A']).instantiate(cl_language, subst_dict)
+        self.assertEqual(inst, PredicateFormula(['R', 'a', 'b']))
+
+        inst = PredicateFormula(['~', ['[α/χ]A']]).instantiate(cl_language, subst_dict)
+        self.assertEqual(inst, PredicateFormula(['~', ['R', 'a', 'b']]))
+
     def test_is_instance_of(self):
         A = PredicateFormula(['A'])
         B = PredicateFormula(['B'])
@@ -324,6 +333,8 @@ class TestLanguageFormulaClasses(unittest.TestCase):
         self.assertFalse(PredicateFormula(['P', ('f', 'a', ('f', 'b'))]).is_instance_of(m, self.function_language))
         inst, subst_dict = f1.is_instance_of(m, self.function_language, return_subst_dict=True)
         self.assertEqual(subst_dict, {'α': 'a'})
+        self.assertTrue(PredicateFormula(['∃', 'x', ['~', ['P', 'x']]])
+                        .is_instance_of(PredicateFormula(['∃', 'χ', ['~', ['A']]]), cl_language))
 
 
     def test_arithmetic_language(self):

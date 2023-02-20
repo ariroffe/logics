@@ -382,6 +382,20 @@ class PredicateFormula(Formula):
 
     def _atomic_instantiate(self, language, subst_dict):
         # Same as the propositional formula method but includes instantiation of variable and ind constant metavars
+
+        # Instantiate things of the form [α/χ]A, useful for things like ND solver
+        if self[0][0] == '[' and self[0][4] == ']':
+            ind_mv, var_mv = self[0][1:4].split('/')
+            if ind_mv not in subst_dict:
+                raise ValueError(f'PredicateFormula {self} has no substitution assigned for {ind_mv}')
+            if var_mv not in subst_dict:
+                raise ValueError(f'PredicateFormula {self} has no substitution assigned for {var_mv}')
+            # First instantiate the A
+            f = self.__class__([self[0][5:]]).instantiate(language, subst_dict)
+            # Then substitute the free occurences of whatever χ is for whatever α is
+            f = f.vsubstitute(subst_dict[var_mv], subst_dict[ind_mv])
+            return f
+
         # Sentential metavar is covered in the super method
         if language.is_metavariable_string(self[0]):
             return super()._atomic_instantiate(language, subst_dict)

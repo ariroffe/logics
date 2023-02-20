@@ -342,7 +342,7 @@ class NaturalDeductionSolver:
 
                     # Look at the current step and check that it is an instance of the conclusion of the derivation
                     instance, subst_dict = step.content.is_instance_of(derived_rule_derivation[-1].content,
-                                                                       cl_language,
+                                                                       self.language,
                                                                        return_subst_dict=True)
                     if not instance:
                         raise SolverError(f"Formula {step.content} is not an instance of the derived rule's conclusion")
@@ -363,11 +363,11 @@ class NaturalDeductionSolver:
 
                             # Get the substitution dictionary (for later steps)
                             is_instance_of_formula, subst_dict = prev_step_formula.is_instance_of(step2.content,
-                                                                                                  cl_language,
+                                                                                                  self.language,
                                                                                                   subst_dict=subst_dict,
                                                                                                   return_subst_dict=True)
                             if not is_instance_of_formula:
-                                raise SolverError(f'Formula {step2.content} not an instance of {prev_step_formula}')
+                                raise SolverError(f'Formula {prev_step_formula} not an instance of {step2.content}')
 
                             # Update the step_correspondence dict
                             step_correspondence_dict[step2_index] = prev_step_index
@@ -376,8 +376,7 @@ class NaturalDeductionSolver:
                         # If the step is not a premise, then it is a new step in the derivation and we need to add it
                         else:
                             # Get the new content
-                            new_formula = step2.content
-                            new_formula = new_formula.instantiate(self.language, subst_dict)
+                            new_formula = self._get_non_premise_replacement(step2.content, subst_dict, derivation2)
 
                             step_correspondence_dict[step2_index] = len(derivation2)
 
@@ -397,6 +396,10 @@ class NaturalDeductionSolver:
                 derivation2.append(step)
 
         return derivation2
+
+    def _get_non_premise_replacement(self, hardcoded_derivation_step, subst_dict, derivation):
+        # Overriden in the predicate solver
+        return hardcoded_derivation_step.instantiate(self.language, subst_dict)  # instantiate returns a deepcopy
 
     # ------------------------------------------------------------------------------------------------------------------
     # ------------------------------------------------------------------------------------------------------------------

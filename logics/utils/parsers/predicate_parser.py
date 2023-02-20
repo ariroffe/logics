@@ -255,6 +255,9 @@ class PredicateParser(StandardParser):
                 return f'({self._unparse_term(term[1], True)} {term[0]} {self._unparse_term(term[2], True)})'
 
     def _unparse_atomic(self, formula):
+        # Sentential constant or sentential metavariable (atomic formula of length 1)
+        if len(formula) == 1:
+            return formula[0]
         # Prefix predicate symbol
         if formula[0] not in self.infix_pred:
             unparsed_formula = formula[0] + '('
