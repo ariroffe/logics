@@ -164,7 +164,7 @@ class NaturalDeductionSolver:
 
         # If it did not find the goal, apply heuristics
         for heuristic in self.heuristics:
-            if heuristic.is_applicable(goal):
+            if heuristic.is_applicable(goal, derivation):
                 try:
                     return heuristic.apply_heuristic(derivation, goal, open_sups, jump_steps, self)
                 except SolverError:
@@ -443,10 +443,11 @@ class Heuristic:
     --------
     See the source code for examples on how to define heuristics.
     """
-    def is_applicable(self, goal):
+    def is_applicable(self, goal, derivation):
         """Determines whether the heuristic is applicable given the current goal.
 
         Takes the goal as parameter and should return a boolean.
+        The other two parameters are basically for the existential heuristic in the predicate solver
         """
         raise NotImplementedError()
 
@@ -487,7 +488,7 @@ class ConjunctionHeuristic(Heuristic):
     You should take this into account if you plan on defining new heuristics for a system that uses this one.
     """
 
-    def is_applicable(self, goal):
+    def is_applicable(self, goal, derivation):
         return goal.main_symbol == '∧'
 
     def apply_heuristic(self, derivation, goal, open_sups, jump_steps, solver):
@@ -530,7 +531,7 @@ class ConjunctionHeuristic(Heuristic):
         # Solve the derivation for the second conjunct
         # deriv 2 does not see deriv1, so it cannot use anything in a closed supposition within it
         deriv2 = solver._solve_derivation(inference=Inference(prems, [goal[2]]),
-                                        open_sups=copy(open_sups), jump_steps=jump_steps)
+                                          open_sups=copy(open_sups), jump_steps=jump_steps)
 
         # Save the step where the second conjunct is, for the introduction later
         second_conjunct_step = next(index for index in range(len(deriv2)) if
@@ -552,7 +553,7 @@ conjunction_heuristic = ConjunctionHeuristic()
 
 
 class ConditionalHeuristic(Heuristic):
-    def is_applicable(self, goal):
+    def is_applicable(self, goal, derivation):
         return goal.main_symbol == '→'
 
     def apply_heuristic(self, derivation, goal, open_sups, jump_steps, solver):
@@ -565,7 +566,7 @@ class ConditionalHeuristic(Heuristic):
         prems = [step.content for step in derivation2]
 
         deriv = solver._solve_derivation(inference=Inference(prems, [goal[2]]),
-                                       open_sups=copy(open_sups2), jump_steps=jump_steps)
+                                         open_sups=copy(open_sups2), jump_steps=jump_steps)
 
         # If deriv and derivation have the same number of steps, it is because the derivation already contained
         # the consequent, and therefore it just returned. We need to repeat the consequent to close it.
@@ -589,7 +590,7 @@ conditional_heuristic = ConditionalHeuristic()
 
 
 class DisjunctionHeuristic(Heuristic):
-    def is_applicable(self, goal):
+    def is_applicable(self, goal, derivation):
         return goal.main_symbol == '∨'
 
     def apply_heuristic(self, derivation, goal, open_sups, jump_steps, solver):
@@ -598,7 +599,7 @@ class DisjunctionHeuristic(Heuristic):
         for disjunct in (1, 2):
             try:
                 deriv = solver._solve_derivation(inference=Inference(prems, [goal[disjunct]]),
-                                               open_sups=copy(open_sups), jump_steps=jump_steps)
+                                                 open_sups=copy(open_sups), jump_steps=jump_steps)
                 derivation.extend([x for x in deriv if x.justification != 'premise'])
 
                 # Look for where the disjunct is (may not be the last step if it was present as premise)
@@ -622,32 +623,35 @@ disjunction_heuristic = DisjunctionHeuristic()
 
 
 class ReductioHeuristic(Heuristic):
-    def is_applicable(self, goal):
-        return goal != Formula(['⊥'])
+    def __init__(self, formula_class=Formula):
+        self.formula_class = formula_class
+
+    def is_applicable(self, goal, derivation):
+        return goal != self.formula_class(['⊥'])
 
     def apply_heuristic(self, derivation, goal, open_sups, jump_steps, solver):
         sup_intro_number = solver._steps([len(derivation)], jump_steps)[0]
         open_sups2 = open_sups + [sup_intro_number]
-        derivation.append(NaturalDeductionStep(content=Formula(['~', goal]), justification='supposition',
+        derivation.append(NaturalDeductionStep(content=self.formula_class(['~', goal]), justification='supposition',
                                                open_suppositions=copy(open_sups2)))
 
         derivation_formulae = [step.content for step in derivation]
         prems = copy(derivation_formulae)
-        inf = Inference(premises=prems, conclusions=[Formula(['⊥'])])
+        inf = Inference(premises=prems, conclusions=[self.formula_class(['⊥'])])
 
         deriv = solver._solve_derivation(inference=inf, open_sups=copy(open_sups2), jump_steps=jump_steps)
 
         # If deriv and derivation have the same number of steps, it is because the derivation already contained
         # falsum, and therefore it just returned. We need to repeat falsum to close it.
         if len(deriv) == len(derivation):
-            falsum_step = next(index for index in range(len(derivation)) if derivation[index].content == Formula(['⊥']))
+            falsum_step = next(index for index in range(len(derivation)) if derivation[index].content == self.formula_class(['⊥']))
             falsum_step = solver._steps([falsum_step], jump_steps)
             deriv.append(NaturalDeductionStep(content=goal[2], justification='repetition',
                                               on_steps=falsum_step,
                                               open_suppositions=copy(open_sups2)))
 
         derivation.extend([x for x in deriv if x.justification != 'premise'])
-        derivation.append(NaturalDeductionStep(content=Formula(['~', ['~', goal]]),
+        derivation.append(NaturalDeductionStep(content=self.formula_class(['~', ['~', goal]]),
                                                justification="I~",
                                                on_steps=[sup_intro_number,  # first number has jump calculated
                                                          solver._steps([len(derivation) - 1], jump_steps)[0]],
@@ -663,11 +667,14 @@ reductio_heuristic = ReductioHeuristic()
 
 
 class EFSQHeuristic(Heuristic):
-    def is_applicable(self, goal):
+    def __init__(self, formula_class=Formula):
+        self.formula_class = formula_class
+
+    def is_applicable(self, goal, derivation):
         return True
 
     def apply_heuristic(self, derivation, goal, open_sups, jump_steps, solver):
-        if Formula(['⊥']) in [step.content for step in derivation]:
+        if self.formula_class(['⊥']) in [step.content for step in derivation]:
             derivation.append(NaturalDeductionStep(content=goal, justification='EFSQ',
                                                    on_steps=solver._steps([len(derivation) - 1], jump_steps),
                                                    open_suppositions=copy(open_sups)))

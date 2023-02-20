@@ -91,11 +91,11 @@ class TestPredicateNaturalDeductionSolver(unittest.TestCase):
             ~∀x (P(x) ∧ P(c)); premise; []; []
             ~∃x (P(d)) ∧ P(e); premise; []; []
         """, natural_deduction=True)
-        self.assertEqual(solver.get_arbitrary_constant(deriv[:0]), 'a')
-        self.assertEqual(solver.get_arbitrary_constant(deriv[:1]), 'b')
-        self.assertEqual(solver.get_arbitrary_constant(deriv[:2]), 'c')
-        self.assertEqual(solver.get_arbitrary_constant(deriv[:-1]), 'd')
-        self.assertIs(solver.get_arbitrary_constant(deriv), None)
+        self.assertEqual(solver.get_arbitrary_constant(solver.language, deriv[:0]), 'a')
+        self.assertEqual(solver.get_arbitrary_constant(solver.language, deriv[:1]), 'b')
+        self.assertEqual(solver.get_arbitrary_constant(solver.language, deriv[:2]), 'c')
+        self.assertEqual(solver.get_arbitrary_constant(solver.language, deriv[:-1]), 'd')
+        self.assertIs(solver.get_arbitrary_constant(solver.language, deriv), None)
 
     def test_replace_derived_rules(self):
         # NegUniv
