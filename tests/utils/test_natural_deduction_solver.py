@@ -131,7 +131,8 @@ class TestNaturalDeductionSolver(unittest.TestCase):
 
     def test_delete_unused_steps(self):
         inference = classical_parser.parse('((p ∧ q) ∧ (q ∧ r)) / r')
-        derivation = solver._solve_derivation(inference)
+        derivation = Derivation([NaturalDeductionStep(content=p, justification='premise') for p in inference.premises])
+        derivation = solver._solve_derivation(derivation, inference.conclusion)
         # print(derivation)
         # print(solver._get_used_steps(derivation, inference))
 
@@ -140,22 +141,20 @@ class TestNaturalDeductionSolver(unittest.TestCase):
         # print(derivation)
 
     def test_replace_derived_rules(self):
-        for inference in self.derived_rules:
-            derivation = solver._solve_derivation(inference)
+        for inf in self.derived_rules:
+            derivation = Derivation([NaturalDeductionStep(content=p, justification='premise') for p in inf.premises])
+            derivation = solver._solve_derivation(derivation, inf.conclusion)
             # print('ORIGINAL\n', derivation)
 
-            derivation = solver._replace_derived_rules(
-                derivation, solver.derived_rules_derivations
-            )
+            derivation = solver._replace_derived_rules(derivation, solver.derived_rules_derivations)
             # print('REPLACED\n', derivation)
             # print('\n')
 
-            derivation2 = solver2._solve_derivation(inference)
+            derivation2 = Derivation([NaturalDeductionStep(content=p, justification='premise') for p in inf.premises])
+            derivation2 = solver2._solve_derivation(derivation2, inf.conclusion)
             # print('ORIGINAL\n', derivation2)
 
-            derivation2 = solver2._replace_derived_rules(
-                derivation, solver2.derived_rules_derivations
-            )
+            derivation2 = solver2._replace_derived_rules(derivation, solver2.derived_rules_derivations)
             # print('REPLACED\n', derivation2)
             # print('\n')
 
@@ -164,9 +163,9 @@ class TestNaturalDeductionSolver(unittest.TestCase):
         unsolved = 0
         for _ in range(1000):
             inf = random_formula_generator.random_valid_inference(num_premises=2, num_conclusions=1,
-                                                                    max_depth=3, atomics=['p', 'q', 'r'],
-                                                                    language=cl_language,
-                                                                    validity_apparatus=classical_mvl_semantics)
+                                                                  max_depth=3, atomics=['p', 'q', 'r'],
+                                                                  language=cl_language,
+                                                                  validity_apparatus=classical_mvl_semantics)
             could_solve = False
             try:
                 derivation = solver.solve(inf)
