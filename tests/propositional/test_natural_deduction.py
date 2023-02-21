@@ -197,7 +197,7 @@ class TestClassicalNaturalDeductionSystem(unittest.TestCase):
     def test_rule_order(self):
         # i1 is conjunction introduction
         i1 = Inference([Formula(['p']), Formula(['q'])],
-                      [Formula(['∧', ['p'], ['q']])])
+                       [Formula(['∧', ['p'], ['q']])])
 
         # First derivation: standard one
         deriv1_1 = classical_parser.parse_derivation(

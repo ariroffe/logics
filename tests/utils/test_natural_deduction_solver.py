@@ -2,7 +2,8 @@ import unittest
 
 from logics.classes.exceptions import SolverError
 from logics.utils.parsers import classical_parser
-from logics.utils.solvers import classical_natural_deduction_solver, classical_natural_deduction_solver2
+from logics.classes.propositional.proof_theories import Derivation, NaturalDeductionStep
+from logics.utils.solvers import classical_natural_deduction_solver as solver, classical_natural_deduction_solver2 as solver2
 from logics.utils.formula_generators.generators_biased import random_formula_generator
 from logics.instances.propositional.languages import classical_infinite_language_with_sent_constants_nobiconditional \
     as cl_language
@@ -33,6 +34,36 @@ class TestNaturalDeductionSolver(unittest.TestCase):
                               self.modus_tollens, self.disjunctive_syllogism, self.disjunctive_syllogism2,
                               self.disjunctive_syllogism3]
 
+    def test_is_in_closed_supposition(self):
+        self.assertFalse(solver._is_in_closed_supposition([], []))
+        self.assertFalse(solver._is_in_closed_supposition([1], [1]))
+        self.assertFalse(solver._is_in_closed_supposition([1], [1,2]))
+        self.assertTrue(solver._is_in_closed_supposition([1, 2], [1]))
+        self.assertTrue(solver._is_in_closed_supposition([1], []))
+
+    def test_get_step_of_formula(self):
+        deriv = classical_parser.parse_derivation("""
+            ⊥; premise; []; []
+            p; supposition; []; [1]
+            p; premise; []; []
+            (p ∧ q); I∧; [1, 0]; []
+        """, natural_deduction=True)
+        step = solver._get_step_of_formula(classical_parser.parse('⊥'), deriv, deriv[-1].open_suppositions)
+        self.assertEqual(step, 0)
+
+        step = solver._get_step_of_formula(classical_parser.parse('p'), deriv, deriv[-1].open_suppositions)
+        self.assertEqual(step, 2)
+
+        step = solver._get_step_of_formula(classical_parser.parse('p'), deriv, [1])
+        self.assertEqual(step, 1)
+
+        step = solver._get_step_of_formula(classical_parser.parse('q'), deriv, deriv[-1].open_suppositions)
+        self.assertIs(step, None)
+
+        step = solver._get_step_of_formula(classical_parser.parse('p ∧ q'), deriv, deriv[-1].open_suppositions)
+        self.assertEqual(step, 3)
+
+
     def test_solver_noclean(self):
         # Rules in the first function
         efsq = classical_parser.parse('⊥ / p')
@@ -48,40 +79,48 @@ class TestNaturalDeductionSolver(unittest.TestCase):
         inferences.extend(self.derived_rules)
 
         for inference in inferences:
-            derivation = classical_natural_deduction_solver._solve_derivation(inference)
-            # print(derivation)
-            # print('\n')
+            derivation = Derivation([NaturalDeductionStep(content=p, justification='premise') for p in inference.premises])
+            try:
+                derivation = solver._solve_derivation(derivation, inference.conclusion)
+                print(derivation.print_derivation(classical_parser))
+                print('\n')
+            except SolverError:
+                self.fail(f"SolverError for inference '{classical_parser.unparse(inference)}'")
 
-        conjunction_steps = classical_parser.parse('p, q, r / (q → p) ∧ (r → p)')
-        derivation = classical_natural_deduction_solver._solve_derivation(conjunction_steps)
-        # print(derivation)
+        conj = classical_parser.parse('p, q, r / (q → p) ∧ (r → p)')
+        try:
+            derivation = Derivation([NaturalDeductionStep(content=p, justification='premise') for p in conj.premises])
+            derivation = solver._solve_derivation(derivation, conj.conclusion)
+            print(derivation.print_derivation(classical_parser))
+        except SolverError:
+            self.fail(f"SolverError for inference 'p, q, r / (q → p) ∧ (r → p)'")
 
     def test_delete_unused_steps(self):
         inference = classical_parser.parse('((p ∧ q) ∧ (q ∧ r)) / r')
-        derivation = classical_natural_deduction_solver._solve_derivation(inference)
+        derivation = solver._solve_derivation(inference)
         # print(derivation)
         # print(solver._get_used_steps(derivation, inference))
 
-        used_steps = classical_natural_deduction_solver._get_used_steps(derivation, inference)
-        derivation = classical_natural_deduction_solver._delete_unused_steps(derivation, used_steps)
+        used_steps = solver._get_used_steps(derivation, inference)
+        derivation = solver._delete_unused_steps(derivation, used_steps)
         # print(derivation)
 
     def test_replace_derived_rules(self):
         for inference in self.derived_rules:
-            derivation = classical_natural_deduction_solver._solve_derivation(inference)
+            derivation = solver._solve_derivation(inference)
             # print('ORIGINAL\n', derivation)
 
-            derivation = classical_natural_deduction_solver._replace_derived_rules(
-                derivation, classical_natural_deduction_solver.derived_rules_derivations
+            derivation = solver._replace_derived_rules(
+                derivation, solver.derived_rules_derivations
             )
             # print('REPLACED\n', derivation)
             # print('\n')
 
-            derivation2 = classical_natural_deduction_solver2._solve_derivation(inference)
+            derivation2 = solver2._solve_derivation(inference)
             # print('ORIGINAL\n', derivation2)
 
-            derivation2 = classical_natural_deduction_solver2._replace_derived_rules(
-                derivation, classical_natural_deduction_solver2.derived_rules_derivations
+            derivation2 = solver2._replace_derived_rules(
+                derivation, solver2.derived_rules_derivations
             )
             # print('REPLACED\n', derivation2)
             # print('\n')
@@ -96,7 +135,7 @@ class TestNaturalDeductionSolver(unittest.TestCase):
                                                                     validity_apparatus=classical_mvl_semantics)
             could_solve = False
             try:
-                derivation = classical_natural_deduction_solver.solve(inf)
+                derivation = solver.solve(inf)
                 could_solve = True
             except SolverError:
                 # warnings.warn(f'Could not solve the derivation of {classical_parser.unparse(inf)}', SolverWarning)
@@ -131,7 +170,7 @@ class TestNaturalDeductionSolver(unittest.TestCase):
                 if x == 99:
                     not_found_invalid += 1
 
-            self.assertRaises(SolverError, classical_natural_deduction_solver.solve, inf)
+            self.assertRaises(SolverError, solver.solve, inf)
 
         # print(f'Could not find invalid inference in {not_found_invalid} cases')
 
@@ -146,7 +185,7 @@ class TestNaturalDeductionSolver(unittest.TestCase):
                                                                   validity_apparatus=classical_mvl_semantics)
             could_solve = False
             try:
-                derivation = classical_natural_deduction_solver2.solve(inf)
+                derivation = solver2.solve(inf)
                 could_solve = True
             except SolverError:
                 # warnings.warn(f'Could not solve the derivation of {classical_parser.unparse(inf)}', SolverWarning)
@@ -183,7 +222,7 @@ class TestNaturalDeductionSolver(unittest.TestCase):
                 if x == 99:
                     not_found_invalid += 1
 
-            self.assertRaises(SolverError, classical_natural_deduction_solver2.solve, inf)
+            self.assertRaises(SolverError, solver2.solve, inf)
 
         # print(f'Could not find invalid inference in {not_found_invalid} cases')
 

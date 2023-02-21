@@ -119,13 +119,15 @@ class NaturalDeductionSolver:
         --------
         See above for an example using the predefined classical solver instance
         """
-        derivation = self._solve_derivation(inference)   # Actually solves the derivation (using some derived rules)
+        goal = inference.conclusion
+        derivation = Derivation([NaturalDeductionStep(content=p, justification='premise') for p in inference.premises])
+        derivation = self._solve_derivation(derivation, goal)   # Actually solves the derivation (using some derived rules)
         derivation = self._clean_derivation(derivation, inference)  # Erases unnecesary steps and replaces derived rules
         return derivation
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def _solve_derivation(self, inference, open_sups=None, jump_steps=None):
+    def _solve_derivation(self, derivation, goal):
         """
         First of the two algorithms of the solver, basically analizes the goal and sets a new goal
 
@@ -141,32 +143,26 @@ class NaturalDeductionSolver:
         all it will be able to "see" are the premises (not the conditional introduction for the first conjunct) -
         thus, step 3 it will suppose q, step 4 repeat p and the next supposition (of r) should be in step 5, not 3
         """
-        # Open sups will be None only in the first recursive call
-        if open_sups is None:
-            open_sups = []
-
-        goal = inference.conclusion
-        derivation = Derivation([NaturalDeductionStep(content=p, justification='premise',
-                                                      open_suppositions=copy(open_sups)) for p in inference.premises])
-
-        for prem_number in range(len(derivation)):
-            # The goal is already present as premise, return the derivation
-            if derivation[prem_number].content == goal:
+        # The goal is already present in the derivation (and not in a closed supposition), return it
+        current_open_sups = self._get_current_open_sups(derivation)
+        for step_idx in range(len(derivation)):
+            if not self._is_in_closed_supposition(derivation[step_idx].open_suppositions, current_open_sups) and \
+                    derivation[step_idx].content == goal:
                 return derivation
 
         # Apply simplification rules (elimination + a couple more, see below)
-        derivation = self._apply_simplification_rules(derivation, goal, jump_steps=jump_steps)
+        derivation = self._apply_simplification_rules(derivation, goal)
 
         # The goal has been reached by the application of the rules
         # (the second algorithm exits if it finds the goal, so the goal should be in the last step)
         if derivation and derivation[-1].content == goal:
             return derivation
 
-        # If it did not find the goal, apply heuristics
+        # If it did not find the goal, apply heuristics (they might call this method recursively)
         for heuristic in self.heuristics:
             if heuristic.is_applicable(goal, derivation):
                 try:
-                    return heuristic.apply_heuristic(derivation, goal, open_sups, jump_steps, self)
+                    return heuristic.apply_heuristic(derivation, goal, self)
                 except SolverError:
                     pass
 
@@ -176,92 +172,91 @@ class NaturalDeductionSolver:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def _apply_simplification_rules(self, derivation, goal, jump_steps=None):
+    def _apply_simplification_rules(self, derivation, goal):
         """Blindly derives everything it can but using only rules that simplify formulae, some of them derived
         (not things like I∨, which would be impossible to apply blindly)
 
         Makes changes and records the indexes on applied_rules (so that it doesn't repeat them)
         When it has no more changes to make (modif = False), returns
         """
+        # If the derivation is empty (inference with no premises), there is nothing to do here
+        if not derivation:
+            return derivation
 
+        # initialization, parameters we will need inside the loop
         applied_rules = {rule_name: [] for rule_name in self.simplification_rules}
-        modif = True  # To track if changes were made. Will only exit when no changes occur in the whole next loop
-        while modif:
-            modif = False
-            formulas_list = [x.content for x in derivation]
-            if derivation:
-                open_sups = derivation[-1].open_suppositions
-                # None of the following rules should open or close sups, so open_suppositions will be copied
-                # from the last step in the original derivation (the copy()'s are below)
-            else:
-                open_sups = list()
+        open_sups = derivation[-1].open_suppositions  # None of the simplif rules open sups, so this can remain the same
+        prev_len_derivation = 0  # zero initially so that it enters the first loop below
+        formulas_list = [step.content for step in derivation]  # will be needed below to not repeat adding
 
-            step_number = -1
-            for formula in formulas_list:  # First quantifier here so that we do not have to repeat it for each rule
-                step_number += 1
+        while prev_len_derivation != len(derivation):  # When they are equal we have not added any new steps
+            prev_len_derivation = len(derivation)
+
+            # For each step in the derivation, see if we can apply a rule to it (if it is the first premise of the rule)
+            for step_idx, step in enumerate(derivation):
+                # Check that the step is not in a closed supposition
+                if self._is_in_closed_supposition(step.open_suppositions, open_sups):
+                    continue
 
                 for rule_name in self.simplification_rules:
                     # Check that the rule has not been applied to this step before
-                    if step_number not in applied_rules[rule_name]:
+                    if step_idx in applied_rules[rule_name]:
+                        continue
 
-                        rule = self.simplification_rules[rule_name]
-                        rule_steps = list()
-                        subst_dict = dict()
+                    rule = self.simplification_rules[rule_name]
 
-                        # See if the current formula being examined is an instance of the first premise of the rule
-                        first_premise_is_instance, subst_dict = formula.is_instance_of(rule.premises[0], self.language,
-                                                                                       subst_dict=subst_dict,
-                                                                                       return_subst_dict=True)
-                        if first_premise_is_instance:
-                            rule_steps.append(step_number)
+                    # See if the current formula being examined is an instance of the first premise of the rule
+                    first_premise_is_instance, subst_dict = step.content.is_instance_of(rule.premises[0],
+                                                                                        self.language,
+                                                                                        return_subst_dict=True)
+                    if first_premise_is_instance:
+                        rule_steps = [step_idx]
 
-                            # Check if the rest of the premises are present
-                            rest_of_premises_present = True
-                            for premise in rule.premises[1:]:
-                                premise_present = False
+                        # Check if the rest of the premises are present
+                        rest_of_premises_present = True
+                        for premise in rule.premises[1:]:
+                            premise_present = False
 
-                                # Go over each formula in the derivation again
-                                step_number2 = -1
-                                for formula2 in formulas_list:
-                                    step_number2 += 1
-                                    premise_is_instance, subst_dict = formula2.is_instance_of(premise, self.language,
-                                                                                              subst_dict=subst_dict,
-                                                                                              return_subst_dict=True)
-                                    if premise_is_instance:
-                                        premise_present = True
-                                        rule_steps.append(step_number2)
-                                        break  # Do not keep looking for this rule premise once we found it
+                            # Go over each formula in the derivation again
+                            for step_idx2, step2 in enumerate(derivation):
+                                # Again, check that this step is not in a closed supposition
+                                if self._is_in_closed_supposition(step2.open_suppositions, open_sups):
+                                    continue
 
-                                if not premise_present:
-                                    rest_of_premises_present = False
-                                    break
+                                premise_is_instance, subst_dict = step2.content.is_instance_of(premise,
+                                                                                            self.language,
+                                                                                            subst_dict=subst_dict,
+                                                                                            return_subst_dict=True)
+                                if premise_is_instance:
+                                    premise_present = True
+                                    rule_steps.append(step_idx2)
+                                    break  # Do not keep looking for this rule premise once we found it
 
-                            # If the rest of the premises are present, we can apply the rule
-                            if rest_of_premises_present:
-                                # We first need to get what the instance of the conclusion would look like
-                                # We will basically take the rule conclusion (which is something like A ∧ B) and
-                                # substitute the metavariables for the formulae in subst_dict
-                                formulae_to_add = self._get_formulae_to_add(rule.conclusions[0], subst_dict)
-                                # Is a list bc the predicate solver sometimes adds multiple formulae
+                            if not premise_present:
+                                rest_of_premises_present = False
+                                break
 
-                                # See that the conclusion is not already in the derivation (avoids freezing), and add it
-                                for formula_to_add in formulae_to_add:
-                                    if formula_to_add not in formulas_list:
-                                        formulas_list.append(formula_to_add)
-                                        derivation.append(NaturalDeductionStep(content=formula_to_add,
-                                                                               justification=rule_name,
-                                                                               on_steps=self._steps(rule_steps, jump_steps),
-                                                                               open_suppositions=copy(open_sups)))
+                        # If the rest of the premises are present, we can apply the rule
+                        if rest_of_premises_present:
+                            # Get what the instance/s of the conclusion would look like
+                            # Is a list bc the predicate solver sometimes adds multiple formulae at once (e.g. E∀)
+                            formulae_to_add = self._get_formulae_to_add(rule.conclusions[0], subst_dict)
+                            for formula_to_add in formulae_to_add:
+                                # Check if the conclusion is not already in the derivation (avoids freezing), add it
+                                if formula_to_add not in formulas_list:
+                                    formulas_list.append(formula_to_add)
+                                    derivation.append(NaturalDeductionStep(content=formula_to_add,
+                                                                           justification=rule_name,
+                                                                           on_steps=rule_steps,
+                                                                           open_suppositions=copy(open_sups)))
+                                    if goal == formula_to_add:
+                                        return derivation
+                                    if self.exit_on_falsum and formula_to_add == Formula(['⊥']):
+                                        return derivation
 
-                                        if goal == formula_to_add:
-                                            return derivation
-                                        if self.exit_on_falsum and formula_to_add == Formula(['⊥']):
-                                            return derivation
-
-                                        # Register that we applied this rule to this step, so that we don't repeat
-                                        modif = True
-                                        if step_number not in applied_rules[rule_name]:
-                                            applied_rules[rule_name].append(step_number)
+                                    # Register that we applied this rule to this step, so that we don't repeat
+                                    if step_idx not in applied_rules[rule_name]:
+                                        applied_rules[rule_name].append(step_idx)
 
         # When it reaches here, it has exited the loop (not made any modifications during an iteration)
         return derivation
@@ -411,10 +406,33 @@ class NaturalDeductionSolver:
     # ------------------------------------------------------------------------------------------------------------------
     # Auxiliary functions
 
+    def _get_current_open_sups(self, derivation):
+        current_open_sups = list()
+        if derivation:
+            current_open_sups = derivation[-1].open_suppositions
+        return current_open_sups
+
+    def _is_in_closed_supposition(self, step_open_sups, current_open_sups):
+        return not set(step_open_sups).issubset(set(current_open_sups))
+
+    def _get_step_of_formula(self, formula, derivation, current_open_sups):
+        # get the step number of a given formula, such that the formula is not in a closed supposition
+        for index in range(len(derivation)):
+            if self._is_in_closed_supposition(derivation[index].open_suppositions, current_open_sups):
+                continue
+            if derivation[index].content == formula:
+                return index
+        return None
+
     @staticmethod
     def _steps(step_list, jump_steps):
-        """Basically for conjunction introduction. Given a step list and jump_steps (of the form [[a, b], [c, d]])
-        It takes the step list and sums b to every step equal or greater than a, d to every step equal or greater than c
+        """For replacing derived rules with their derivations, because once you introduce steps in the middle you have
+        to change the ones that come after it.
+
+        Given a step list and jump_steps (of the form [[a, b], [c, d]]):
+        - Takes the step list and sums b to every step equal or greater than a
+        - d to every step equal or greater than c
+        - etc.
         """
         if jump_steps is None:
             return step_list
@@ -451,7 +469,7 @@ class Heuristic:
         """
         raise NotImplementedError()
 
-    def apply_heuristic(self, derivation, goal, open_sups, jump_steps, solver):
+    def apply_heuristic(self, derivation, goal, solver):
         """Applies the heuristic.
 
         Takes the current deriation, goal, current open suppositions and solver, and returns a derivation.
@@ -463,90 +481,44 @@ class Heuristic:
 
 class ConjunctionHeuristic(Heuristic):
     """
-    This heuristic is complicated for the following reason. What it will do, given a goal of the form A ∧ B, is to
-    take everything in the current derivation as premise, and solve for A, and then do the same and solve for B;
-    finally, concatenate the original derivation with the specific derivations for A and B, and apply conjunction
-    introduction.
-
-    However, in the second derivation (that of B) it should not take the things that are present in the first derivation
-    (that of A) as premises, but only the things in the original derivationn (bc there might be closed suppositions).
-
-    For example, if B is the formula p, the derivation of A has 2 steps, and the original derivation is:
-        q; premise; []; []
-        q ∧ (q ∧ p); premise; []; []
-    The derivation of B should add the following two steps
-        (q ∧ p); E∧; [1]; [...]
-        p; E∧; [4]; [...]
-    Notice that the last step has on_steps [4], even though the solver "sees" that (q ∧ p) is in step 2 while performing
-    the derivation of B (since the part of the derivation corresponding to the derivation of A was not given). In the
-    final output [4] will be correct because the derivation of A will be added before that of B.
-
-    To do this, there is a parameter `jump_steps`, which in this case will contain [[2, 2]] -meaning "from step 2
-    onwards, add 2 steps". If there are nested conjunctions, `jump_steps` can be, e.g. [[2, 2], [4, 3], ...]
-    ("From step 2 add 2 steps, from step 4 add an additional 3 steps")
-
-    You should take this into account if you plan on defining new heuristics for a system that uses this one.
+    Given a goal of the form A ∧ B, solve for A, add the derivation to the current one, and then do the same and solve
+    for B; finally, apply conjunction introduction.
     """
 
     def is_applicable(self, goal, derivation):
         return goal.main_symbol == '∧'
 
-    def apply_heuristic(self, derivation, goal, open_sups, jump_steps, solver):
-        derivation_formulae = [step.content for step in derivation]
-        prems = copy(derivation_formulae)
-
+    def apply_heuristic(self, derivation, goal, solver):
+        deriv1 = deepcopy(derivation)
         # Solve the derivation of the first conjunct
-        deriv1 = solver._solve_derivation(inference=Inference(prems, [goal[1]]),
-                                          open_sups=copy(open_sups), jump_steps=jump_steps)
+        deriv1 = solver._solve_derivation(derivation=deriv1, goal=goal[1])
+        open_sups = derivation[-1].open_suppositions  # the open suppositions before we solved for A
 
         # Save the step where the first conjunct is, for the introduction later
-        # (the step may not be the last of deriv1 if the first conjunct was already present as premise)
-        first_conjunct_step = next(index for index in range(len(deriv1)) if
-                                   deriv1[index].content == goal[1] and
-                                   deriv1[index].open_suppositions <= open_sups)
-        first_conjunct_step = solver._steps([first_conjunct_step], jump_steps)[0]
+        # (the step may not be the last of deriv1 if the first conjunct was already present in the derivation)
+        first_conjunct_step = solver._get_step_of_formula(goal[1], deriv1, open_sups)
 
         # If asked for a conjunction between the same two formulas, simply repeat the first conjunct
         # (more efficient, and otherwise p / p ∧ p would have on steps [1, 1] which is wrong)
         if goal[1] == goal[2]:
-            derivation.extend([step for step in deriv1 if step.justification != 'premise'])
-            derivation.append(NaturalDeductionStep(content=goal[2], justification="repetition",
-                                                   on_steps=[first_conjunct_step],
+            deriv1.append(NaturalDeductionStep(content=goal[2], justification="repetition",
+                                               on_steps=[first_conjunct_step],
+                                               open_suppositions=copy(open_sups)))
+            deriv1.append(NaturalDeductionStep(content=goal, justification="I∧",
+                                                   on_steps=[first_conjunct_step, len(deriv1) - 1],
                                                    open_suppositions=copy(open_sups)))
-            derivation.append(NaturalDeductionStep(content=goal, justification="I∧",
-                                                   on_steps=[first_conjunct_step,
-                                                             solver._steps([len(derivation) - 1], jump_steps)[0]],
-                                                   open_suppositions=copy(open_sups)))
-            return derivation
+            return deriv1
 
-        # Otherwise, if the second conjunct is different
-        if jump_steps is None:
-            jump_steps = [[len(derivation_formulae), len(deriv1) - len(derivation_formulae)]]
-            # e.g. if the base derivation has 2 steps and deriv1 has 5, jump_steps will be [2, 3]
-            # meaning: for a step equal or greater than 2, add 3 steps (step 2 becomes step 5)
-        else:
-            jump_steps = copy(jump_steps)  # To not alter previous recursive iterations
-            jump_steps.append([len(derivation_formulae), len(deriv1) - len(derivation_formulae)])
-
-        # Solve the derivation for the second conjunct
-        # deriv 2 does not see deriv1, so it cannot use anything in a closed supposition within it
-        deriv2 = solver._solve_derivation(inference=Inference(prems, [goal[2]]),
-                                          open_sups=copy(open_sups), jump_steps=jump_steps)
+        # Otherwise, if the second conjunct is different from the first, solve the derivation for the second conjunct
+        deriv1 = solver._solve_derivation(derivation=deriv1, goal=goal[2])
 
         # Save the step where the second conjunct is, for the introduction later
-        second_conjunct_step = next(index for index in range(len(deriv2)) if
-                                    deriv2[index].content == goal[2] and
-                                    deriv2[index].open_suppositions <= open_sups)
-        second_conjunct_step = solver._steps([second_conjunct_step], jump_steps)[0]
+        second_conjunct_step = solver._get_step_of_formula(goal[2], deriv1, open_sups)
 
-        # AFTER fixing the step numbers (important), extend derivation
-        derivation.extend([step for step in deriv1 if step.justification != 'premise'])
-        derivation.extend([step for step in deriv2 if step.justification != 'premise'])
-
-        derivation.append(NaturalDeductionStep(content=goal, justification="I∧",
-                                               on_steps=[first_conjunct_step, second_conjunct_step],
-                                               open_suppositions=copy(open_sups)))
-        return derivation
+        deriv1.append(NaturalDeductionStep(content=goal, justification="I∧",
+                                           on_steps=[first_conjunct_step, second_conjunct_step],
+                                           open_suppositions=copy(open_sups)))
+        return deriv1
 
 
 conjunction_heuristic = ConjunctionHeuristic()
@@ -556,34 +528,31 @@ class ConditionalHeuristic(Heuristic):
     def is_applicable(self, goal, derivation):
         return goal.main_symbol == '→'
 
-    def apply_heuristic(self, derivation, goal, open_sups, jump_steps, solver):
-        # Add the antecedent as a supposition
-        sup_intro_number = solver._steps([len(derivation)], jump_steps)[0]
-        open_sups2 = open_sups + [sup_intro_number]
-        derivation2 = copy(derivation)
-        derivation2.append(NaturalDeductionStep(content=goal[1], justification='supposition',
-                                                on_steps=[], open_suppositions=copy(open_sups2)))
-        prems = [step.content for step in derivation2]
+    def apply_heuristic(self, derivation, goal, solver):
+        deriv1 = deepcopy(derivation)
 
-        deriv = solver._solve_derivation(inference=Inference(prems, [goal[2]]),
-                                         open_sups=copy(open_sups2), jump_steps=jump_steps)
+        # Add the antecedent as a supposition
+        prev_open_sups = solver._get_current_open_sups(derivation)
+        new_open_sups = prev_open_sups + [len(derivation)]
+        deriv1.append(NaturalDeductionStep(content=goal[1], justification='supposition',
+                                           on_steps=[], open_suppositions=copy(new_open_sups)))
+
+        # Solve for the consequent
+        deriv1 = solver._solve_derivation(derivation=deriv1, goal=goal[2])
 
         # If deriv and derivation have the same number of steps, it is because the derivation already contained
         # the consequent, and therefore it just returned. We need to repeat the consequent to close it.
-        if len(deriv) == len(derivation2):
-            consequent_step = next(index for index in range(len(derivation2)) if
-                                   derivation2[index].content == goal[2])
-            consequent_step = solver._steps([consequent_step], jump_steps)
-            deriv.append(NaturalDeductionStep(content=goal[2], justification='repetition',
-                                              on_steps=consequent_step,
-                                              open_suppositions=copy(open_sups2)))
+        if len(deriv1) == len(derivation):
+            consequent_step = solver._get_step_of_formula(goal[2], deriv1, prev_open_sups)
+            deriv1.append(NaturalDeductionStep(content=goal[2], justification='repetition',
+                                               on_steps=consequent_step,
+                                               open_suppositions=copy(new_open_sups)))
 
-        derivation2.extend([x for x in deriv if x.justification != 'premise'])
-        derivation2.append(NaturalDeductionStep(content=goal, justification="I→",
-                                                on_steps=[sup_intro_number,  # first number has jump calculated
-                                                          solver._steps([len(derivation2) - 1], jump_steps)[0]],
-                                                open_suppositions=open_sups2[:-1]))
-        return derivation2
+        deriv1.append(NaturalDeductionStep(content=goal, justification="I→",
+                                           on_steps=[len(derivation),  # where we introduced the supposition
+                                                     len(deriv1)-1],   # last step of the new derivation
+                                           open_suppositions=copy(prev_open_sups)))
+        return deriv1
 
 
 conditional_heuristic = ConditionalHeuristic()
@@ -593,25 +562,21 @@ class DisjunctionHeuristic(Heuristic):
     def is_applicable(self, goal, derivation):
         return goal.main_symbol == '∨'
 
-    def apply_heuristic(self, derivation, goal, open_sups, jump_steps, solver):
-        derivation_formulae = [step.content for step in derivation]
-        prems = copy(derivation_formulae)
+    def apply_heuristic(self, derivation, goal, solver):
+        deriv1 = deepcopy(derivation)
+        prev_open_sups = solver._get_current_open_sups(derivation)
+
+        # Try to solve for each disjunct separately
         for disjunct in (1, 2):
             try:
-                deriv = solver._solve_derivation(inference=Inference(prems, [goal[disjunct]]),
-                                                 open_sups=copy(open_sups), jump_steps=jump_steps)
-                derivation.extend([x for x in deriv if x.justification != 'premise'])
+                deriv1 = solver._solve_derivation(derivation=deriv1, goal=goal[disjunct])
 
-                # Look for where the disjunct is (may not be the last step if it was present as premise)
-                step_num = next(index for index in range(len(derivation)) if
-                                derivation[index].content == goal[disjunct] and
-                                derivation[index].open_suppositions <= open_sups)
-                step_num = solver._steps([step_num], jump_steps)  # this returns a list
-                derivation.append(NaturalDeductionStep(content=goal, justification=f'I∨{disjunct}',
+                # Look for where the disjunct is (may not be the last step if it was present in the derivation)
+                step_num = solver._get_step_of_formula(goal[disjunct], deriv1, prev_open_sups)
+                deriv1.append(NaturalDeductionStep(content=goal, justification=f'I∨{disjunct}',
                                                        on_steps=step_num,
-                                                       open_suppositions=copy(open_sups)))
-
-                return derivation
+                                                       open_suppositions=copy(prev_open_sups)))
+                return deriv1
             except SolverError as e:
                 if disjunct == 1:
                     pass
@@ -629,38 +594,37 @@ class ReductioHeuristic(Heuristic):
     def is_applicable(self, goal, derivation):
         return goal != self.formula_class(['⊥'])
 
-    def apply_heuristic(self, derivation, goal, open_sups, jump_steps, solver):
-        sup_intro_number = solver._steps([len(derivation)], jump_steps)[0]
-        open_sups2 = open_sups + [sup_intro_number]
-        derivation.append(NaturalDeductionStep(content=self.formula_class(['~', goal]), justification='supposition',
-                                               open_suppositions=copy(open_sups2)))
+    def apply_heuristic(self, derivation, goal, solver):
+        deriv1 = deepcopy(derivation)
 
-        derivation_formulae = [step.content for step in derivation]
-        prems = copy(derivation_formulae)
-        inf = Inference(premises=prems, conclusions=[self.formula_class(['⊥'])])
+        # Add the negation of the goal as a supposition
+        prev_open_sups = solver._get_current_open_sups(derivation)
+        new_open_sups = prev_open_sups + [len(derivation)]
+        deriv1.append(NaturalDeductionStep(content=self.formula_class(['~', goal]), justification='supposition',
+                                           on_steps=[], open_suppositions=copy(new_open_sups)))
 
-        deriv = solver._solve_derivation(inference=inf, open_sups=copy(open_sups2), jump_steps=jump_steps)
+        # Solve for falsum
+        new_goal = self.formula_class(['⊥'])
+        deriv1 = solver._solve_derivation(derivation=deriv1, goal=new_goal)
 
         # If deriv and derivation have the same number of steps, it is because the derivation already contained
         # falsum, and therefore it just returned. We need to repeat falsum to close it.
-        if len(deriv) == len(derivation):
-            falsum_step = next(index for index in range(len(derivation)) if derivation[index].content == self.formula_class(['⊥']))
-            falsum_step = solver._steps([falsum_step], jump_steps)
-            deriv.append(NaturalDeductionStep(content=goal[2], justification='repetition',
-                                              on_steps=falsum_step,
-                                              open_suppositions=copy(open_sups2)))
+        if len(deriv1) == len(derivation):
+            falsum_step = solver._get_step_of_formula(new_goal, deriv1, prev_open_sups)
+            deriv1.append(NaturalDeductionStep(content=goal[2], justification='repetition',
+                                               on_steps=falsum_step,
+                                               open_suppositions=copy(new_open_sups)))
 
-        derivation.extend([x for x in deriv if x.justification != 'premise'])
-        derivation.append(NaturalDeductionStep(content=self.formula_class(['~', ['~', goal]]),
+        deriv1.append(NaturalDeductionStep(content=self.formula_class(['~', new_goal]),
                                                justification="I~",
-                                               on_steps=[sup_intro_number,  # first number has jump calculated
-                                                         solver._steps([len(derivation) - 1], jump_steps)[0]],
-                                               open_suppositions=open_sups2[:-1]))
+                                               on_steps=[len(derivation),  # where we introduced the supposition
+                                                         len(deriv1)-1],
+                                               open_suppositions=copy(prev_open_sups)))
 
-        derivation.append(NaturalDeductionStep(content=goal, justification="~~",
-                                               on_steps=solver._steps([len(derivation) - 1], jump_steps),
-                                               open_suppositions=open_sups2[:-1]))
-        return derivation
+        deriv1.append(NaturalDeductionStep(content=goal, justification="~~",
+                                           on_steps=[len(deriv1)- 1],
+                                           open_suppositions=copy(prev_open_sups)))
+        return deriv1
 
 
 reductio_heuristic = ReductioHeuristic()
@@ -673,12 +637,15 @@ class EFSQHeuristic(Heuristic):
     def is_applicable(self, goal, derivation):
         return True
 
-    def apply_heuristic(self, derivation, goal, open_sups, jump_steps, solver):
-        if self.formula_class(['⊥']) in [step.content for step in derivation]:
-            derivation.append(NaturalDeductionStep(content=goal, justification='EFSQ',
-                                                   on_steps=solver._steps([len(derivation) - 1], jump_steps),
-                                                   open_suppositions=copy(open_sups)))
-            return derivation
+    def apply_heuristic(self, derivation, goal, solver):
+        open_sups = solver._get_current_open_sups(derivation)
+        falsum_idx = solver._get_step_of_formula(self.formula_class(['⊥']), derivation, open_sups)
+        if falsum_idx is not None:
+            deriv1 = deepcopy(derivation)
+            deriv1.append(NaturalDeductionStep(content=goal, justification='EFSQ',
+                                               on_steps=[falsum_idx],
+                                               open_suppositions=copy(open_sups)))
+            return deriv1
         raise SolverError()
 
 
