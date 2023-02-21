@@ -469,7 +469,7 @@ class ConjunctionHeuristic(Heuristic):
     introduction.
 
     However, in the second derivation (that of B) it should not take the things that are present in the first derivation
-    (that of A) as premises, but only the things in the original derivation.
+    (that of A) as premises, but only the things in the original derivationn (bc there might be closed suppositions).
 
     For example, if B is the formula p, the derivation of A has 2 steps, and the original derivation is:
         q; premise; []; []

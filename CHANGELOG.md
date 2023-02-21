@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - FECHA
+### Added
+- Predicate natural deduction.
+
+### Changed
+- Predicate languages now accept individual and variable metavariables 
+  (they are useful for formulating rules).
+  The relevant `PredicateFormula` methods were changed to account for this.
+
 ## [1.2.1] - 2022-11-15
 ### Added
 - Alternative natural deduction system for classical logic (with solver), see docs.

@@ -76,6 +76,7 @@ class TestPropositionalParser(unittest.TestCase):
         # Not well-formed
         self.assertRaises(NotWellFormed, classical_parser.parse, 'pq')
         self.assertRaises(NotWellFormed, classical_parser.parse, '(p)')
+        self.assertRaises(NotWellFormed, classical_parser.parse, '~(p)')
         self.assertRaises(NotWellFormed, classical_parser.parse, 'p~p')
         self.assertRaises(NotWellFormed, classical_parser.parse, '(p or q or p)')
 
@@ -201,6 +202,7 @@ class TestPredicateParser(unittest.TestCase):
         self.assertEqual(f, PredicateFormula(['P', ('f', ('f', 'x'))]))
         self.assertRaises(NotWellFormed, classical_predicate_parser.parse, 'Pa')
         f = classical_predicate_parser.parse('~P(a)')
+        self.assertRaises(NotWellFormed, classical_predicate_parser.parse, '~(P(a))')
         self.assertEqual(f, PredicateFormula(['~', ['P', 'a']]))
         f = classical_predicate_parser.parse('~~P(a)')
         self.assertEqual(f, PredicateFormula(['~', ['~', ['P', 'a']]]))
@@ -208,6 +210,10 @@ class TestPredicateParser(unittest.TestCase):
         self.assertEqual(f, PredicateFormula(['∧', ['P', 'a'], ['R', 'a', 'b']]))
         self.assertRaises(NotWellFormed, classical_predicate_parser.parse, '∀x P(x)')
         f = classical_predicate_parser.parse('∀x (P(x))')
+        self.assertRaises(NotWellFormed, classical_predicate_parser.parse, '∀x P(x)')
+        self.assertRaises(NotWellFormed, classical_predicate_parser.parse, '∀x ~P(x)')
+        self.assertRaises(NotWellFormed, classical_predicate_parser.parse, '∃x ~P(x)')
+        self.assertRaises(NotWellFormed, classical_predicate_parser.parse, '∃x ~(P(x))')
         self.assertEqual(f, PredicateFormula(['∀', 'x', ['P', 'x']]))
         f = classical_predicate_parser.parse('∀x (P(x) and R(x,y))')
         self.assertEqual(f, PredicateFormula(['∀', 'x', ['∧', ['P', 'x'], ['R', 'x', 'y']]]))
