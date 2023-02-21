@@ -492,7 +492,7 @@ class ConjunctionHeuristic(Heuristic):
         deriv1 = deepcopy(derivation)
         # Solve the derivation of the first conjunct
         deriv1 = solver._solve_derivation(derivation=deriv1, goal=goal[1])
-        open_sups = derivation[-1].open_suppositions  # the open suppositions before we solved for A
+        open_sups = solver._get_current_open_sups(derivation)
 
         # Save the step where the first conjunct is, for the introduction later
         # (the step may not be the last of deriv1 if the first conjunct was already present in the derivation)
@@ -540,12 +540,12 @@ class ConditionalHeuristic(Heuristic):
         # Solve for the consequent
         deriv1 = solver._solve_derivation(derivation=deriv1, goal=goal[2])
 
-        # If deriv and derivation have the same number of steps, it is because the derivation already contained
+        # If deriv1 has one more step (the supposition), it is because the derivation already contained
         # the consequent, and therefore it just returned. We need to repeat the consequent to close it.
-        if len(deriv1) == len(derivation):
-            consequent_step = solver._get_step_of_formula(goal[2], deriv1, prev_open_sups)
+        if len(deriv1) == len(derivation)+1:
+            consequent_step = solver._get_step_of_formula(goal[2], deriv1, new_open_sups)  # new to check the antecedent
             deriv1.append(NaturalDeductionStep(content=goal[2], justification='repetition',
-                                               on_steps=consequent_step,
+                                               on_steps=[consequent_step],
                                                open_suppositions=copy(new_open_sups)))
 
         deriv1.append(NaturalDeductionStep(content=goal, justification="I→",
@@ -574,7 +574,7 @@ class DisjunctionHeuristic(Heuristic):
                 # Look for where the disjunct is (may not be the last step if it was present in the derivation)
                 step_num = solver._get_step_of_formula(goal[disjunct], deriv1, prev_open_sups)
                 deriv1.append(NaturalDeductionStep(content=goal, justification=f'I∨{disjunct}',
-                                                       on_steps=step_num,
+                                                       on_steps=[step_num],
                                                        open_suppositions=copy(prev_open_sups)))
                 return deriv1
             except SolverError as e:
@@ -607,20 +607,19 @@ class ReductioHeuristic(Heuristic):
         new_goal = self.formula_class(['⊥'])
         deriv1 = solver._solve_derivation(derivation=deriv1, goal=new_goal)
 
-        # If deriv and derivation have the same number of steps, it is because the derivation already contained
+        # If deriv1 has one more step (the supposition), it is because the derivation already contained
         # falsum, and therefore it just returned. We need to repeat falsum to close it.
-        if len(deriv1) == len(derivation):
+        if len(deriv1) == len(derivation)+1:
             falsum_step = solver._get_step_of_formula(new_goal, deriv1, prev_open_sups)
             deriv1.append(NaturalDeductionStep(content=goal[2], justification='repetition',
-                                               on_steps=falsum_step,
+                                               on_steps=[falsum_step],
                                                open_suppositions=copy(new_open_sups)))
 
-        deriv1.append(NaturalDeductionStep(content=self.formula_class(['~', new_goal]),
-                                               justification="I~",
-                                               on_steps=[len(derivation),  # where we introduced the supposition
-                                                         len(deriv1)-1],
-                                               open_suppositions=copy(prev_open_sups)))
-
+        deriv1.append(NaturalDeductionStep(content=self.formula_class(['~', ['~', goal]]),
+                                           justification="I~",
+                                           on_steps=[len(derivation),  # where we introduced the supposition
+                                                     len(deriv1)-1],
+                                           open_suppositions=copy(prev_open_sups)))
         deriv1.append(NaturalDeductionStep(content=goal, justification="~~",
                                            on_steps=[len(deriv1)- 1],
                                            open_suppositions=copy(prev_open_sups)))

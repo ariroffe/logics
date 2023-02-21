@@ -63,27 +63,61 @@ class TestNaturalDeductionSolver(unittest.TestCase):
         step = solver._get_step_of_formula(classical_parser.parse('p ∧ q'), deriv, deriv[-1].open_suppositions)
         self.assertEqual(step, 3)
 
+    def test_solver_heuristics_repetition(self):
+        # Should repeat q inside the conditional
+        inf = classical_parser.parse('p, q / p → q')
+        deriv = Derivation([NaturalDeductionStep(content=p, justification='premise') for p in inf.premises])
+        deriv = solver._solve_derivation(deriv, inf.conclusion)
+        solution = classical_parser.parse_derivation("""
+            p; premise; []; []
+            q; premise; []; []
+            p; supposition; []; [2]
+            q; repetition; [1]; [2]
+            p → q; I→; [2, 3]; []
+        """, natural_deduction=True)
+        self.assertEqual(deriv, solution)
+
+        # Should get the second conjunct from the premises
+        inf = classical_parser.parse('(p ∧ p), q / p ∧ q')
+        deriv = Derivation([NaturalDeductionStep(content=p, justification='premise') for p in inf.premises])
+        deriv = solver._solve_derivation(deriv, inf.conclusion)
+        solution = classical_parser.parse_derivation("""
+            p ∧ p; premise; []; []
+            q; premise; []; []
+            p; E∧1; [0]; []
+            p ∧ q; I∧; [2, 1]; []
+        """, natural_deduction=True)
+        self.assertEqual(deriv, solution)
+
+    def test_not_use_closed_sups(self):
+        inf = classical_parser.parse('/(p → p) ∧ (p ∨ ~p)')
+        deriv = Derivation([NaturalDeductionStep(content=p, justification='premise') for p in inf.premises])
+        deriv = solver._solve_derivation(deriv, inf.conclusion)
+        # steps 0 and 1 are a supposition and a repetition, 3 is a conditional intro
+        # See that 0 and 1 are not used again after that
+        for step in deriv[3:]:
+            self.assertNotIn(0, step.on_steps)
+            self.assertNotIn(1, step.on_steps)
 
     def test_solver_noclean(self):
         # Rules in the first function
         efsq = classical_parser.parse('⊥ / p')
         conjunction_introduction = classical_parser.parse('p1 ∧ p2, p3 ∧ p4 / p2 ∧ p3')
-        conditional_introduction = classical_parser.parse('p, q / p → q')
         disjunction_introduction = classical_parser.parse('p / p ∨ q')
         reductio = classical_parser.parse('p → (q ∧ ~q) / ~p')
         repetitions1 = classical_parser.parse('p / p ∧ p')
         repetitions2 = classical_parser.parse('/ p → p')
 
-        inferences = [efsq, conjunction_introduction, conditional_introduction, disjunction_introduction, reductio,
-                      repetitions1, repetitions2]
+        inferences = [efsq, conjunction_introduction, disjunction_introduction, reductio, repetitions1, repetitions2]
         inferences.extend(self.derived_rules)
 
         for inference in inferences:
             derivation = Derivation([NaturalDeductionStep(content=p, justification='premise') for p in inference.premises])
             try:
                 derivation = solver._solve_derivation(derivation, inference.conclusion)
-                print(derivation.print_derivation(classical_parser))
-                print('\n')
+                # print(classical_parser.unparse(inference))
+                # derivation.print_derivation(classical_parser)
+                # print('')
             except SolverError:
                 self.fail(f"SolverError for inference '{classical_parser.unparse(inference)}'")
 
@@ -91,7 +125,7 @@ class TestNaturalDeductionSolver(unittest.TestCase):
         try:
             derivation = Derivation([NaturalDeductionStep(content=p, justification='premise') for p in conj.premises])
             derivation = solver._solve_derivation(derivation, conj.conclusion)
-            print(derivation.print_derivation(classical_parser))
+            # derivation.print_derivation(classical_parser)
         except SolverError:
             self.fail(f"SolverError for inference 'p, q, r / (q → p) ∧ (r → p)'")
 
