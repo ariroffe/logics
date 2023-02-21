@@ -127,21 +127,12 @@ class NaturalDeductionSolver:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def _solve_derivation(self, derivation, goal):
-        """
-        First of the two algorithms of the solver, basically analizes the goal and sets a new goal
-
-        open_sups and jump_steps should be left as the default values
-        The first is so that recursive iterations preserve suppositions from the above ones
-        The second is because of how conjunction introduction works (makes two derivations separately, so the step
-        numbers in the second should jump over some values) - e.g. in p, q, r / (q → p) ∧ (r → p) the derivation of
-        (r → p) should start the supposition not in step 3, but after the last step of the derivation of (q → p).
-        When it is not None, will come in format [[3, 4], [7, 3]], meaning:
-            - for a step greater or equal than 3 you sould add 4 steps
-            - for a step greater or equal than 7, add 3 more steps
-        In the case above, jump_steps will include [3, 2] in the recursive iteration to solve the second conjunct -
-        all it will be able to "see" are the premises (not the conditional introduction for the first conjunct) -
-        thus, step 3 it will suppose q, step 4 repeat p and the next supposition (of r) should be in step 5, not 3
+    def _solve_derivation(self, derivation, goal, tried_existentials=None):
+        """First of the two algorithms of the solver, basically does the following:
+        - First, checks is the goal is already present
+        - If not, blindly derives things using elimination rules (some of them derived)
+        - If it still did not find the goal, analizes the goal and sets a new goal using heuristics, may add things as
+          suppositions in the process
         """
         # The goal is already present in the derivation (and not in a closed supposition), return it
         current_open_sups = self._get_current_open_sups(derivation)
@@ -158,11 +149,15 @@ class NaturalDeductionSolver:
         if derivation and derivation[-1].content == goal:
             return derivation
 
+        # This is for the predicate solver and the existential elimination heuristic
+        if tried_existentials is None:
+            tried_existentials = []
+
         # If it did not find the goal, apply heuristics (they might call this method recursively)
         for heuristic in self.heuristics:
-            if heuristic.is_applicable(goal, derivation):
+            if heuristic.is_applicable(goal):
                 try:
-                    return heuristic.apply_heuristic(derivation, goal, self)
+                    return heuristic.apply_heuristic(derivation, goal, self, tried_existentials)
                 except SolverError:
                     pass
 
@@ -406,13 +401,15 @@ class NaturalDeductionSolver:
     # ------------------------------------------------------------------------------------------------------------------
     # Auxiliary functions
 
-    def _get_current_open_sups(self, derivation):
+    @staticmethod
+    def _get_current_open_sups(derivation):
         current_open_sups = list()
         if derivation:
             current_open_sups = derivation[-1].open_suppositions
         return current_open_sups
 
-    def _is_in_closed_supposition(self, step_open_sups, current_open_sups):
+    @staticmethod
+    def _is_in_closed_supposition(step_open_sups, current_open_sups):
         return not set(step_open_sups).issubset(set(current_open_sups))
 
     def _get_step_of_formula(self, formula, derivation, current_open_sups):
@@ -461,7 +458,7 @@ class Heuristic:
     --------
     See the source code for examples on how to define heuristics.
     """
-    def is_applicable(self, goal, derivation):
+    def is_applicable(self, goal):
         """Determines whether the heuristic is applicable given the current goal.
 
         Takes the goal as parameter and should return a boolean.
@@ -469,7 +466,7 @@ class Heuristic:
         """
         raise NotImplementedError()
 
-    def apply_heuristic(self, derivation, goal, solver):
+    def apply_heuristic(self, derivation, goal, solver, tried_existentials):
         """Applies the heuristic.
 
         Takes the current deriation, goal, current open suppositions and solver, and returns a derivation.
@@ -485,10 +482,10 @@ class ConjunctionHeuristic(Heuristic):
     for B; finally, apply conjunction introduction.
     """
 
-    def is_applicable(self, goal, derivation):
+    def is_applicable(self, goal):
         return goal.main_symbol == '∧'
 
-    def apply_heuristic(self, derivation, goal, solver):
+    def apply_heuristic(self, derivation, goal, solver, tried_existentials):
         deriv1 = deepcopy(derivation)
         # Solve the derivation of the first conjunct
         deriv1 = solver._solve_derivation(derivation=deriv1, goal=goal[1])
@@ -525,10 +522,10 @@ conjunction_heuristic = ConjunctionHeuristic()
 
 
 class ConditionalHeuristic(Heuristic):
-    def is_applicable(self, goal, derivation):
+    def is_applicable(self, goal):
         return goal.main_symbol == '→'
 
-    def apply_heuristic(self, derivation, goal, solver):
+    def apply_heuristic(self, derivation, goal, solver, tried_existentials):
         deriv1 = deepcopy(derivation)
 
         # Add the antecedent as a supposition
@@ -559,10 +556,10 @@ conditional_heuristic = ConditionalHeuristic()
 
 
 class DisjunctionHeuristic(Heuristic):
-    def is_applicable(self, goal, derivation):
+    def is_applicable(self, goal):
         return goal.main_symbol == '∨'
 
-    def apply_heuristic(self, derivation, goal, solver):
+    def apply_heuristic(self, derivation, goal, solver, tried_existentials):
         deriv1 = deepcopy(derivation)
         prev_open_sups = solver._get_current_open_sups(derivation)
 
@@ -591,10 +588,10 @@ class ReductioHeuristic(Heuristic):
     def __init__(self, formula_class=Formula):
         self.formula_class = formula_class
 
-    def is_applicable(self, goal, derivation):
+    def is_applicable(self, goal):
         return goal != self.formula_class(['⊥'])
 
-    def apply_heuristic(self, derivation, goal, solver):
+    def apply_heuristic(self, derivation, goal, solver, tried_existentials):
         deriv1 = deepcopy(derivation)
 
         # Add the negation of the goal as a supposition
@@ -633,10 +630,10 @@ class EFSQHeuristic(Heuristic):
     def __init__(self, formula_class=Formula):
         self.formula_class = formula_class
 
-    def is_applicable(self, goal, derivation):
+    def is_applicable(self, goal):
         return True
 
-    def apply_heuristic(self, derivation, goal, solver):
+    def apply_heuristic(self, derivation, goal, solver, tried_existentials):
         open_sups = solver._get_current_open_sups(derivation)
         falsum_idx = solver._get_step_of_formula(self.formula_class(['⊥']), derivation, open_sups)
         if falsum_idx is not None:

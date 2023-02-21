@@ -1,8 +1,15 @@
 import unittest
 
 from logics.classes.predicate import PredicateFormula
+
 from logics.utils.parsers.predicate_parser import classical_predicate_parser as parser
-from logics.utils.solvers.first_order_natural_deduction import first_order_natural_deduction_solver as solver
+from logics.utils.solvers.first_order_natural_deduction import (
+    Derivation,
+    NaturalDeductionStep,
+    first_order_natural_deduction_solver as solver,
+    universal_intro_heuristic,
+    existential_elim_heuristic,
+)
 
 
 class TestPredicateNaturalDeductionSolver(unittest.TestCase):
@@ -137,16 +144,78 @@ class TestPredicateNaturalDeductionSolver(unittest.TestCase):
 
         # NegExist (binary predicate)
         deriv = parser.parse_derivation("""
-                ~∃x (R(x, a)); premise; []; []
-                ∀x (~R(x, a)); NegExist; [0]; []
-            """, natural_deduction=True)
+            ~∃x (R(x, a)); premise; []; []
+            ∀x (~R(x, a)); NegExist; [0]; []
+        """, natural_deduction=True)
         new_deriv = solver._replace_derived_rules(deriv, solver.derived_rules_derivations)
         solution = parser.parse_derivation("""
-                    ~∃x (R(x, a)); premise; []; []
-                    R(b, a); supposition; []; [1]
-                    ∃x (R(x, a)); I∃; [1]; [1]
-                    ⊥; E~; [0, 2]; [1]
-                    ~R(b, a); I~; [1, 3]; []
-                    ∀x (~R(x, a)); I∀; [4]; []
-                """, natural_deduction=True)
+            ~∃x (R(x, a)); premise; []; []
+            R(b, a); supposition; []; [1]
+            ∃x (R(x, a)); I∃; [1]; [1]
+            ⊥; E~; [0, 2]; [1]
+            ~R(b, a); I~; [1, 3]; []
+            ∀x (~R(x, a)); I∀; [4]; []
+        """, natural_deduction=True)
         self.assertEqual(new_deriv, solution)
+
+    def test_existential_intro_heuristic(self):
+        inf = parser.parse('P(a) / ∃x (P(x))')
+        derivation = Derivation([NaturalDeductionStep(content=p, justification='premise') for p in inf.premises])
+        derivation = solver._solve_derivation(derivation, inf.conclusion)
+        deriv = parser.parse_derivation("""
+            P(a); premise; []; []
+            ∃x (P(x)); I∃; [0]; []
+        """, natural_deduction=True)
+        self.assertEqual(derivation, deriv)
+
+    def test_universal_intro_heuristic(self):
+        # is_arbitary_ct method
+        deriv = parser.parse_derivation("""
+            R(a, a); premise; []; []
+            R(b, b); ~~; [0]; []
+        """, natural_deduction=True)
+        self.assertFalse(universal_intro_heuristic._is_arbitrary_constant('a', parser.parse('R(c,x)'), deriv))
+        self.assertTrue(universal_intro_heuristic._is_arbitrary_constant('b', parser.parse('R(c,x)'), deriv))
+        self.assertFalse(universal_intro_heuristic._is_arbitrary_constant('c', parser.parse('R(c,x)'), deriv))
+        self.assertTrue(universal_intro_heuristic._is_arbitrary_constant('d', parser.parse('R(c,x)'), deriv))
+
+        # Test with an inference
+        inf = parser.parse('∀x (P(x)), P(a) / ∀y (P(y))')
+        derivation = Derivation([NaturalDeductionStep(content=p, justification='premise') for p in inf.premises])
+        derivation = solver._solve_derivation(derivation, inf.conclusion)
+        deriv = parser.parse_derivation("""
+            ∀x (P(x)); premise; []; []
+            P(a); premise; []; []
+            P(b); E∀; [0]; []
+            P(c); E∀; [0]; []
+            P(d); E∀; [0]; []
+            P(e); E∀; [0]; []
+            ∀y (P(y)); I∀; [2]; []
+        """, natural_deduction=True)
+        self.assertEqual(derivation, deriv)
+
+    def test_existential_elim_heuristic(self):
+        # get_first_untried_existential_idx method
+        deriv = parser.parse_derivation("""
+            ∃x (P(x)); premise; []; []
+            P(a); supposition; []; [1]
+            ∃y (P(y)); ~~; []; [1]
+            ∃y (P(y)); I∃; []; []
+        """, natural_deduction=True)
+        self.assertEqual(existential_elim_heuristic.get_first_untried_existential_idx(deriv, []), 0)
+        self.assertEqual(existential_elim_heuristic.get_first_untried_existential_idx(deriv, [0]), 3)
+        self.assertEqual(existential_elim_heuristic.get_first_untried_existential_idx(deriv, [0, 3]), None)
+
+        # Test with an inference
+        inf = parser.parse('∃x (P(x)), P(a) / ∃y (P(y))')
+        derivation = Derivation([NaturalDeductionStep(content=p, justification='premise') for p in inf.premises])
+        derivation = solver._solve_derivation(derivation, inf.conclusion)
+        deriv = parser.parse_derivation("""
+            ∃x (P(x)); premise; []; []
+            P(a); premise; []; []
+            P(b); supposition; []; [2]
+            ∃y (P(y)); I∃; [1]; [2]
+            P(b) → ∃y (P(y)); I→; [2, 3]; [] 
+            ∃y (P(y)); E∃; [0, 4]; []
+        """, natural_deduction=True)
+        self.assertEqual(derivation, deriv)

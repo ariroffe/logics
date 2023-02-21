@@ -126,79 +126,157 @@ predicate_EFSQ_heuristic = EFSQHeuristic(formula_class=PredicateFormula)
 predicate_reductio_heuristic = ReductioHeuristic(formula_class=PredicateFormula)
 
 
-class ExistentialHeuristic(Heuristic):
+class ExistentialEliminationHeuristic(Heuristic):
     def __init__(self, language):
         self.language = language
 
-    def get_first_untried_existential_idx(self, derivation):
+    def get_first_untried_existential_idx(self, derivation, tried_existentials):
+        open_sups = FirstOrderNaturalDeductionSolver._get_current_open_sups(derivation)
+        for step_idx in range(len(derivation)):
+            # get the step number of the first existential formula that is not in tried_existentials and that
+            # is not in a closed supposition
+            step = derivation[step_idx]
+            if step_idx not in tried_existentials and step.content[0] == "∃" and \
+                    not FirstOrderNaturalDeductionSolver._is_in_closed_supposition(step.open_suppositions, open_sups):
+                return step_idx
         return None
 
-    def is_applicable(self, goal, derivation):
-        # We need to see if there are any existentials that we have not tried to eliminate yet
-        if self.get_first_untried_existential_idx(derivation) is not None:
-            return True
-        return False
+    def is_applicable(self, goal):
+        return True  # we need to check if applicable below anyway, so let's not repeat the check here
 
-    def apply_heuristic(self, derivation, goal, open_sups, jump_steps, solver):
+    def apply_heuristic(self, derivation, goal, solver, tried_existentials):
         # Get the first untried existential
-        existential_idx = self.get_first_untried_existential_idx(derivation)
-        existential = derivation[existential_idx]
-        existential_idx = solver._steps([existential_idx], jump_steps)[0]  # todo ver lo de jump_steps aca, es esto?
+        existential_idx = self.get_first_untried_existential_idx(derivation, tried_existentials)
+        if existential_idx is None:
+            raise SolverError("No existentials left to try")
+        tried_existentials.append(existential_idx)  # Add it so that we don't try it again
+        existential = derivation[existential_idx].content
+
+        deriv1 = deepcopy(derivation)
 
         # Get an arbitrary individual constant
-        # Need to check that the constant is not in the consequent as well, so lets add it as premise at the end
-        # to get the arbitrary ct and then remove it again
-        derivation.append(NaturalDeductionStep(content=goal, justification='premise', on_steps=[], open_suppositions=[]))
-        arbitrary_ct = FirstOrderNaturalDeductionSolver.get_arbitrary_constant(self.language, derivation)
+        # Need to check that the constant is not in the consequent as well, so lets add it at the end and then remove it
+        deriv1.append(NaturalDeductionStep(content=goal, justification='premise'))
+        arbitrary_ct = FirstOrderNaturalDeductionSolver.get_arbitrary_constant(self.language, deriv1)
         if arbitrary_ct is None:
             raise SolverError('Could not find an arbtitrary constant to work with the existential heuristic')
-        del derivation[-1]
+        del deriv1[-1]
 
         # Add an instance of the existential as a supposition
         supposition = existential[2].vsubstitute(existential[1], arbitrary_ct)
-        sup_intro_number = solver._steps([len(derivation)], jump_steps)[0]
-        open_sups2 = open_sups + [sup_intro_number]
-        derivation2 = copy(derivation)
-        derivation2.append(NaturalDeductionStep(content=supposition, justification='supposition',
-                                                on_steps=[], open_suppositions=copy(open_sups2)))
-        prems = [step.content for step in derivation2]
+
+        prev_open_sups = solver._get_current_open_sups(derivation)
+        sup_step = len(derivation)
+        new_open_sups = prev_open_sups + [sup_step]
+        deriv1.append(NaturalDeductionStep(content=supposition, justification='supposition',
+                                           on_steps=[], open_suppositions=new_open_sups))
 
         # Solve for the goal of the original derivation
-        deriv = solver._solve_derivation(inference=Inference(prems, goal),
-                                         open_sups=copy(open_sups2), jump_steps=jump_steps)
+        deriv1 = solver._solve_derivation(derivation=deriv1, goal=goal, tried_existentials=tried_existentials)
 
-        # If deriv and derivation have the same number of steps, it is because the derivation already contained
-        # the goal, and therefore it just returned. We need to repeat the consequent to close it.
-        if len(deriv) == len(derivation2):
-            consequent_step = next(index for index in range(len(derivation2)) if
-                                   derivation2[index].content == goal[2])
-            consequent_step = solver._steps([consequent_step], jump_steps)
-            deriv.append(NaturalDeductionStep(content=goal, justification='repetition',
-                                              on_steps=consequent_step,
-                                              open_suppositions=copy(open_sups2)))
-
+        # If deriv1 has one more step (the supposition), it is because the derivation already contained the goal (this
+        # should not happen but just in case) and therefore it just returned. We need to repeat the goal to close it.
+        goal_step = solver._get_step_of_formula(goal, deriv1, new_open_sups)
+        if len(deriv1) == len(derivation)+1:
+            deriv1.append(NaturalDeductionStep(content=goal[2], justification='repetition',
+                                               on_steps=[goal_step],
+                                               open_suppositions=copy(new_open_sups)))
         # Now add the conditional and the existential elimination
-        derivation2.extend([x for x in deriv if x.justification != 'premise'])
-        conditional_step = solver._steps([len(derivation2) - 2], jump_steps)[0]
-        derivation2.append(NaturalDeductionStep(content=PredicateFormula(['→', supposition, goal]), justification="I→",
-                                                on_steps=[sup_intro_number,  # first number has jump calculated
-                                                          conditional_step],
-                                                open_suppositions=open_sups2[:-1]))
-        derivation2.append(NaturalDeductionStep(content=goal, justification="E∃",
-                                                on_steps=[existential_idx, sup_intro_number, conditional_step],
-                                                open_suppositions=open_sups2[:-1]))
-        return derivation2
+        deriv1.append(NaturalDeductionStep(content=PredicateFormula(['→', supposition, goal]), justification="I→",
+                                           on_steps=[sup_step, goal_step], open_suppositions=copy(prev_open_sups)))
+        deriv1.append(NaturalDeductionStep(content=goal, justification="E∃",
+                                           on_steps=[existential_idx, len(deriv1)-1],
+                                           open_suppositions=copy(prev_open_sups)))
+        return deriv1
 
 
-existential_heuristic = ExistentialHeuristic(language=cl_language)
+existential_elim_heuristic = ExistentialEliminationHeuristic(language=cl_language)
 
+
+class ExistentialIntroductionHeuristic(Heuristic):
+    rule_justification = 'I∃'
+
+    def __init__(self, language):
+        self.language = language
+
+    def is_applicable(self, goal):
+        return goal.main_symbol == '∃'
+
+    def _is_arbitrary_constant(self, ind_ct, formula_quantified, derivation):
+        return True  # Here we don't care about this, just return true. Will be overloaded in the UnivIntroHeuristic
+
+    def apply_heuristic(self, derivation, goal, solver, tried_existentials):
+        # Basically, try to derive every possible substitution instance
+        deriv1 = deepcopy(derivation)
+        prev_open_sups = solver._get_current_open_sups(derivation)
+
+        # Try to solve for each disjunct separately
+        for ind_ct in self.language.individual_constants:
+            # Get the free variables in the formula quantified
+            free_vars = tuple(goal[2].free_variables(self.language))
+            if not free_vars:
+                subst_instance = goal[2]  # There are none, the formula is just the formula quantified
+            else:
+                # For the universal intro heuristic below. Has to be here bc if no free vars, we don't care about ind_ct
+                if not self._is_arbitrary_constant(ind_ct, goal[2], derivation):
+                    continue
+                subst_instance = goal[2].vsubstitute(free_vars[0], ind_ct)
+
+            try:
+                deriv1 = solver._solve_derivation(derivation=deriv1, goal=subst_instance)
+
+                # Look for where the instance is (may not be the last step if it was present in the derivation?)
+                step_num = solver._get_step_of_formula(subst_instance, deriv1, prev_open_sups)
+                deriv1.append(NaturalDeductionStep(content=goal, justification=self.rule_justification,
+                                                   on_steps=[step_num],
+                                                   open_suppositions=copy(prev_open_sups)))
+                return deriv1
+            except SolverError:
+                if not free_vars:
+                    break  # if there are no free variables every subst instance will be the same, so just break here
+
+        # After trying all possible subst instances, exit
+        raise SolverError("Could not derive substitution instance")
+
+
+existential_intro_heuristic = ExistentialIntroductionHeuristic(language=cl_language)
+
+
+class UniversalIntroductionHeuristic(ExistentialIntroductionHeuristic):
+    rule_justification = 'I∀'
+
+    def is_applicable(self, goal):
+        return goal.main_symbol == '∀'
+
+    def _is_arbitrary_constant(self, ind_ct, formula_quantified, derivation):
+        # Check that the ind ct is not in the formula quantified
+        if formula_quantified.contains_string(ind_ct):
+            return False
+        for step_idx in range(len(derivation)):
+            step = derivation[step_idx]
+            # Check that the ind ct is not in a premise
+            if step.justification == 'premise' and step.content.contains_string(ind_ct):
+                return False
+            # Check that it is not in an open supposition
+            if step.justification == 'supposition' and step.content.contains_string(ind_ct) and \
+                    step_idx in derivation[-1].open_suppositions:
+                return False
+        return True
+
+universal_intro_heuristic = UniversalIntroductionHeuristic(language=cl_language)
+
+
+# ----------------------------------------------------------------------------
+# Solver instance
 
 first_order_natural_deduction_solver = FirstOrderNaturalDeductionSolver(language=cl_language,
                                                         simplification_rules=first_order_simplification_rules,
                                                         derived_rules_derivations=first_order_derived_rules_derivations,
-                                                        heuristics=[existential_heuristic,
+                                                        heuristics=[existential_elim_heuristic,
                                                                     predicate_EFSQ_heuristic,
                                                                     conjunction_heuristic,
                                                                     conditional_heuristic,
                                                                     disjunction_heuristic,
+                                                                    existential_intro_heuristic,
+                                                                    universal_intro_heuristic,
                                                                     predicate_reductio_heuristic])
