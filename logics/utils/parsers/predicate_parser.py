@@ -215,11 +215,14 @@ class PredicateParser(StandardParser):
                 formula_opening_parenthesis_index = parser_utils.get_last_opening_parenthesis(string)
                 if formula_opening_parenthesis_index is None:
                     raise NotWellFormed(f'Quantified formula in {string} must come between parentheses')
-                if string[current_index] == '∈':
+                elif string[current_index] == '∈':
                     bounded = True
                     current_index += 1
                     unparsed_term = string[current_index:formula_opening_parenthesis_index]
                     parsed_term = self.parse_term(unparsed_term, replace=False)
+                # We have a non bounded-formula, the parenthesis must come immediately after the variable
+                elif formula_opening_parenthesis_index != current_index:
+                    raise NotWellFormed(f'Quantified formula in {string} must come between parentheses')
 
                 # Lastly, parse the formula
                 unparsed_formula = string[formula_opening_parenthesis_index+1:-1]
