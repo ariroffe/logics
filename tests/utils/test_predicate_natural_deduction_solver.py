@@ -10,6 +10,7 @@ from logics.utils.solvers.first_order_natural_deduction import (
     universal_intro_heuristic,
     existential_elim_heuristic,
 )
+from logics.instances.predicate.natural_deduction import predicate_classical_natural_deduction_system as nd_system
 
 
 class TestPredicateNaturalDeductionSolver(unittest.TestCase):
@@ -286,4 +287,10 @@ class TestPredicateNaturalDeductionSolver(unittest.TestCase):
             except SolverError as err:
                 self.fail(f"Could not solve inference {parser.unparse(e)}")
 
-        # Chequear contra el nd_system
+            # Check that the derivation is correct against the nd_system
+            correct, error_list = nd_system.is_correct_derivation(solution, inference=e, return_error_list=True)
+            if not correct:
+                solution.print_derivation(parser)
+                print("\nErrors: ", error_list)
+                self.fail(f"Derivation for inference {parser.unparse(e)} is incorrect")
+

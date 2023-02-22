@@ -182,7 +182,9 @@ class NaturalDeductionSolver:
         applied_rules = {rule_name: [] for rule_name in self.simplification_rules}
         open_sups = derivation[-1].open_suppositions  # None of the simplif rules open sups, so this can remain the same
         prev_len_derivation = 0  # zero initially so that it enters the first loop below
-        formulas_list = [step.content for step in derivation]  # will be needed below to not repeat adding
+        # will be needed below to not repeat adding:
+        formulas_list = [step.content for step in derivation if
+                         not self._is_in_closed_supposition(step.open_suppositions, open_sups)]
 
         while prev_len_derivation != len(derivation):  # When they are equal we have not added any new steps
             prev_len_derivation = len(derivation)
@@ -198,9 +200,8 @@ class NaturalDeductionSolver:
                     if step_idx in applied_rules[rule_name]:
                         continue
 
-                    rule = self.simplification_rules[rule_name]
-
                     # See if the current formula being examined is an instance of the first premise of the rule
+                    rule = self.simplification_rules[rule_name]
                     first_premise_is_instance, subst_dict = step.content.is_instance_of(rule.premises[0],
                                                                                         self.language,
                                                                                         return_subst_dict=True)
@@ -507,7 +508,7 @@ class ConjunctionHeuristic(Heuristic):
             return deriv1
 
         # Otherwise, if the second conjunct is different from the first, solve the derivation for the second conjunct
-        deriv1 = solver._solve_derivation(derivation=deriv1, goal=goal[2])
+        deriv1 = solver._solve_derivation(derivation=deriv1, goal=goal[2], tried_existentials=tried_existentials)
 
         # Save the step where the second conjunct is, for the introduction later
         second_conjunct_step = solver._get_step_of_formula(goal[2], deriv1, open_sups)
@@ -535,7 +536,7 @@ class ConditionalHeuristic(Heuristic):
                                            on_steps=[], open_suppositions=copy(new_open_sups)))
 
         # Solve for the consequent
-        deriv1 = solver._solve_derivation(derivation=deriv1, goal=goal[2])
+        deriv1 = solver._solve_derivation(derivation=deriv1, goal=goal[2], tried_existentials=tried_existentials)
 
         # If deriv1 has one more step (the supposition), it is because the derivation already contained
         # the consequent, and therefore it just returned. We need to repeat the consequent to close it.
@@ -566,7 +567,8 @@ class DisjunctionHeuristic(Heuristic):
         # Try to solve for each disjunct separately
         for disjunct in (1, 2):
             try:
-                deriv1 = solver._solve_derivation(derivation=deriv1, goal=goal[disjunct])
+                deriv1 = solver._solve_derivation(derivation=deriv1, goal=goal[disjunct],
+                                                  tried_existentials=tried_existentials)
 
                 # Look for where the disjunct is (may not be the last step if it was present in the derivation)
                 step_num = solver._get_step_of_formula(goal[disjunct], deriv1, prev_open_sups)
@@ -610,7 +612,7 @@ class ReductioHeuristic(Heuristic):
 
         # Solve for falsum
         new_goal = self.formula_class(['⊥'])
-        deriv1 = solver._solve_derivation(derivation=deriv1, goal=new_goal)
+        deriv1 = solver._solve_derivation(derivation=deriv1, goal=new_goal, tried_existentials=tried_existentials)
 
         # If deriv1 has one more step (the supposition), it is because the derivation already contained
         # falsum, and therefore it just returned. We need to repeat falsum to close it.

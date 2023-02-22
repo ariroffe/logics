@@ -93,14 +93,14 @@ NegUniv_derivation = Derivation([
     #5
     NaturalDeductionStep(content=PredicateFormula(['~', ['~', ['[α/χ]A']]]), justification='I~', on_steps=[2, 4],
                          open_suppositions=[1]),
-    NaturalDeductionStep(content=PredicateFormula(['[α/χ]A']), justification='DN', on_steps=[5], open_suppositions=[1]),
+    NaturalDeductionStep(content=PredicateFormula(['[α/χ]A']), justification='~~', on_steps=[5], open_suppositions=[1]),
     NaturalDeductionStep(content=PredicateFormula(['∀', 'χ', ['A']]), justification='I∀', on_steps=[6],
                          open_suppositions=[1]),
     #8
-    NaturalDeductionStep(content=PredicateFormula(['⊥']), justification='E~', on_steps=[1, 3], open_suppositions=[1]),
+    NaturalDeductionStep(content=PredicateFormula(['⊥']), justification='E~', on_steps=[0, 7], open_suppositions=[1]),
     NaturalDeductionStep(content=PredicateFormula(['~', ['~', ['∃', 'χ', ['~', ['A']]]]]), justification='I~',
                          on_steps=[1, 8], open_suppositions=[]),
-    NaturalDeductionStep(content=PredicateFormula(['∃', 'χ', ['~', ['A']]]), justification='DN', on_steps=[9],
+    NaturalDeductionStep(content=PredicateFormula(['∃', 'χ', ['~', ['A']]]), justification='~~', on_steps=[9],
                          open_suppositions=[]),
 ])
 NegExist_derivation = Derivation([
@@ -243,7 +243,8 @@ class ExistentialIntroductionHeuristic(Heuristic):
                 subst_instance = goal[2].vsubstitute(free_vars[0], ind_ct)
 
             try:
-                deriv1 = solver._solve_derivation(derivation=deriv1, goal=subst_instance)
+                deriv1 = solver._solve_derivation(derivation=deriv1, goal=subst_instance,
+                                                  tried_existentials=tried_existentials)
 
                 # Look for where the instance is (may not be the last step if it was present in the derivation?)
                 step_num = solver._get_step_of_formula(subst_instance, deriv1, prev_open_sups)
