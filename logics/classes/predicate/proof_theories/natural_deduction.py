@@ -17,9 +17,9 @@ class PredicateNaturalDeductionRule(NaturalDeductionRule):
     >>> from logics.classes.predicate.proof_theories.natural_deduction import NaturalDeductionStep, PredicateNaturalDeductionRule
     >>> univ_intro = PredicateNaturalDeductionRule([
     ...     '(...)',
-    ...     NaturalDeductionStep(Formula(['[α/χ]A']), 'I∨1', [0], open_suppositions=[]),
+    ...     NaturalDeductionStep(Formula(['[α/χ]A']), open_suppositions=[]),
     ...     '(...)',
-    ...     NaturalDeductionStep(Formula(['∀', 'x', ['A']]), open_suppositions=[])
+    ...     NaturalDeductionStep(Formula(['∀', 'x', ['A']]), 'I∀', [0], open_suppositions=[])
     ... ], arbitrary_cts=['α'])
     >>> univ_intro.arbitrary_cts
     ['α']
@@ -35,8 +35,43 @@ class PredicateNaturalDeductionRule(NaturalDeductionRule):
 
 
 class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
-    """The differences between this class and the propositional one stem from rules with given constants as arbitrary
-    up to that point in the derivation, and things like [α/χ]A
+    """The differences between this class and the propositional one stem from rules with arbitrary constants
+    and rules with formulae of the form [α/χ]A. The user interface is the same, though.
+
+    Examples
+    --------
+    >>> from logics.utils.parsers.predicate_parser import classical_predicate_parser as parser
+    >>> from logics.instances.predicate.natural_deduction import predicate_classical_natural_deduction_system as nd_system
+    >>> deriv = parser.parse_derivation('''
+    ...     ∃x (R(x, a)); premise; []; []
+    ...     ∃y (∃x (R(x, y))); I∃; [0]; []
+    ... ''', natural_deduction=True)
+    >>> nd_system.is_correct_application(deriv, 1, nd_system.rules['I∃'])
+    True
+    >>> deriv = parser.parse_derivation('''
+    ...     P(a); premise; []; []
+    ...     ∀x (P(x)); I∀; [0]; []
+    ... ''', natural_deduction=True)
+    >>> rule = nd_system.substitute_rule(deriv, 1, nd_system.rules['I∀'])  # to get a specific instance of the rule
+    >>> is_correct, error = nd_system.check_arbitrary_constants(deriv, 1, rule)
+    >>> is_correct
+    False
+    >>> error
+    "Constant 'a' is not arbitrary"
+    >>> deriv = parser.parse_derivation('''
+    ...     ∃x (R(x, x)); premise; []; []
+    ...     R(a, a); supposition; []; [1]
+    ...     ∃y (R(y, y)); I∃; [1]; [1]
+    ...     R(a, a) → ∃y (R(y, y)); I→; [1,2]; []
+    ...     ∃y (R(y, y)); E∃; [0, 3]; []
+    ... ''', natural_deduction=True)
+    >>> nd_system.is_correct_derivation(deriv)
+    True
+
+    Notes
+    -----
+    The class is hardcoded to work with the usual quantifier rules. If you want to give it different ones,
+    you may need to adjust the code
     """
     def substitute_rule(self, derivation, step, rule):
         """Gets rid of things of form [α/χ] in the rules, by vsubstituting the χ's for α's and returning the modified

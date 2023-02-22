@@ -47,6 +47,7 @@ Table of Contents
    predicate/parsers
    predicate/semantics/models
    predicate/semantics/truth_theory
+   predicate/proof_theories/natural_deduction
 
 
 .. raw:: html

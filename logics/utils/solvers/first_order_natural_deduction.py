@@ -16,13 +16,28 @@ from logics.utils.solvers.natural_deduction import (
 from logics.classes.predicate.proof_theories import Derivation
 from logics.classes.predicate.proof_theories.natural_deduction import NaturalDeductionStep
 from logics.classes.predicate import PredicateFormula, Inference
-from logics.utils.upgrade.upgrade import upgrade_inference, upgrade_derivation
+from logics.utils.upgrade import upgrade_inference, upgrade_derivation
 
 # ----------------------------------------------------------------------------
 # ----------------------------------------------------------------------------
 # First order classical ND solver
 
 class FirstOrderNaturalDeductionSolver(NaturalDeductionSolver):
+    """First-order natural deduction solver. Has the same user interface than the propositional one.
+
+    Examples
+    --------
+    >>> from logics.utils.parsers.predicate_parser import classical_predicate_parser as parser
+    >>> from logics.utils.solvers.first_order_natural_deduction import first_order_natural_deduction_solver as solver
+    >>> deriv = solver.solve(parser.parse('~∃x (P(x)) / ∀x (~P(x))'))
+    >>> deriv.print_derivation(parser)
+    0. ~∃x (P(x)); premise; []
+    |  1. P(a); supposition; []
+    |  2. ∃x (P(x)); I∃; [1]
+    |  3. ⊥; E~; [0, 2]
+    4. ~P(a); I~; [1, 3]
+    5. ∀x (~P(x)); I∀; [4]
+    """
     def _get_formulae_to_add(self, rule_conclusion, subst_dict):
         if rule_conclusion.contains_string('[α/χ]A'):
             # Here just add every possible instance (this is mainly for instantiating E∀)

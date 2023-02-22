@@ -56,6 +56,25 @@ class PredicateFormula(Formula):
     ...                         PredicateFormula(['∧', ['A'], ['B']]),
     ...                         PredicateFormula(['∧', ['B'], ['A']]))
     ['∧', ['Q', 'x'], ['P', 'x']]
+
+    You can also upgrade a propositional formula into a predicate formula using the ``logics.utils.upgrade`` module.
+    Useful especially for defining predicate systems from propositional systems (see e.g.,
+    ``logics.instances.predicate.natural_deduction``)
+
+    >>> from logics.classes.propositional import Formula
+    >>> from logics.utils.upgrade import upgrade_to_predicate_formula
+    >>> f = Formula(['~', ['A']])
+    >>> type(f)
+    <class 'logics.classes.propositional.formula.Formula'>
+    >>> f2 = upgrade_to_predicate_formula(f)
+    >>> f2
+    ['~', ['A']]
+    >>> type(f2)
+    <class 'logics.classes.predicate.formula.PredicateFormula'>
+    >>> type(f2[1])
+    <class 'logics.classes.predicate.formula.PredicateFormula'>
+    >>> type(f)  # The original is unaffected, the function returns a new entity
+    <class 'logics.classes.propositional.formula.Formula'>
     """
     @property
     def is_atomic(self):
@@ -233,7 +252,26 @@ class PredicateFormula(Formula):
         return not self.is_closed(language)
 
     def individual_constants_inside(self, language, ind_cts=None):
-        """Returns a set of the individual constants that the formula contains"""
+        """Returns a set of the individual constants that the formula contains
+
+        Parameters
+        ----------
+        language: logics.classes.predicate.language.PredicateLanguage or logics.classes.predicate.language.InfinitePredicateLanguage
+            A predicate language
+        ind_cts: NoneType
+            Internal, you should not alter this value
+
+        Examples
+        --------
+        >>> from logics.classes.predicate import PredicateFormula
+        >>> from logics.instances.predicate.languages import classical_function_language
+        >>> PredicateFormula(['P', 'a']).individual_constants_inside(classical_function_language)
+        {'a'}
+        >>> PredicateFormula(['R', 'a', ('f', 'b')]).individual_constants_inside(classical_function_language)
+        {'a', 'b'}
+        >>> PredicateFormula(['∀', 'x', ['P', 'x']]).individual_constants_inside(classical_function_language)
+        set()
+        """
         if ind_cts is None:
             ind_cts = set()
 
@@ -268,7 +306,7 @@ class PredicateFormula(Formula):
         raise ValueError(f"Incorrect term {term}")
 
     def contains_string(self, string):
-        """Determines if a formula constains a given string (useful, e.g., checking arbitrary cts in natural deduction),
+        """Determines if a formula constains a given language item (useful, for various things internally),
         excluding connectives and base language
 
         Examples
@@ -287,6 +325,8 @@ class PredicateFormula(Formula):
         False
         >>> f.contains_string('f')
         True
+        >>> f.contains_string('f(b)')  # Looks at the actual parsed formula, not the unparsed one above
+        False
         """
         if self.is_atomic:
             for term in self:  # the relation itself is counted as a term here

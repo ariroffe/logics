@@ -14,10 +14,16 @@ Abstract/logical languages:
 
 .. data:: logics.instances.predicate.languages.classical_predicate_language
 
-   Finite language, with constants `a`, `b`, `c`, `d`; Variables `x`, `y`, `z`;
-   Predicate letters `P` (1), `Q` (1), `R` (2), `S` (3); Predicate variables `X` (1), `Y` (1), `Z` (2);
-   Metavariables `A`, `B`, `C`; Sentential constants `⊥`, `⊤`;
-   Constants `~`, `∧`, `∨`, `→`, `↔` and Quantifiers `∀`, `∃`.
+   Finite language, with constants `a`, `b`, `c`, `d`, `e`;
+   Variables `x`, `y`, `z`;
+   Predicate letters `P` (1), `Q` (1), `R` (2), `S` (3), `M` (1), `N` (1), `T` (2);
+   Predicate variables `X` (1), `Y` (1), `Z` (2);
+   Sentential constants `⊥`, `⊤`;
+   Constants `~`, `∧`, `∨`, `→`, `↔`;
+   Quantifiers `∀`, `∃`;
+   Sentential Metavariables `A`, `B`, `C`;
+   Individual Constant Metavariables `α`, `β`, `γ`, `δ`, `ε`
+   and Variable Metavariables `χ`, `ψ`, `ω`.
 
 .. data:: logics.instances.predicate.languages.classical_infinite_predicate_language
 
