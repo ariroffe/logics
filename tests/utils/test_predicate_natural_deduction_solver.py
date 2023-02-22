@@ -281,6 +281,7 @@ class TestPredicateNaturalDeductionSolver(unittest.TestCase):
                 self.fail(f"{e} is not a well formed inference")
 
         # Try to solve them
+        counter = 1
         for e in parsed_preset_exercises:
             try:
                 solution = solver.solve(e)
@@ -294,3 +295,6 @@ class TestPredicateNaturalDeductionSolver(unittest.TestCase):
                 print("\nErrors: ", error_list)
                 self.fail(f"Derivation for inference {parser.unparse(e)} is incorrect")
 
+            # print('\n', f'Exercise {counter}.', parser.unparse(e))
+            # solution.print_derivation(parser)
+            # counter+= 1

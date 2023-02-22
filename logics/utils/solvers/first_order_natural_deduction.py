@@ -35,10 +35,8 @@ class FirstOrderNaturalDeductionSolver(NaturalDeductionSolver):
         return super()._get_formulae_to_add(rule_conclusion, subst_dict)
 
     @staticmethod
-    def get_arbitrary_constant(language, derivation):
-        """Given a derivation, returns an individual constant that is arbitrary up to the last step
-
-        For now, returns something completely new to the derivation (easier)"""
+    def get_new_constant(language, derivation):
+        """Given a derivation, returns an individual constant that is completely new to the derivation"""
         possible_ind_constants = copy(language.individual_constants)
         for step in derivation:
             for ind_constant in reversed(possible_ind_constants):  # loop it in reverse bc we are changing the bound
@@ -52,7 +50,7 @@ class FirstOrderNaturalDeductionSolver(NaturalDeductionSolver):
         # Simply add an abritrary ind constant as an instance of α and then call the super method
         if hardcoded_derivation_step.contains_string('[α/χ]A'):
             if 'α' not in subst_dict:
-                arbitrary_ct = self.get_arbitrary_constant(self.language, derivation)
+                arbitrary_ct = self.get_new_constant(self.language, derivation)
                 if arbitrary_ct is None:
                     raise SolverError(f'Could not find arbitrary constant for step {len(derivation)}')
                 subst_dict['α'] = arbitrary_ct
