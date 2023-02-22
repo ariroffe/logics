@@ -91,7 +91,7 @@ class TestPredicateNaturalDeductionSolver(unittest.TestCase):
         """, natural_deduction=True)
         self.assertEqual(new_deriv, solution)
 
-    def test_get_arbitrary_constant(self):
+    def test_get_new_constant(self):
         deriv = parser.parse_derivation("""
             P(a); premise; []; []
             P(b); premise; []; []
@@ -99,11 +99,11 @@ class TestPredicateNaturalDeductionSolver(unittest.TestCase):
             ~∀x (P(x) ∧ P(c)); premise; []; []
             ~∃x (P(d)) ∧ P(e); premise; []; []
         """, natural_deduction=True)
-        self.assertEqual(solver.get_arbitrary_constant(solver.language, deriv[:0]), 'a')
-        self.assertEqual(solver.get_arbitrary_constant(solver.language, deriv[:1]), 'b')
-        self.assertEqual(solver.get_arbitrary_constant(solver.language, deriv[:2]), 'c')
-        self.assertEqual(solver.get_arbitrary_constant(solver.language, deriv[:-1]), 'd')
-        self.assertIs(solver.get_arbitrary_constant(solver.language, deriv), None)
+        self.assertEqual(solver.get_new_constant(solver.language, deriv[:0]), 'a')
+        self.assertEqual(solver.get_new_constant(solver.language, deriv[:1]), 'b')
+        self.assertEqual(solver.get_new_constant(solver.language, deriv[:2]), 'c')
+        self.assertEqual(solver.get_new_constant(solver.language, deriv[:-1]), 'd')
+        self.assertIs(solver.get_new_constant(solver.language, deriv), None)
 
     def test_replace_derived_rules(self):
         # NegUniv
@@ -119,11 +119,11 @@ class TestPredicateNaturalDeductionSolver(unittest.TestCase):
             ∃x (~P(x)); I∃; [2]; [1, 2]
             ⊥; E~; [1, 3]; [1, 2]
             ~~P(a); I~; [2, 4]; [1]
-            P(a); DN; [5]; [1]
+            P(a); ~~; [5]; [1]
             ∀x (P(x)); I∀; [6]; [1]
-            ⊥; E~; [1, 3]; [1]
+            ⊥; E~; [0, 7]; [1]
             ~~∃x (~P(x)); I~; [1, 8]; []
-            ∃x (~P(x)); DN; [9]; []
+            ∃x (~P(x)); ~~; [9]; []
         """, natural_deduction=True)
         self.assertEqual(new_deriv, solution)
 

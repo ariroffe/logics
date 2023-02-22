@@ -56,8 +56,8 @@ class TestLanguageFormulaClasses(unittest.TestCase):
         self.assertEqual(cl_language.constants(1), {'~'})
         self.assertEqual(cl_language.constants(2), {'∧', '∨', '→', '↔'})
         self.assertEqual(cl_language.quantifiers, ['∀', '∃'])
-        self.assertEqual(cl_language.predicates(), {'P', 'Q', 'R', 'S'})
-        self.assertEqual(cl_language.predicates(1), {'P', 'Q'})
+        self.assertEqual(cl_language.predicates(), {'P', 'Q', 'R', 'S', 'M', 'N', 'T'})
+        self.assertEqual(cl_language.predicates(1), {'P', 'Q', 'M', 'N'})
 
     def test_arity(self):
         self.assertEqual(cl_language.arity('~'), 1)
