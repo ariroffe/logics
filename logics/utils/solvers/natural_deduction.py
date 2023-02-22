@@ -594,11 +594,19 @@ class ReductioHeuristic(Heuristic):
     def apply_heuristic(self, derivation, goal, solver, tried_existentials):
         deriv1 = deepcopy(derivation)
 
-        # Add the negation of the goal as a supposition
+        # Add the negation of the goal as a supposition (if the goal already is a negation, remove that negation)
         prev_open_sups = solver._get_current_open_sups(derivation)
         new_open_sups = prev_open_sups + [len(derivation)]
-        deriv1.append(NaturalDeductionStep(content=self.formula_class(['~', goal]), justification='supposition',
-                                           on_steps=[], open_suppositions=copy(new_open_sups)))
+        if goal.main_symbol != '~':
+            goal_is_negation = False
+            supposition = self.formula_class(['~', goal])
+            deriv1.append(NaturalDeductionStep(content=supposition, justification='supposition',
+                                               on_steps=[], open_suppositions=copy(new_open_sups)))
+        else:
+            goal_is_negation = True
+            supposition = goal[1]
+            deriv1.append(NaturalDeductionStep(content=supposition, justification='supposition',
+                                               on_steps=[], open_suppositions=copy(new_open_sups)))
 
         # Solve for falsum
         new_goal = self.formula_class(['⊥'])
@@ -608,18 +616,27 @@ class ReductioHeuristic(Heuristic):
         # falsum, and therefore it just returned. We need to repeat falsum to close it.
         if len(deriv1) == len(derivation)+1:
             falsum_step = solver._get_step_of_formula(new_goal, deriv1, prev_open_sups)
-            deriv1.append(NaturalDeductionStep(content=goal[2], justification='repetition',
+            deriv1.append(NaturalDeductionStep(content=self.formula_class(['⊥']), justification='repetition',
                                                on_steps=[falsum_step],
                                                open_suppositions=copy(new_open_sups)))
 
-        deriv1.append(NaturalDeductionStep(content=self.formula_class(['~', ['~', goal]]),
-                                           justification="I~",
-                                           on_steps=[len(derivation),  # where we introduced the supposition
-                                                     len(deriv1)-1],
-                                           open_suppositions=copy(prev_open_sups)))
-        deriv1.append(NaturalDeductionStep(content=goal, justification="~~",
-                                           on_steps=[len(deriv1)- 1],
-                                           open_suppositions=copy(prev_open_sups)))
+        if not goal_is_negation:
+            # If the goal was not a negation, we supposed ~goal, so have to conclude ~~goal and then apply DN
+            deriv1.append(NaturalDeductionStep(content=self.formula_class(['~', ['~', goal]]),
+                                               justification="I~",
+                                               on_steps=[len(derivation),  # where we introduced the supposition
+                                                         len(deriv1)-1],
+                                               open_suppositions=copy(prev_open_sups)))
+            deriv1.append(NaturalDeductionStep(content=goal, justification="~~",
+                                               on_steps=[len(deriv1)- 1],
+                                               open_suppositions=copy(prev_open_sups)))
+        else:
+            # If the goal was ~A, we supposed A, and we just need to conclude ~A
+            deriv1.append(NaturalDeductionStep(content=goal, justification="I~",
+                                               on_steps=[len(derivation),  # where we introduced the supposition
+                                                         len(deriv1) - 1],
+                                               open_suppositions=copy(prev_open_sups)))
+
         return deriv1
 
 

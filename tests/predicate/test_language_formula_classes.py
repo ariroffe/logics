@@ -106,6 +106,15 @@ class TestLanguageFormulaClasses(unittest.TestCase):
         self.assertFalse(f.contains_string('y'))
         self.assertTrue(f.contains_string('f'))
 
+    def test_individual_constants_inside(self):
+        self.assertEqual(parser.parse("P(a)").individual_constants_inside(cl_language), {'a'})
+        self.assertEqual(parser.parse("R(a,b)").individual_constants_inside(cl_language), {'a', 'b'})
+        self.assertEqual(parser.parse("R(x,b)").individual_constants_inside(cl_language), {'b'})
+        self.assertEqual(parser.parse("R(a,f(b))").individual_constants_inside(self.function_language), {'a', 'b'})
+        self.assertEqual(parser.parse("forall x (P(x))").individual_constants_inside(self.function_language), set())
+        f = parser.parse("forall x (P(x) or P(c)) and ~R(a, f(b))")
+        self.assertEqual(f.individual_constants_inside(cl_language), {'a', 'b', 'c'})
+
     def test_is_well_formed(self):
         self.assertTrue(self.function_language.is_well_formed(self.a1))
         self.assertTrue(self.function_language.is_well_formed(self.a2))

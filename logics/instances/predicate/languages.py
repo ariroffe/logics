@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from logics.classes.predicate.language import PredicateLanguage, InfinitePredicateLanguage, TruthPredicateLanguage
 
 # Classical predicate logic
@@ -8,7 +10,7 @@ variable_metavariables = ['χ', 'ψ', 'ω']
 quantifiers = ['∀', '∃']
 metavariables = ['A', 'B', 'C', 'D', 'E']  # These are formula metavariables
 constant_arity_dict = {'~': 1, '∧': 2, '∨': 2, '→': 2, '↔': 2}
-predicate_letters = {'P': 1, 'Q': 1, 'R': 2, 'S': 3}
+predicate_letters = {"M": 1, "N": 1, 'P': 1, 'Q': 1, 'R': 2, 'S': 3, "T": 2}
 predicate_variables = {'W': 1, 'X': 1, 'Y': 1, 'Z': 2}  # These can be quantified over in second order languages
 sentential_constants = ['⊥', '⊤']
 
@@ -22,6 +24,13 @@ classical_predicate_language = PredicateLanguage(individual_constants=individual
                                                  predicate_letters=predicate_letters,
                                                  predicate_variables=predicate_variables,
                                                  sentential_constants=sentential_constants)
+
+# Predicate language for natural deduction: no biconditional, no verum, no second order stuff
+natural_deduction_predicate_language = deepcopy(classical_predicate_language)
+del natural_deduction_predicate_language.constant_arity_dict['↔']
+natural_deduction_predicate_language.sentential_constants = ['⊥']
+natural_deduction_predicate_language.predicate_variables = {}
+
 classical_infinite_predicate_language = InfinitePredicateLanguage(individual_constants=individual_constants,
                                                                   variables=variables,
                                                                   individual_metavariables=individual_metavariables,

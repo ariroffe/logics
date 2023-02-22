@@ -1,6 +1,6 @@
 from copy import copy, deepcopy
 
-from logics.instances.predicate.languages import classical_predicate_language as cl_language
+from logics.instances.predicate.languages import natural_deduction_predicate_language as cl_language
 from logics.utils.solvers.natural_deduction import (
     NaturalDeductionSolver,
     standard_simplification_rules,
@@ -16,7 +16,7 @@ from logics.utils.solvers.natural_deduction import (
 from logics.classes.predicate.proof_theories import Derivation
 from logics.classes.predicate.proof_theories.natural_deduction import NaturalDeductionStep
 from logics.classes.predicate import PredicateFormula, Inference
-from logics.utils.etc.upgrade import upgrade_inference, upgrade_derivation
+from logics.utils.upgrade.upgrade import upgrade_inference, upgrade_derivation
 
 # ----------------------------------------------------------------------------
 # ----------------------------------------------------------------------------
@@ -141,6 +141,26 @@ class ExistentialEliminationHeuristic(Heuristic):
                 return step_idx
         return None
 
+    def get_arbitrary_constant(self, derivation, existential, goal):
+        possible_arbitrary_cts = set(self.language.individual_constants)
+        # We first need to remove the cts that are in the existential and the goal
+        possible_arbitrary_cts -= existential.individual_constants_inside(self.language)
+        possible_arbitrary_cts -= goal.individual_constants_inside(self.language)
+
+        # Next look at every step in the derivation and remove the constants that are in premises and open suppositions
+        open_sups = derivation[-1].open_suppositions  # we can assume the derivation is not empty
+        for step in derivation:
+            if step.justification == 'premise' or (step.justification == 'supposition' and
+                    not FirstOrderNaturalDeductionSolver._is_in_closed_supposition(step.open_suppositions, open_sups)):
+                possible_arbitrary_cts -= step.content.individual_constants_inside(self.language)
+            # If we run out of possible cts make an early exit
+            if not possible_arbitrary_cts:
+                break
+
+        if not possible_arbitrary_cts:
+            return None
+        return sorted(possible_arbitrary_cts)[0]
+
     def is_applicable(self, goal):
         return True  # we need to check if applicable below anyway, so let's not repeat the check here
 
@@ -157,7 +177,7 @@ class ExistentialEliminationHeuristic(Heuristic):
         # Get an arbitrary individual constant
         # Need to check that the constant is not in the consequent as well, so lets add it at the end and then remove it
         deriv1.append(NaturalDeductionStep(content=goal, justification='premise'))
-        arbitrary_ct = FirstOrderNaturalDeductionSolver.get_arbitrary_constant(self.language, deriv1)
+        arbitrary_ct = self.get_arbitrary_constant(deriv1, existential, goal)
         if arbitrary_ct is None:
             raise SolverError('Could not find an arbtitrary constant to work with the existential heuristic')
         del deriv1[-1]

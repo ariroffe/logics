@@ -8,7 +8,7 @@ from logics.classes.predicate.proof_theories import (
 )
 from logics.instances.predicate.languages import classical_infinite_predicate_language
 from logics.instances.propositional.natural_deduction import classical_primitive_rules
-from logics.utils.etc.upgrade import upgrade_derivation
+from logics.utils.upgrade.upgrade import upgrade_derivation
 
 
 first_order_primitive_rules = deepcopy(classical_primitive_rules)

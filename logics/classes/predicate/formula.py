@@ -232,6 +232,41 @@ class PredicateFormula(Formula):
         """
         return not self.is_closed(language)
 
+    def individual_constants_inside(self, language, ind_cts=None):
+        """Returns a set of the individual constants that the formula contains"""
+        if ind_cts is None:
+            ind_cts = set()
+
+        # Atomic
+        if self.is_atomic and len(self) > 1:  # if len is 1, it is a sentential mv, has no atomics
+            for term in self[1:]:
+                ind_cts |= self._term_individual_constants_inside(term, language)
+
+        # Molecular
+        else:
+            # Check the bound of quantified formulae
+            if (self[0] == "∀" or self[0] == "∃") and self[2] == "∈":
+                ind_cts |= self._term_individual_constants_inside(self[3], language)
+
+            # Add the constants in the arguments
+            for arg in self.arguments(language.quantifiers):
+                ind_cts |= arg.individual_constants_inside(language, ind_cts)
+
+        return ind_cts
+
+    def _term_individual_constants_inside(self, term, language, ind_cts=None):
+        if type(term) == str:
+            if term in language.individual_constants:
+                return {term}
+            return set()
+        elif type(term) == tuple:
+            if ind_cts is None:
+                ind_cts = set()
+            for subterm in term:
+                ind_cts |= self._term_individual_constants_inside(subterm, language, ind_cts)
+            return ind_cts
+        raise ValueError(f"Incorrect term {term}")
+
     def contains_string(self, string):
         """Determines if a formula constains a given string (useful, e.g., checking arbitrary cts in natural deduction),
         excluding connectives and base language

@@ -1,7 +1,7 @@
 import unittest
 
 from logics.classes.predicate import PredicateFormula
-
+from logics.classes.exceptions import NotWellFormed, SolverError
 from logics.utils.parsers.predicate_parser import classical_predicate_parser as parser
 from logics.utils.solvers.first_order_natural_deduction import (
     Derivation,
@@ -206,6 +206,24 @@ class TestPredicateNaturalDeductionSolver(unittest.TestCase):
         self.assertEqual(existential_elim_heuristic.get_first_untried_existential_idx(deriv, [0]), 3)
         self.assertEqual(existential_elim_heuristic.get_first_untried_existential_idx(deriv, [0, 3]), None)
 
+        # get_arbitrary_constant method
+        deriv = parser.parse_derivation("""
+            ∃x (P(x) → P(a)); premise; []; []
+            P(b); supposition; []; [1]
+            P(c); ~~; []; [1]
+            ∃y (P(y)); I∃; [2]; []
+        """, natural_deduction=True)
+        self.assertEqual(existential_elim_heuristic.get_arbitrary_constant(deriv, parser.parse('∃y (P(y))'),
+                                                                           parser.parse('∀x (P(x))')), 'b')
+        self.assertEqual(existential_elim_heuristic.get_arbitrary_constant(deriv[:-1], parser.parse('∃y (P(y))'),
+                                                                           parser.parse('∀x (P(x))')), 'c')
+        self.assertEqual(existential_elim_heuristic.get_arbitrary_constant(deriv, parser.parse('∃y (P(y) ∨ P(b))'),
+                                                                           parser.parse('∀x (P(x))')), 'c')
+        self.assertEqual(existential_elim_heuristic.get_arbitrary_constant(deriv, parser.parse('∃y (P(y))'),
+                                                                           parser.parse('∀x (P(x) ∨ P(b))')), 'c')
+        self.assertIs(existential_elim_heuristic.get_arbitrary_constant(deriv[:-1], parser.parse('∃y (P(c))'),
+                                                                        parser.parse('∀x (P(d) ∨ P(e))')), None)
+
         # Test with an inference
         inf = parser.parse('∃x (P(x)), P(a) / ∃y (P(y))')
         derivation = Derivation([NaturalDeductionStep(content=p, justification='premise') for p in inf.premises])
@@ -219,3 +237,53 @@ class TestPredicateNaturalDeductionSolver(unittest.TestCase):
             ∃y (P(y)); E∃; [0, 4]; []
         """, natural_deduction=True)
         self.assertEqual(derivation, deriv)
+
+    def test_predicate_solver(self):
+        preset_excercises = [
+            '∀x (P(x)) / ∀y (P(y))',
+            '∃x (P(x)) / ∃y (P(y))',
+            '∀x (∀y (R(x,y))), P(a) / ∀x (R(x,x))',
+            '∃y (P(y)), R(a,b) / ∃x (P(x) ∨ Q(x))',
+            '∀x (P(x)) / ~∃x (~P(x))',
+            '∃x (P(x)) / ~∀x (~P(x))',
+            '∀x (~P(x)) / ~∃x (P(x))',
+            '∃x (~P(x)) / ~∀x (P(x))',
+            '~∀x (P(x)) / ∃x (~P(x))',
+            '~∃x (P(x)) / ∀x (~P(x))',
+            '∀x (∀y (R(x,y))) / ∀y (∀x (R(x,y)))',
+            '∃x (∃y (R(x,y))) / ∃y (∃x (R(x,y)))',
+            '∃x (∀y (R(x,y))) / ∀y (∃x (R(x,y)))',
+            '∀x (~P(x)) / ∀y (P(y) → Q(y))',
+            '/ ∀x (P(x) ∨ ~P(x))',
+            '∀x (P(x) → Q(x)), ∀x (Q(x) → M(x)) / ∀x (P(x) → M(x))',
+            '∀x (P(x)) ∧ ∀x (Q(x)), ∀x (P(x) → M(x)) / ∀x (M(x))',
+            '∀x (P(x) → Q(x)), ∀x (~N(x) → ~Q(x)) / ∀x (P(x) → (N(x) ∨ M(x)))',
+            '∀x (R(x,a)), ∃x (R(x,b)) / ∃x (∃y (R(x,a) ∧ R(y,b)))',
+            '∀x (P(x) ∧ ~Q(x)) / ∀y (~(P(y) → Q(y)))',
+            '∃x (~(P(x) → Q(x))) / ~∀x (P(x) → Q(x))',
+            '∀x (~~(P(x) → Q(x))) / ~∃x (P(x) ∧ ~Q(x))',
+            '∀x (P(x) → Q(x)), ∀x (Q(x) → ~M(x)) / ~∃x (~(P(x) → ~M(x)))',
+            '~∃x (~(~P(x) ∨ M(x))), ∃x (~M(x)) / ∃x (~P(x))',
+            '∀x (M(x) → ~Q(x)), ∀x (P(x) → Q(x)) / ∀x (~P(x) ∨ ~M(x))',
+            '∀x (P(x)) → ∀x (Q(x)), ~Q(a) / ~∀x (P(x))',
+            '∀x (P(x) → Q(x)), ∀x (~M(x) → ~Q(x)), ∀x (~M(x)) / ∃x (~P(x))',
+            '∀x (M(x) → Q(x)), ∀x (~(P(x) ∨ ~M(x))) / ∃x (~P(x) ∧ Q(x))',
+            '∀x (M(x) → ~Q(x)), ∃x (~(~P(x) ∨ ~Q(x))) / ∃x (P(x) ∧ ~M(x))',
+            '∀x (P(x) → (Q(x) ∨ M(x))), ∃x (~Q(x) ∧ P(x)) / ∃x (M(x))'
+        ]
+        # Check that the above are well-formed
+        parsed_preset_exercises = list()
+        for e in preset_excercises:
+            try:
+                parsed_preset_exercises.append(parser.parse(e))
+            except NotWellFormed:
+                self.fail(f"{e} is not a well formed inference")
+
+        # Try to solve them
+        for e in parsed_preset_exercises:
+            try:
+                solution = solver.solve(e)
+            except SolverError as err:
+                self.fail(f"Could not solve inference {parser.unparse(e)}")
+
+        # Chequear contra el nd_system
