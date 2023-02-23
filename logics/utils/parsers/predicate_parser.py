@@ -280,9 +280,10 @@ class PredicateParser(StandardParser):
         if formula.main_symbol in self.language.quantifiers:
             # Bounded
             if formula[2] == '∈':
-                return f'{formula[0]}{formula[1]} ∈ {self._unparse_term(formula[3])} ({self._unparse_formula(formula[4], remove_external_parentheses=True)})'
+                return f'{formula[0]}{formula[1]} ∈ {self._unparse_term(formula[3])} ' \
+                       f'{self._unparse_formula(formula[4], remove_external_parentheses=False)}'
             # Unbounded
-            return f'{formula[0]}{formula[1]} ({self._unparse_formula(formula[2], remove_external_parentheses=True)})'
+            return f'{formula[0]}{formula[1]} {self._unparse_formula(formula[2], remove_external_parentheses=False)}'
 
         # Non-quantified formula
         return super()._unparse_molecular(formula, remove_external_parentheses)
