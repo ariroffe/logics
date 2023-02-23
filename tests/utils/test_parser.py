@@ -191,6 +191,14 @@ class TestPropositionalParser(unittest.TestCase):
 
 class TestPredicateParser(unittest.TestCase):
     def test_parse_formula(self):
+        # Sentential metavariable
+        f = classical_predicate_parser.parse('A')
+        self.assertEqual(f, PredicateFormula(['A']))
+        f = classical_predicate_parser.parse('A ∧ B')
+        self.assertEqual(f, PredicateFormula(['∧', ['A'], ['B']]))
+        f = classical_predicate_parser.parse('A ∧ P(a)')
+        self.assertEqual(f, PredicateFormula(['∧', ['A'], ['P', 'a']]))
+
         # Standard predicate formulae
         f = classical_predicate_parser.parse('P(a)')
         self.assertEqual(f, PredicateFormula(['P', 'a']))

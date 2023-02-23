@@ -108,8 +108,8 @@ class PredicateParser(StandardParser):
         return True
 
     def _parse_atomic(self, string):
-        # First check if it is a sentential constant
-        if self.language.is_sentential_constant_string(string):
+        # First check if it is a sentential constant or a sentential metavariable
+        if self.language.is_sentential_constant_string(string) or string in self.language.metavariables:
             return PredicateFormula([string])
 
         # Check for an infix predicate
