@@ -183,6 +183,8 @@ class PredicateParser(StandardParser):
         raise NotWellFormed(f'String {string} is not a valid term')
 
     def _parse_infix_term(self, string):
+        if not string:
+            return None
         # If not between parentheses, its something of the form 's(0+0)' and not '(0+0)'
         if string[0] != '(' or string[-1] != ')':
             return None
@@ -212,20 +214,23 @@ class PredicateParser(StandardParser):
 
                 # See if the quantifier is bounded and parse the bound
                 bounded = False
-                formula_opening_parenthesis_index = parser_utils.get_last_opening_parenthesis(string)
-                if formula_opening_parenthesis_index is None:
-                    raise NotWellFormed(f'Quantified formula in {string} must come between parentheses')
-                elif string[current_index] == '∈':
+                if string[current_index] == '∈':
                     bounded = True
                     current_index += 1
-                    unparsed_term = string[current_index:formula_opening_parenthesis_index]
-                    parsed_term = self.parse_term(unparsed_term, replace=False)
-                # We have a non bounded-formula, the parenthesis must come immediately after the variable
-                elif formula_opening_parenthesis_index != current_index:
-                    raise NotWellFormed(f'Quantified formula in {string} must come between parentheses')
+                    bound_endind_index = None
+                    for char_index in range(current_index+1, len(string)):
+                        try:
+                            parsed_term = self.parse_term(string[current_index:char_index], replace=False)
+                            bound_endind_index = char_index - 1
+                        except NotWellFormed:
+                            pass
+                    if bound_endind_index is None:
+                        raise NotWellFormed("Incorrect bound for a quantifier")
+                    else:
+                        current_index = bound_endind_index + 1
 
                 # Lastly, parse the formula
-                unparsed_formula = string[formula_opening_parenthesis_index+1:-1]
+                unparsed_formula = string[current_index:]
                 parsed_formula = self.parse(unparsed_formula)
 
                 if not bounded:
