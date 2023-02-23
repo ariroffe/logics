@@ -63,7 +63,7 @@ class PredicateParser(StandardParser):
     >>> type(f)
     <class 'logics.classes.predicate.formula.PredicateFormula'>
     >>> real_number_arithmetic_parser.unparse(f)
-    '1 + 1 = 2 ∨ ∃x (x + 1 = 2)'
+    '1 + 1 = 2 ∨ ∃x x + 1 = 2'
     >>> # Infix predicates and function symbols cannot be given in prefix notation
     >>> real_number_arithmetic_parser.parse("=(+(1,1),2)")
     Traceback (most recent call last):
