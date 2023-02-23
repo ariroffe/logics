@@ -16,7 +16,7 @@ class PredicateParser(StandardParser):
     * Infix predicate formuale must come without outer parentheses, e.g. ``"(a = b)"`` is not well formed
     * Outermost parentheses in infix function terms can be ommited, e.g. both ``"0+(0+0)"`` and ``"(0+(0+0))"`` are ok
     * Infix predicates and function symbols CANNOT be given in prefix notation
-    * Quantified formulae come in format ∀x (A) or ∀x ∈ T (A) - Always add parentheses to the quantified formula
+    * Quantified formulae come in format ∀x A or ∀x ∈ T A - Do not add extra parentheses to the quantified formula
 
     Parameters
     ----------
@@ -44,20 +44,20 @@ class PredicateParser(StandardParser):
     >>> from logics.instances.predicate.languages import real_number_arithmetic_language
     >>> from logics.utils.parsers.predicate_parser import PredicateParser
     >>> replacement_dict = {
-    ...                         '¬': '~', 'not ': '~',
-    ...                         '&': '∧', ' and ': '∧',  # notice the spaces before and after 'and'
-    ...                         'v': '∨',  ' or ': '∨',
-    ...                         ' then ': '→', '-->': '→', 'if ': '',  # 'if p then q' it will convert to 'p then q'
-    ...                         ' iff ': '↔', '<->': '↔',
-    ...                         'forall ': '∀', 'exists ': '∃', ' in ': '∈'
-    ...                     }
+    ...     '¬': '~', 'not ': '~',
+    ...     '&': '∧', ' and ': '∧',  # notice the spaces before and after 'and'
+    ...     'v': '∨',  ' or ': '∨',
+    ...     ' then ': '→', '-->': '→', 'if ': '',  # 'if p then q' it will convert to 'p then q'
+    ...     ' iff ': '↔', '<->': '↔',
+    ...     'forall ': '∀', 'exists ': '∃', ' in ': '∈'
+    ... }
     >>> real_number_arithmetic_parser = PredicateParser(language=real_number_arithmetic_language,
     ...                                                 parse_replacement_dict=replacement_dict,
     ...                                                 infix_cts=['∧', '∨', '→', '↔'],
     ...                                                 infix_pred=['=', '<', '>'], infix_func=['+', '*', '**'])
     >>> real_number_arithmetic_parser.parse("0.5 + 0.5 = 1")
     ['=', ('+', '0.5', '0.5'), '1']
-    >>> f = real_number_arithmetic_parser.parse("1 + 1 = 2 or exists x (x + 1 = 2)")
+    >>> f = real_number_arithmetic_parser.parse("1 + 1 = 2 or exists x x + 1 = 2")
     >>> f
     ['∨', ['=', ('+', '1', '1'), '2'], ['∃', 'x', ['=', ('+', 'x', '1'), '2']]]
     >>> type(f)
@@ -68,7 +68,7 @@ class PredicateParser(StandardParser):
     >>> real_number_arithmetic_parser.parse("=(+(1,1),2)")
     Traceback (most recent call last):
     ...
-    IndexError: string index out of range
+    logics.classes.exceptions.NotWellFormed: String  is not a valid term
 
     Examples with a predefined parser for a language with prefix predicates and function symbols (see below for
     more predefined instances):
@@ -76,6 +76,8 @@ class PredicateParser(StandardParser):
     >>> from logics.utils.parsers.predicate_parser import classical_predicate_parser
     >>> classical_predicate_parser.parse("R(a, b) or P(f(a))")
     ['∨', ['R', 'a', 'b'], ['P', ('f', 'a')]]
+    >>> classical_predicate_parser.parse("forall x ~P(x)")
+    ['∀', 'x', ['~', ['P', 'x']]]
     >>> classical_predicate_parser.parse("forall x in f(a) (if ~P(x) then P(x))")
     ['∀', 'x', '∈', ('f', 'a'), ['→', ['~', ['P', 'x']], ['P', 'x']]]
     """
@@ -313,13 +315,13 @@ class ArithmeticTruthParser(PredicateParser):
     >>> from logics.utils.parsers.parser_utils import godel_encode, godel_decode
     >>> from logics.utils.parsers.predicate_parser import ArithmeticTruthParser
     >>> replacement_dict = {
-    ...                         '¬': '~', 'not ': '~',
-    ...                         '&': '∧', ' and ': '∧',  # notice the spaces before and after 'and'
-    ...                         'v': '∨',  ' or ': '∨',
-    ...                         ' then ': '→', '-->': '→', 'if ': '',  # 'if p then q' it will convert to 'p then q'
-    ...                         ' iff ': '↔', '<->': '↔',
-    ...                         'forall ': '∀', 'exists ': '∃', ' in ': '∈'
-    ...                     }
+    ...     '¬': '~', 'not ': '~',
+    ...     '&': '∧', ' and ': '∧',  # notice the spaces before and after 'and'
+    ...     'v': '∨',  ' or ': '∨',
+    ...     ' then ': '→', '-->': '→', 'if ': '',  # 'if p then q' it will convert to 'p then q'
+    ...     ' iff ': '↔', '<->': '↔',
+    ...     'forall ': '∀', 'exists ': '∃', ' in ': '∈'
+    ... }
     >>> replacement_dict.update({
     ...     '⌜': 'quote(',
     ...     '⌝': ')'

@@ -312,7 +312,7 @@ class PredicateFormula(Formula):
         Examples
         --------
         >>> from logics.utils.parsers.predicate_parser import classical_predicate_parser as parser
-        >>> f = parser.parse("forall x (P(x)) and ~R(a, f(b))")
+        >>> f = parser.parse("forall x P(x) and ~R(a, f(b))")
         >>> f.contains_string('R')
         True
         >>> f.contains_string('a')

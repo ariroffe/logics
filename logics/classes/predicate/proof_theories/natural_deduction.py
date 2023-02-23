@@ -43,14 +43,14 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
     >>> from logics.utils.parsers.predicate_parser import classical_predicate_parser as parser
     >>> from logics.instances.predicate.natural_deduction import predicate_classical_natural_deduction_system as nd_system
     >>> deriv = parser.parse_derivation('''
-    ...     ∃x (R(x, a)); premise; []; []
-    ...     ∃y (∃x (R(x, y))); I∃; [0]; []
+    ...     ∃x R(x, a); premise; []; []
+    ...     ∃y ∃x R(x, y); I∃; [0]; []
     ... ''', natural_deduction=True)
     >>> nd_system.is_correct_application(deriv, 1, nd_system.rules['I∃'])
     True
     >>> deriv = parser.parse_derivation('''
     ...     P(a); premise; []; []
-    ...     ∀x (P(x)); I∀; [0]; []
+    ...     ∀x P(x); I∀; [0]; []
     ... ''', natural_deduction=True)
     >>> rule = nd_system.substitute_rule(deriv, 1, nd_system.rules['I∀'])  # to get a specific instance of the rule
     >>> is_correct, error = nd_system.check_arbitrary_constants(deriv, 1, rule)
@@ -59,11 +59,11 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
     >>> error
     "Constant 'a' is not arbitrary"
     >>> deriv = parser.parse_derivation('''
-    ...     ∃x (R(x, x)); premise; []; []
+    ...     ∃x R(x, x); premise; []; []
     ...     R(a, a); supposition; []; [1]
-    ...     ∃y (R(y, y)); I∃; [1]; [1]
-    ...     R(a, a) → ∃y (R(y, y)); I→; [1,2]; []
-    ...     ∃y (R(y, y)); E∃; [0, 3]; []
+    ...     ∃y R(y, y); I∃; [1]; [1]
+    ...     R(a, a) → ∃y R(y, y); I→; [1,2]; []
+    ...     ∃y R(y, y); E∃; [0, 3]; []
     ... ''', natural_deduction=True)
     >>> nd_system.is_correct_derivation(deriv)
     True
