@@ -212,6 +212,12 @@ class TestPredicateParser(unittest.TestCase):
         self.assertEqual(f, PredicateFormula(['∀', 'x', ['P', 'x']]))
         f = classical_predicate_parser.parse('∀x ~P(x)')
         self.assertEqual(f, PredicateFormula(['∀', 'x', ['~', ['P', 'x']]]))
+        f = classical_predicate_parser.parse('∀x ∀y R(x, y)')
+        self.assertEqual(f, PredicateFormula(['∀', 'x', ['∀', 'y', ['R', 'x', 'y']]]))
+        f = classical_predicate_parser.parse('∀x ∀y (P(x) and R(x, y))')
+        self.assertEqual(f, PredicateFormula(['∀', 'x', ['∀', 'y', ['∧', ['P', 'x'], ['R', 'x', 'y']]]]))
+        f = classical_predicate_parser.parse('∀x ∀y P(x) and R(x, y)')
+        self.assertEqual(f, PredicateFormula(['∧', ['∀', 'x', ['∀', 'y', ['P', 'x']]], ['R', 'x', 'y']]))
         self.assertRaises(NotWellFormed, classical_predicate_parser.parse, '∀x (P(x))')
         self.assertRaises(NotWellFormed, classical_predicate_parser.parse, '∃x ~(P(x))')
         f = classical_predicate_parser.parse('∀x (P(x) and R(x,y))')
@@ -251,6 +257,14 @@ class TestPredicateParser(unittest.TestCase):
         f = realnumber_arithmetic_parser.parse('1 + 1 = 2')
         self.assertEqual(f, PredicateFormula(['=', ('+', '1', '1'), '2']))
 
+        # Right now this is throwing NotWellFormed because it computes the bound as 11 and the formula as =1
+        # I'll leave it as a corner case, fixing it would require extensive modifications (treating spaces differently)
+        # f = realnumber_arithmetic_parser.parse('∀x ∈ 1 1=1')
+        # self.assertEqual(f, PredicateFormula(['∀', 'x', '∈', '1', ['=', '1', '1']]))
+        # Same with this
+        # f = realnumber_arithmetic_parser.parse('∀x1 1=1')
+        # self.assertEqual(f, PredicateFormula(['∀', 'x1', ['=', '1', '1']]))
+
     def test_unparse_formula(self):
         f = classical_predicate_parser.parse('P(a) ∧ R(a,b)')
         self.assertEqual(classical_predicate_parser.unparse(f), 'P(a) ∧ R(a, b)')
@@ -258,8 +272,8 @@ class TestPredicateParser(unittest.TestCase):
         self.assertEqual(classical_predicate_parser.unparse(f), 'P(f(f(x)))')
         f = classical_predicate_parser.parse('∀x (P(x) and R(x,y))')
         self.assertEqual(classical_predicate_parser.unparse(f), '∀x (P(x) ∧ R(x, y))')
-        f = classical_predicate_parser.parse('∀x ∈ a (P(x))')
-        self.assertEqual(classical_predicate_parser.unparse(f), '∀x ∈ a (P(x))')
+        f = classical_predicate_parser.parse('∀x ∈ a P(x)')
+        self.assertEqual(classical_predicate_parser.unparse(f), '∀x ∈ a P(x)')
         f = arithmetic_parser.parse('0 = 0 + 0')
         self.assertEqual(arithmetic_parser.unparse(f), '0 = 0 + 0')
         f = arithmetic_parser.parse('0=0+(0+0)')
