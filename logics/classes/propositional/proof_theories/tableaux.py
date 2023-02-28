@@ -934,8 +934,7 @@ class ManyValuedTableauxSystem(TableauxSystem):
 class IndexedTableauxSystem(ManyValuedTableauxSystem, TableauxSystem):
     """Class for propositional indexed tableaux.
 
-    Initializes nodes as the mvl tableaux system, the rest is identical to TableauxSystem except for the fast node is
-    closed condition
+    Initializes nodes as the ``ManyValuedTableauxSystem``, and has ``[(A, 1), (A, 0)]`` as a hardcoded closure rule.
     """
     fast_node_is_closed_enabled = True
 

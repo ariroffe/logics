@@ -16,6 +16,7 @@ Tableaux System
 
 .. autoclass:: logics.classes.propositional.proof_theories.tableaux.ManyValuedTableauxSystem
 
+.. autoclass:: logics.classes.propositional.proof_theories.tableaux.IndexedTableauxSystem
 
 Instances
 ^^^^^^^^^
@@ -28,6 +29,13 @@ Instances
        :language: python
        :lines: 11-95
 
+.. data:: logics.instances.propositional.tableaux.classical_indexed_tableaux_system
+
+    Indexed presentation of classical logic. Has the following rules:
+
+    .. literalinclude:: ../../../../logics/instances/propositional/tableaux.py
+       :language: python
+       :lines: 124-216
 
 .. data:: logics.instances.propositional.tableaux.FDE_tableaux_system
 .. data:: logics.instances.propositional.tableaux.LP_tableaux_system
@@ -37,13 +45,13 @@ Instances
 
     .. literalinclude:: ../../../../logics/instances/propositional/tableaux.py
        :language: python
-       :lines: 123-203
+       :lines: 245-325
 
     They only differ in their closure rules:
 
     .. literalinclude:: ../../../../logics/instances/propositional/tableaux.py
        :language: python
-       :lines: 218-227
+       :lines: 340-349
 
 
 Tableaux Solver
@@ -52,7 +60,7 @@ Tableaux Solver
 .. autoclass:: logics.utils.solvers.tableaux.TableauxSolver
    :members:
 
-.. autoclass:: logics.utils.solvers.tableaux.ManyValuedTableauxSolver
+.. autoclass:: logics.utils.solvers.tableaux.IndexedTableauxSolver
 
 
 Constructive Tree System
