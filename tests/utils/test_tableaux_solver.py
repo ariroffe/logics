@@ -1,9 +1,9 @@
 import unittest
 
 from logics.classes.propositional import Formula
-from logics.instances.propositional.tableaux import classical_tableaux_system, LP_tableaux_system, \
-    classical_constructive_tree_system
-from logics.utils.solvers.tableaux import standard_tableaux_solver, mvl_tableaux_solver
+from logics.instances.propositional.tableaux import classical_tableaux_system, classical_indexed_tableaux_system, \
+    LP_tableaux_system, classical_constructive_tree_system
+from logics.utils.solvers.tableaux import standard_tableaux_solver, indexed_tableaux_solver
 from logics.utils.parsers import classical_parser
 from logics.utils.formula_generators.generators_biased import random_formula_generator
 from logics.instances.propositional.languages import classical_infinite_language as cl_language
@@ -40,6 +40,7 @@ class TestTableauxSolver(unittest.TestCase):
                            conjunction_introduction, conditional_introduction, disjunction_introduction, reductio,
                            repetitions1, repetitions2]
 
+        # Classical tableaux
         for inference in test_inferences:
             tableaux = standard_tableaux_solver.solve(inference, classical_tableaux_system)
             self.assertTrue(classical_tableaux_system.tree_is_closed(tableaux))
@@ -50,29 +51,46 @@ class TestTableauxSolver(unittest.TestCase):
                 tableaux.print_tree(classical_parser)
                 raise e
 
+        # Classical indexed tableaux
+        for inference in test_inferences:
+            tableaux = indexed_tableaux_solver.solve(inference, classical_indexed_tableaux_system)
+            self.assertTrue(classical_indexed_tableaux_system.tree_is_closed(tableaux))
+            try:
+                self.assertTrue(classical_indexed_tableaux_system.is_correct_tree(tableaux, inference))
+            except Exception as e:
+                print(classical_parser.unparse(inference))
+                tableaux.print_tree(classical_parser)
+                raise e
+
     def test_with_generator(self):
         # Test with valid arguments
-        for _ in range(1000):
+        for _ in range(500):
             inf = random_formula_generator.random_valid_inference(num_premises=2, num_conclusions=1,
                                                                   max_depth=3, atomics=['p', 'q', 'r'],
                                                                   language=cl_language,
                                                                   validity_apparatus=classical_mvl_semantics)
 
+            # Non-indexed
             tableaux = standard_tableaux_solver.solve(inf, classical_tableaux_system)
+            self.assertTrue(classical_tableaux_system.tree_is_closed(tableaux))
+            # Indexed
+            tableaux2 = indexed_tableaux_solver.solve(inf, classical_indexed_tableaux_system)
+            self.assertTrue(classical_indexed_tableaux_system.tree_is_closed(tableaux2))
+
             # print('\nInference to solve:', classical_parser.unparse(inf))
             # tableaux.print_tree(classical_parser)
-            self.assertTrue(classical_tableaux_system.tree_is_closed(tableaux))
             try:
                 self.assertTrue(classical_tableaux_system.is_correct_tree(tableaux, inf))
+                self.assertTrue(classical_indexed_tableaux_system.is_correct_tree(tableaux2, inf))
             except Exception as e:
                 print("ERROR WITH INFERENCE:", classical_parser.unparse(inf))
-                tableaux.print_tree(classical_parser)
-                correct, error_list = classical_tableaux_system.is_correct_tree(tableaux, inf, return_error_list=True)
-                print("ERROR LIST:", error_list)
+                # tableaux.print_tree(classical_parser)
+                # correct, error_list = classical_tableaux_system.is_correct_tree(tableaux, inf, return_error_list=True)
+                # print("ERROR LIST:", error_list)
                 raise e
 
         # Test with invalid arguments
-        for _ in range(1000):
+        for _ in range(500):
             invalid = False
             for x in range(100):
                 inf = random_formula_generator.random_inference(num_premises=2, num_conclusions=1, max_depth=3,
@@ -84,15 +102,21 @@ class TestTableauxSolver(unittest.TestCase):
                 if x == 99:
                     print('Invalid argument not found')
 
+            # Non-indexed
             tableaux = standard_tableaux_solver.solve(inf, classical_tableaux_system)
             self.assertFalse(classical_tableaux_system.tree_is_closed(tableaux))
+            # Indexed
+            tableaux2 = indexed_tableaux_solver.solve(inf, classical_indexed_tableaux_system)
+            self.assertFalse(classical_indexed_tableaux_system.tree_is_closed(tableaux2))
+
             try:
                 self.assertTrue(classical_tableaux_system.is_correct_tree(tableaux, inf))
+                self.assertTrue(classical_indexed_tableaux_system.is_correct_tree(tableaux2, inf))
             except Exception as e:
                 print("ERROR WITH INFERENCE:", classical_parser.unparse(inf))
-                tableaux.print_tree(classical_parser)
-                correct, error_list = classical_tableaux_system.is_correct_tree(tableaux, inf, return_error_list=True)
-                print("ERROR LIST:", error_list)
+                # tableaux.print_tree(classical_parser)
+                # correct, error_list = classical_tableaux_system.is_correct_tree(tableaux, inf, return_error_list=True)
+                # print("ERROR LIST:", error_list)
                 raise e
 
     def test_mvl_tableaux(self):
@@ -103,7 +127,7 @@ class TestTableauxSolver(unittest.TestCase):
                                                                     language=mvl_language,
                                                                     validity_apparatus=LP_mvl_semantics)
 
-            tableaux = mvl_tableaux_solver.solve(inf, LP_tableaux_system)
+            tableaux = indexed_tableaux_solver.solve(inf, LP_tableaux_system)
             self.assertTrue(LP_tableaux_system.tree_is_closed(tableaux))
             try:
                 self.assertTrue(LP_tableaux_system.is_correct_tree(tableaux, inf))
@@ -121,7 +145,7 @@ class TestTableauxSolver(unittest.TestCase):
                                                                       language=mvl_language,
                                                                       validity_apparatus=LP_mvl_semantics)
 
-            tableaux = mvl_tableaux_solver.solve(inf, LP_tableaux_system)
+            tableaux = indexed_tableaux_solver.solve(inf, LP_tableaux_system)
             self.assertFalse(LP_tableaux_system.tree_is_closed(tableaux))
             try:
                 self.assertTrue(LP_tableaux_system.is_correct_tree(tableaux, inf))

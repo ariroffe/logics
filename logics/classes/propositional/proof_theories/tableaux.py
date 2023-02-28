@@ -931,6 +931,28 @@ class ManyValuedTableauxSystem(TableauxSystem):
         return premises, conclusions
 
 
+class IndexedTableauxSystem(ManyValuedTableauxSystem, TableauxSystem):
+    """Class for propositional indexed tableaux.
+
+    Initializes nodes as the mvl tableaux system, the rest is identical to TableauxSystem except for the fast node is
+    closed condition
+    """
+    fast_node_is_closed_enabled = True
+
+    @staticmethod
+    def _fast_node_is_closed(node):
+        """Checks whether A, 1 and A, 0 are present in the branch"""
+        path = node.path
+        # Basically, build a new list and add one node at a time, checking that its negation is not present
+        # (or if it is a negated sentence, that the formula it negates is not present)
+        new_list = [(path[0].content, path[0].index)]
+        for node2 in path[1:]:
+            if (node2.content, 1 - node2.index) in new_list:
+                return True
+            new_list.append((node2.content, node2.index))
+        return False
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 

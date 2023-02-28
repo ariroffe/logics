@@ -3,7 +3,7 @@ import unittest
 from logics.classes.propositional.proof_theories.tableaux import TableauxNode, ConstructiveTreeSystem
 from logics.classes.propositional import Formula, Inference
 from logics.instances.propositional.languages import classical_infinite_language as lang
-from logics.instances.propositional.tableaux import classical_tableaux_system
+from logics.instances.propositional.tableaux import classical_tableaux_system, classical_indexed_tableaux_system
 
 
 class TestTableauxSystem(unittest.TestCase):
@@ -234,6 +234,34 @@ class TestTableauxSystem(unittest.TestCase):
 
         # More extensive tests (with the random argument generator) are made in tests/utils/test_tableaux_solver
 
+    def test_classical_indexed_tableaux(self):
+        # Node is closed
+        n1 = TableauxNode(content=Formula(['p']), index=1)
+        n2 = TableauxNode(content=Formula(['~', ['p']]), index=1, parent=n1)
+        n3 = TableauxNode(content=Formula(['p']), index=0, parent=n2)
+        '''
+        p, 1
+        └── ~p, 1
+            └── p, 0
+        '''
+        self.assertFalse(classical_indexed_tableaux_system.node_is_closed(n1))
+        self.assertFalse(classical_indexed_tableaux_system.node_is_closed(n2))
+        self.assertTrue(classical_indexed_tableaux_system.node_is_closed(n3))
+
+        n1 = TableauxNode(content=Formula(['~', ['~', ['~', ['p']]]]), index=1)
+        n2 = TableauxNode(content=Formula(['~', ['~', ['p']]]), index=0, justification='R~1', parent=n1)
+        n3 = TableauxNode(content=Formula(['~', ['p']]), index=1, justification='R~0', parent=n2)
+        n4 = TableauxNode(content=Formula(['p']), index=0, justification='R~1', parent=n3)
+        '''
+        ~~~~p, 1
+        └── ~~p, 0 (R~1)
+            └── ~p, 1 (R~0)
+                └── p, 0 (R~1)
+        '''
+        correct, error_list = classical_indexed_tableaux_system.is_correct_tree(n1, return_error_list=True)
+        self.assertTrue(correct)
+
+        # More extensive tests (with the random argument generator) are made in tests/utils/test_tableaux_solver
 
 class TestConstructiveTrees(unittest.TestCase):
     def test_constructive_tree_system_rules(self):

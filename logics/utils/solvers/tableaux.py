@@ -85,7 +85,7 @@ class TableauxSolver:
                     rule = tableaux_system.rules[rule_name]
                     rule_application = rule.instantiate(tableaux_system.language, subst_dict)  # Has no parent
 
-                    # applied_rules contains a list of the the instantiations of the rules. Done like this because
+                    # applied_rules contains a list of the instantiations of the rules. Done like this because
                     # in some modal systems, a rule may be applied twice to the same node & yield different results
                     if rule_application not in applied_rules[rule_name]:
                         applied_rules[rule_name].append(rule_application)
@@ -136,8 +136,8 @@ standard_tableaux_solver = TableauxSolver()
 # ----------------------------------------------------------------------------------------------------------------------
 # SOLVERS FOR OTHER LOGIC SYSTEMS
 
-class ManyValuedTableauxSolver(TableauxSolver):
-    """Class for many-valued tableaux systems
+class IndexedTableauxSolver(TableauxSolver):
+    """Class for classical indexed and many-valued tableaux systems
 
     Basically the same as the above solver, only changes the way in which the tableaux is initialized
     (does not negate the conclusion, ``beggining_premise_index`` is 1, ``beggining_conclusion_index`` is 0)
@@ -145,9 +145,9 @@ class ManyValuedTableauxSolver(TableauxSolver):
     Examples
     --------
     >>> from logics.utils.parsers import classical_parser
-    >>> from logics.utils.solvers.tableaux import mvl_tableaux_solver  # <-- The default instance of the solver
+    >>> from logics.utils.solvers.tableaux import indexed_tableaux_solver  # <-- The default instance of the solver
     >>> from logics.instances.propositional.tableaux import LP_tableaux_system
-    >>> tree = mvl_tableaux_solver.solve(classical_parser.parse("~(p ∨ q) / ~~p ∧ ~~q"), LP_tableaux_system)
+    >>> tree = indexed_tableaux_solver.solve(classical_parser.parse("~(p ∨ q) / ~~p ∧ ~~q"), LP_tableaux_system)
     >>> tree.print_tree(classical_parser)
     ~(p ∨ q), 1
     └── (~~p ∧ ~~q), 0
@@ -174,13 +174,12 @@ class ManyValuedTableauxSolver(TableauxSolver):
             new_node = TableauxNode(content=premise, index=self.beggining_premise_index, parent=parent)
             parent = new_node
         for conclusion in inference.conclusions:
-            new_node = TableauxNode(content=conclusion, index=self.beggining_conclusion_index,
-                                    parent=parent)
+            new_node = TableauxNode(content=conclusion, index=self.beggining_conclusion_index, parent=parent)
             parent = new_node
         return new_node.root
 
 
-mvl_tableaux_solver = ManyValuedTableauxSolver()
+indexed_tableaux_solver = IndexedTableauxSolver()
 
 
 class ModalTableauxSolver(TableauxSolver):
