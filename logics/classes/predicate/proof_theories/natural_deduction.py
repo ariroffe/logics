@@ -1,5 +1,6 @@
 from copy import deepcopy
 
+from logics.classes.errors import ErrorCode, CorrectionError
 from logics.classes.propositional.proof_theories.natural_deduction import (
     NaturalDeductionRule,
     NaturalDeductionSystem,
@@ -156,12 +157,20 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
     def check_arbitrary_constants(self, derivation, step, rule):
         """For a rule that requires an arbitrary constant, determines what that constant is and determines if it is so
 
+        Returns
+        -------
+        tuple (bool, ``logics.classes.errors.CorrectionError`` or None)
+
+        Raises
+        ------
+        NotImplementedError: if the rule name is anything other than "I∀" and "E∃"
+
         Notes
         -----
         Requires the modified version of the rule (by ``substitute_rule``); that is, one that does not contain [α/χ]
         """
         if rule.arbitrary_cts is None:
-            return True, ""
+            return True, None
 
         # rule is the modified version (by the above method), it does not contain things of the form [α/χ]
         # but does contain things of the form α. We also know by now that, except for this, the application is correct
@@ -183,14 +192,16 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
 
             # In this case, we also need to check that the existential does not contain the constant as well
             if derivation[derivation[step].on_steps[0]].content.contains_string(arbitrary_constant):
-                return False, possible_error
+                return False, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, category="ND", index=step,
+                                              description=possible_error)
         else:
             raise NotImplementedError("No arbitrary constant checking for the rule given yet")
 
 
         # 1) Check that arbitrary_constant is not in the formula at the current step
         if derivation[step].content.contains_string(arbitrary_constant):
-            return False, possible_error
+            return False, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, category="ND", index=step,
+                                          description=possible_error)
 
         open_sups = derivation[step].open_suppositions
         for step2_idx in range(step):  # Go up to (but not including) the current step of the derivation
@@ -198,14 +209,16 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
 
             # 2) Check that arbitrary_constant it is not in a premise
             if step2.justification == "premise" and step2.content.contains_string(arbitrary_constant):
-                return False, possible_error
+                return False, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, category="ND", index=step,
+                                              description=possible_error)
 
             # 3) Check that arbitrary_constant it is not in an open supposition
             if step2.justification == "supposition" and step2_idx in open_sups and \
                     step2.content.contains_string(arbitrary_constant):
-                return False, possible_error
+                return False, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, category="ND", index=step,
+                                              description=possible_error)
 
-        return True, ""
+        return True, None
 
     def is_correct_application(self, derivation, step, rule, return_error=False):
         # Get rid of the [a/x]A sorts of things in the rules by doing the replacement directly
@@ -214,7 +227,8 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
         except ValueError as e:
             if not return_error:
                 return False
-            return False, str(e)
+            return False, CorrectionError(code=ErrorCode.ND_INCORRECT_RULE_APPLICATION, category='ND', index=step,
+                                          description=str(e))
 
         # Super method
         correct, error = super().is_correct_application(derivation, step, rule, return_error=True)
