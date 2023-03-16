@@ -4,6 +4,7 @@ from itertools import combinations, combinations_with_replacement
 from anytree import NodeMixin, RenderTree, PostOrderIter
 
 from logics.classes.exceptions import SolverError
+from logics.classes.errors import ErrorCode, CorrectionError
 
 
 class Sequent(list):
@@ -1190,7 +1191,7 @@ class SequentCalculus:
             return_value.append(None)
         return tuple(return_value)
 
-    def is_correct_tree(self, tree, premises=None, return_error_list=False):
+    def is_correct_tree(self, tree, premises=None, return_error_list=False, exit_on_first_error=False):
         """Checks if a tree derivation is correct.
 
         That is, checks that every leaf is an axiom or a premise, and that every other node is obtained via a correct
@@ -1204,7 +1205,10 @@ class SequentCalculus:
             An optional list of sequents to use as premises, additionally to the axioms
         return_error_list: bool, optional
             If False, will just return True or False (exits when it finds an error, more efficient) If True, will return
-            a tuple (boolean, [error_list]) (computes all errors, does not exit on the first, less efficient)
+            (True, a list of ``logics.classes.errors.CorrectionError``)
+        exit_on_first_error: bool, optional
+            If `return_error_list` and this are both true, it will return a list with a single error instead of many.
+            More efficient, since it makes early exits.
 
         Examples
         --------
@@ -1240,6 +1244,8 @@ class SequentCalculus:
         >>> LK.is_correct_tree(n6, premises=[classical_parser.parse('p ==> q')])
         True
         """
+        # todo CHANGE THE INDEXES IN THE CorrectionErrors
+
         error_list = list()
 
         if premises is None:
@@ -1255,8 +1261,12 @@ class SequentCalculus:
                         if node.justification is not None and node.justification != 'premise':
                             if not return_error_list:
                                 return False
-                            error_list.append(f"Node {node}: Premise nodes must have either None or 'premise' "
-                                              f"as justification")
+                            error_list.append(CorrectionError(code=ErrorCode.SEQ_INCORRECT_PREMISE, index=None,
+                                                              category="SEQ",
+                                                              description=f"Node {node}: Premise nodes must have either"
+                                                                          f" None or 'premise' as justification"))
+                            if exit_on_first_error:
+                                return False, error_list
                         premise = True
 
                 # If not, it must be an axiom
@@ -1265,12 +1275,20 @@ class SequentCalculus:
                     if self.fast_axiom_check and axiom_name != 'identity':
                         if not return_error_list:
                             return False
-                        error_list.append(f'Node {node}: Axiom {axiom_name} is not a valid axiom name '
-                                          f'(you might want to disable fast_axiom_check)')
+                        error_list.append(CorrectionError(code=ErrorCode.SEQ_INCORRECT_AXIOM, index=None,
+                                                          category="SEQ",
+                                                          description=f'Node {node}: Axiom {axiom_name} is not a valid '
+                                                                      f'axiom name'))
+                        if exit_on_first_error:
+                            return False, error_list
                     if not self.sequent_is_axiom(node.content, axiom_name):
                         if not return_error_list:
                             return False
-                        error_list.append(f'Node {node} is not a valid axiom')
+                        error_list.append(CorrectionError(code=ErrorCode.SEQ_INCORRECT_AXIOM, index=None,
+                                                          category="SEQ",
+                                                          description=f'Node {node} is not a valid axiom'))
+                        if exit_on_first_error:
+                            return False, error_list
 
             # Internal nodes
             else:
@@ -1279,7 +1297,10 @@ class SequentCalculus:
                 if not correct:
                     if not return_error_list:
                         return False
-                    error_list.append(error)
+                    error_list.append(CorrectionError(code=ErrorCode.SEQ_RULE_INCORRECTLY_APPLIED, index=None,
+                                                      category="SEQ", description=error))
+                    if exit_on_first_error:
+                        return False, error_list
 
         if error_list:
             return False, error_list

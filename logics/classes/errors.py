@@ -28,6 +28,11 @@ class ErrorCode(IntEnum):
     AX_INCORRECT_JUSTIFICATION = 304
     AX_INCORRECT_CONCLUSION = 305
 
+    # Sequent calculi
+    SEQ_INCORRECT_PREMISE = 401
+    SEQ_INCORRECT_AXIOM = 402
+    SEQ_RULE_INCORRECTLY_APPLIED = 403
+
     @property
     def name(self):
         return error_names[self.value]
@@ -57,6 +62,11 @@ error_names = {
     303: "AX: Rule incorrectly applied",
     304: "AX: Incorrect justification",
     305: "AX: Incorrect conclusion",
+
+    # Sequent calculi
+    401: "SEQ: Incorrect premise",
+    402: "SEQ: Incorrect axiom",
+    403: "SEQ: Rule incorrectly applied",
 }
 
 

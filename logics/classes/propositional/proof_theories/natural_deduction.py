@@ -160,7 +160,7 @@ class NaturalDeductionSystem:
             inference
         return_error_list: bool, optional
             If False, will just return True or False (exits when it finds an error, more efficient) If True, will return
-            a list of ``logics.classes.errors.CorrectionError``
+            (True, a list of ``logics.classes.errors.CorrectionError``)
         exit_on_first_error: bool, optional
             If `return_error_list` and this are both true, it will return a list with a single error instead of many.
             More efficient, since it makes early exits.
