@@ -1,4 +1,5 @@
 from logics.classes.propositional import Inference
+from logics.classes.errors import ErrorCode, CorrectionError
 
 
 class AxiomSystem:
@@ -38,7 +39,7 @@ class AxiomSystem:
         self.axioms = axioms
         self.rules = rules
 
-    def is_correct_derivation(self, derivation, inference=None, return_error_list=False):
+    def is_correct_derivation(self, derivation, inference=None, return_error_list=False, exit_on_first_error=False):
         """Determines if a derivation has been correctly performed.
 
         Will check that the steps with a justification of 'premise' are premises of inference, that every other step
@@ -57,6 +58,9 @@ class AxiomSystem:
         return_error_list: bool
             If False, will just return True or False (exits when it finds an error, more efficient) If True, will return
             a tuple (boolean, [error_list]) (computes all errors, does not exit on the first, less efficient)
+        exit_on_first_error: bool, optional
+            If `return_error_list` and this are both true, it will return a list with a single error instead of many.
+            More efficient, since it makes early exits.
 
         Examples
         --------
@@ -108,8 +112,12 @@ class AxiomSystem:
                     if not return_error_list:
                         return False
                     else:
-                        error_list.append(f"Step {step_index}: {step.content} was marked as 'premise', "
-                                          f"but is not a premise of the inference given")
+                        error_list.append(CorrectionError(code=ErrorCode.AX_INCORRECT_PREMISE, category="AX",
+                                                          index=step_index,
+                                                          description=f"{step.content} was marked as 'premise', "
+                                                                      f"but is not a premise of the inference given"))
+                        if exit_on_first_error:
+                            return False, error_list
 
             # If the justification is 'axiom'
             elif step.justification == 'axiom':
@@ -122,8 +130,12 @@ class AxiomSystem:
                     if not return_error_list:
                         return False
                     else:
-                        error_list.append(f"Step {step_index}: {step.content} was marked as 'axiom', "
-                                          f"but is not an instance of any axiom of the system")
+                        error_list.append(CorrectionError(code=ErrorCode.AX_INCORRECT_AXIOM, category="AX",
+                                                          index=step_index,
+                                                          description=f"{step.content} was marked as 'axiom', but is "
+                                                                      f"not an instance of any axiom of the system"))
+                        if exit_on_first_error:
+                            return False, error_list
 
             # If the justification is the name of a speficic axiom
             elif step.justification in self.axioms:
@@ -131,8 +143,13 @@ class AxiomSystem:
                     if not return_error_list:
                         return False
                     else:
-                        error_list.append(f"Step {step_index}: {step.content} was marked as "
-                                          f"{step.justification}, but is not an instance of that axiom")
+                        error_list.append(CorrectionError(code=ErrorCode.AX_INCORRECT_AXIOM, category="AX",
+                                                          index=step_index,
+                                                          description=f"{step.content} was marked as "
+                                                                      f"{step.justification}, but is not an instance "
+                                                                      f"of that axiom"))
+                        if exit_on_first_error:
+                            return False, error_list
 
             # If the justification is the name of a specific rule
             elif step.justification in self.rules:
@@ -146,23 +163,37 @@ class AxiomSystem:
                     if not return_error_list:
                         return False
                     else:
-                        error_list.append(f"Step {step_index}: {step.content} was marked as "
-                                          f"{step.justification}, but it is not a correct application of that rule")
+                        error_list.append(CorrectionError(code=ErrorCode.AX_RULE_INCORRECTLY_APPLIED, category="AX",
+                                                          index=step_index,
+                                                          description=f"{step.content} was marked as "
+                                                                      f"{step.justification}, but it is not a correct "
+                                                                      f"application of that rule"))
+                        if exit_on_first_error:
+                            return False, error_list
 
             # If none of the above, then the justification is incorrect
             else:
                 if not return_error_list:
                     return False
                 else:
-                    error_list.append(f"Step {step_index}: Justification is incorrect, "
-                                      f"must be either 'premise', 'axiom', or the name of a specific axiom or rule")
+                    error_list.append(CorrectionError(code=ErrorCode.AX_INCORRECT_JUSTIFICATION, category="AX",
+                                                      index=step_index,
+                                                      description="Justification is incorrect, must be either 'premise'"
+                                                                  ", 'axiom', or the name of a specific axiom or rule"))
+                    if exit_on_first_error:
+                        return False, error_list
 
         # Now check if the last step is the conclusion of the inference
         if inference is not None and not derivation.conclusion == inference.conclusion:
             if not return_error_list:
                 return False
             else:
-                error_list.append(f"Final step of the derivation is not the conclusion of the inference given")
+                error_list.append(CorrectionError(code=ErrorCode.AX_INCORRECT_CONCLUSION, index=len(derivation)-1,
+                                                  category="AX",
+                                                  description="Final step of the derivation is not the conclusion of "
+                                                              "the inference given"))
+                if exit_on_first_error:
+                    return False, error_list
 
         # If it gets here either there are no errors, or there are some but return_error_list is True
         if not error_list:

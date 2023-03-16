@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.5.0] - 
 ### Added
-- Extra parameter ``exit_on_first_error`` for Tableaux ``is_correct_tree`` mathod.
+- Extra parameter ``exit_on_first_error`` for Tableaux ``is_correct_tree`` mathod and 
+  AxiomSystem's ``is_correct_derivation``.
 
 ### Changed
 - Every module's ``is_correct_xxx`` method now returns a list of  

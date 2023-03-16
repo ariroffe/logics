@@ -4,22 +4,29 @@ from enum import IntEnum
 class ErrorCode(IntEnum):
     """Enum to represent error codes. Advantages: more readable than a dict, JSON serializable variants (into ints)"""
     # Natural deduction
-    ND_INCORRECT_PREMISE = 1
-    ND_INCORRECT_SUPPOSITION = 2
-    ND_INCORRECT_JUSTIFICATION = 3
-    ND_RULE_INCORRECTLY_APPLIED = 4
-    ND_INCORRECT_CONCLUSION = 5
-    ND_INCORRECT_ON_STEPS = 6
-    ND_CLOSED_SUPPOSITION = 7
-    ND_NONARBITRARY_CONSTANT = 8
+    ND_INCORRECT_PREMISE = 101
+    ND_INCORRECT_SUPPOSITION = 102
+    ND_INCORRECT_JUSTIFICATION = 103
+    ND_RULE_INCORRECTLY_APPLIED = 104
+    ND_INCORRECT_CONCLUSION = 105
+    ND_INCORRECT_ON_STEPS = 106
+    ND_CLOSED_SUPPOSITION = 107
+    ND_NONARBITRARY_CONSTANT = 108
 
     # Tableaux
-    TBL_PREMISE_NOT_BEGINNING = 9
-    TBL_INCORRECT_PREMISE = 10
-    TBL_RULE_NOT_APPLIED = 11
-    TBL_RULE_INCORRECTLY_APPLIED = 12
-    TBL_PREMISE_NOT_PRESENT = 13
-    TBL_CONCLUSION_NOT_PRESENT = 14
+    TBL_PREMISE_NOT_BEGINNING = 201
+    TBL_INCORRECT_PREMISE = 202
+    TBL_RULE_NOT_APPLIED = 203
+    TBL_RULE_INCORRECTLY_APPLIED = 204
+    TBL_PREMISE_NOT_PRESENT = 205
+    TBL_CONCLUSION_NOT_PRESENT = 206
+
+    # Axiom systems
+    AX_INCORRECT_PREMISE = 301
+    AX_INCORRECT_AXIOM = 302
+    AX_RULE_INCORRECTLY_APPLIED = 303
+    AX_INCORRECT_JUSTIFICATION = 304
+    AX_INCORRECT_CONCLUSION = 305
 
     @property
     def name(self):
@@ -27,22 +34,29 @@ class ErrorCode(IntEnum):
 
 error_names = {
     # Natural deduction
-    1: "ND: Incorrect premise step",
-    2: "ND: Incorrect supposition handling",
-    3: "ND: Incorrect justification",
-    4: "ND: Rule incorrectly applied",
-    5: "ND: Incorrect conclusion",
-    6: "ND: Incorrect specification of 'on steps'",
-    7: "ND: Using step in a closed supposition",
-    8: "ND: Non-arbitrary constant",
+    101: "ND: Incorrect premise step",
+    102: "ND: Incorrect supposition handling",
+    103: "ND: Incorrect justification",
+    104: "ND: Rule incorrectly applied",
+    105: "ND: Incorrect conclusion",
+    106: "ND: Incorrect specification of 'on steps'",
+    107: "ND: Using step in a closed supposition",
+    108: "ND: Non-arbitrary constant",
 
     # Tableaux
-    9: "TBL: Premise not at the beggining",
-    10: "TBL: Incorrect premise",
-    11: "TBL: Rule not applied to node",
-    12: "TBL: Rule incorrectly applied",
-    13: "TBL: Premise not present",
-    14: "TBL: Conclusion not present",
+    201: "TBL: Premise not at the beggining",
+    202: "TBL: Incorrect premise",
+    203: "TBL: Rule not applied to node",
+    204: "TBL: Rule incorrectly applied",
+    205: "TBL: Premise not present",
+    206: "TBL: Conclusion not present",
+
+    # Axiom systems
+    301: "AX: Incorrect premise",
+    302: "AX: Not an axiom instance",
+    303: "AX: Rule incorrectly applied",
+    304: "AX: Incorrect justification",
+    305: "AX: Incorrect conclusion",
 }
 
 

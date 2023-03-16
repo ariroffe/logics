@@ -3,6 +3,7 @@ import unittest
 from logics.classes.propositional import Inference, Formula
 from logics.utils.parsers import classical_parser
 from logics.instances.propositional.axiom_systems import classical_logic_axiom_system
+from logics.classes.errors import ErrorCode, CorrectionError
 
 
 class TestClassicalAxiomSystem(unittest.TestCase):
@@ -24,8 +25,9 @@ class TestClassicalAxiomSystem(unittest.TestCase):
         self.assertFalse(classical_logic_axiom_system.is_correct_derivation(deriv4, i4))
 
         correct, error_list = classical_logic_axiom_system.is_correct_derivation(deriv4, i4, return_error_list=True)
-        self.assertEqual(error_list[0], "Step 0: ['→', ['p'], ['→', ['p'], ['q']]] was marked as ax1, "
-                                        "but is not an instance of that axiom")
+        self.assertEqual(error_list[0], CorrectionError(code=ErrorCode.AX_INCORRECT_AXIOM, category="AX", index=0,
+                                                        description="['→', ['p'], ['→', ['p'], ['q']]] was marked as "
+                                                                    "ax1, but is not an instance of that axiom"))
 
     def test_complex_derivations(self):
         # Demostration of / p → p
@@ -52,8 +54,10 @@ class TestClassicalAxiomSystem(unittest.TestCase):
         self.assertFalse(classical_logic_axiom_system.is_correct_derivation(deriv3, i))
 
         correct, error_list = classical_logic_axiom_system.is_correct_derivation(deriv3, i, return_error_list=True)
-        self.assertEqual(error_list[0], "Step 2: ['→', ['p'], ['p']] was marked as mp, "
-                                        "but it is not a correct application of that rule")
+        self.assertEqual(error_list[0], CorrectionError(code=ErrorCode.AX_RULE_INCORRECTLY_APPLIED, category="AX",
+                                                        index=2, description="['→', ['p'], ['p']] was marked as mp, "
+                                                                             "but it is not a correct application of "
+                                                                             "that rule"))
 
 
 if __name__ == '__main__':
