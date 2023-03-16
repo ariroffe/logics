@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 
+### Added
+- Extra parameter ``exit_on_first_error`` for Tableaux ``is_correct_tree`` mathod.
+
+### Changed
+- Every module's ``is_correct_xxx`` method now returns a list of  
+  ``logics.classes.errors.Correctionerror`` objects if asked to return the error list. 
+
 ## [1.5.0] - 2023-02-28
 ### Added
 - Indexed presentation of classical logic tableaux.

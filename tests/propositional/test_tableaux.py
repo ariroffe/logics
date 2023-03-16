@@ -255,6 +255,12 @@ class TestTableauxSystem(unittest.TestCase):
                                                       index=(0, 1, 0),
                                                       description="Rule incorrectly applied to node ['q'] (R↔)")])
 
+        # exit_on_first_error - should return only the first of those
+        correct, error_list = classical_tableaux_system.is_correct_tree(n1, return_error_list=True,
+                                                                        exit_on_first_error=True)
+        self.assertEqual(error_list, [CorrectionError(code=ErrorCode.TBL_RULE_NOT_APPLIED, category="TBL", index=(0,),
+                                                      description="Rule R↔ was not applied to node ['↔', ['p'], ['q']]")])
+
         # More extensive tests (with the random argument generator) are made in tests/utils/test_tableaux_solver
 
     def test_classical_indexed_tableaux(self):

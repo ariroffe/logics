@@ -552,7 +552,7 @@ class TableauxSystem:
                 return False
             return False, subst_dict
 
-    def is_correct_tree(self, tree, inference=None, return_error_list=False, parser=None):
+    def is_correct_tree(self, tree, inference=None, return_error_list=False, exit_on_first_error=False, parser=None):
         """Checks if a given tableaux (a node and its descendants) is correctly derived, given the rules of the system.
 
         Parameters
@@ -567,6 +567,9 @@ class TableauxSystem:
             If False, will just return True or False (exits when it finds an error, more efficient). If True, will
             return a tuple (boolean, [error_list]) (computes all errors, does not exit on the first, less efficient).
             The error list contains tuples (index path to node, str), see the examples below.
+        exit_on_first_error: bool, optional
+            If `return_error_list` and this are both true, it will return a list with a single error instead of many.
+            More efficient, since it makes early exits.
         parser: logics.utils.parsers.standard_parser.StandardParser, optional
             If present, will return the error list with unparsed instead of parsed formulae.
             Can be of another class that implements ``unparse`` for ``Formula``.
@@ -598,11 +601,11 @@ class TableauxSystem:
         False
         >>> classical_tableaux_system.is_correct_tree(n1, inference=classical_parser.parse('~~p ∧ q / ~p'),
         ...                                           return_error_list=True)
-        (False, [((0, 0), "Node ['~', ['p']] is an incorrect premise node"), ((), "Negation of conclusion ['~', ['p']] is not present in the tree")])
+        (False, [(): Conclusion ['~', ['p']] is not present in the tree, (0, 0): Node ['~', ['p']] is an incorrect premise node])
         >>> from logics.utils.parsers import classical_parser
         >>> classical_tableaux_system.is_correct_tree(n1, inference=classical_parser.parse('~~p ∧ q / ~p'),
         ...                                           return_error_list=True, parser=classical_parser)
-        (False, [((0, 0), 'Node ~p is an incorrect premise node'), ((), 'Negation of conclusion ~p is not present in the tree')])
+        (False, [(): Conclusion ~p is not present in the tree, (0, 0): Node ~p is an incorrect premise node])
 
         Notes
         -----
@@ -639,6 +642,8 @@ class TableauxSystem:
                                                       description='Premise nodes must be at the beggining of the '
                                                                   'tableaux, before applying any rule and before '
                                                                   'opening any new branch'))
+                    if exit_on_first_error:
+                        return False, error_list
 
                 # If an inference was given
                 if inference is not None:
@@ -655,6 +660,8 @@ class TableauxSystem:
                                                           index=tuple(n.child_index for n in node.path),
                                                           description=f'Node {node._self_string(parser)} is an '
                                                                       f'incorrect premise node'))
+                        if exit_on_first_error:
+                            return False, error_list
                 else:
                     correctly_derived_nodes.add(node)  # Not really necessary but leave it just in case
             if len(node.children) > 1:
@@ -682,6 +689,8 @@ class TableauxSystem:
                                                           index=tuple(n.child_index for n in node.path),
                                                           description=f'Rule {rule_name} was not applied to '
                                                                       f'node {node._self_string(parser)}'))
+                        if exit_on_first_error:
+                            return False, error_list
                     else:
                         correctly_derived_nodes |= result3[1]
 
@@ -689,9 +698,12 @@ class TableauxSystem:
         if inference is not None:
             # returns a bool, MUTATES ERROR_LIST
             all_premises_present = self._all_premises_present(inference, present_premises, present_conclusions,
-                                                              return_error_list, error_list, parser)
-            if not all_premises_present and not return_error_list:
-                return False
+                                                              return_error_list, error_list, exit_on_first_error, parser)
+            if not all_premises_present:
+                if not return_error_list:
+                    return False
+                if exit_on_first_error:
+                    return False, error_list
 
         # After checking all nodes and all rules that can be applied to it, the correctly derived nodes should be
         # all the tree nodes (that are not premises),
@@ -706,6 +718,8 @@ class TableauxSystem:
                                                   index=tuple(n.child_index for n in node.path),
                                                   description=f'Rule incorrectly applied to '
                                                               f'node {node._self_string(parser)}'))
+                if exit_on_first_error:
+                    return False, error_list
 
         # If you got to here with return_error_list = False, then everything is alright
         if not return_error_list:
@@ -733,7 +747,7 @@ class TableauxSystem:
         return premises, conclusions
 
     def _all_premises_present(self, inference, present_premises, present_conclusions, return_error_list, error_list,
-                              parser):
+                              exit_on_first_error, parser):
         """After visiting all nodes, check that all premises and negated conclusions are present"""
         not_present_premises = set(range(len(inference.premises))) - present_premises
         not_present_conclusions = set(range(len(inference.conclusions))) - present_conclusions
@@ -746,6 +760,8 @@ class TableauxSystem:
                     prem = parser.unparse(prem)
                 error_list.append(CorrectionError(code=ErrorCode.TBL_PREMISE_NOT_PRESENT, category="TBL", index=tuple(),
                                                   description=f'Premise {prem} is not present in the tree'))
+                if exit_on_first_error:
+                    return False
         if not_present_conclusions:
             if not return_error_list:
                 return False
@@ -756,6 +772,8 @@ class TableauxSystem:
                 error_list.append(CorrectionError(code=ErrorCode.TBL_CONCLUSION_NOT_PRESENT, category="TBL",
                                                   index=tuple(),
                                                   description=f'Conclusion {concl} is not present in the tree'))
+                if exit_on_first_error:
+                    return False
         return True
 
     def _is_correctly_applied(self, start_node, rule_subtree, correctly_derived_nodes, subst_dict=None):
