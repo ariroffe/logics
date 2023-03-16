@@ -347,7 +347,7 @@ class NaturalDeductionSystem:
                                 error_list.append(error)
                             else:
                                 # If there is more than one possible rule, return a generic error message
-                                error_list.append(CorrectionError(code=ErrorCode.ND_INCORRECT_RULE_APPLICATION,
+                                error_list.append(CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED,
                                                                   category="ND", index=step_index,
                                                                   description="Incorrect application of rule"))
                             if exit_on_first_error:
@@ -439,7 +439,7 @@ class NaturalDeductionSystem:
             if not exact_match and not without_num_match:
                 if not return_error:
                     return False
-                return False, CorrectionError(code=ErrorCode.ND_INCORRECT_RULE_APPLICATION, category="ND", index=step,
+                return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED, category="ND", index=step,
                                               description=f"Justification for step {derivation.index(last_step)} does "
                                                           f"not coincide with the justification in the rule conclusion")
         # (content)
@@ -447,7 +447,7 @@ class NaturalDeductionSystem:
         if not instance:
             if not return_error:
                 return False
-            return False, CorrectionError(code=ErrorCode.ND_INCORRECT_RULE_APPLICATION, category="ND", index=step,
+            return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED, category="ND", index=step,
                                           description=f"Step {derivation.index(last_step)} is not an instance of the "
                                                       f"conclusion of the rule given")
 
@@ -478,7 +478,7 @@ class NaturalDeductionSystem:
                 if prev_step is not None and step_number != prev_step + 1:
                     if not return_error:
                         return False
-                    return False, CorrectionError(code=ErrorCode.ND_INCORRECT_RULE_APPLICATION,
+                    return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED,
                                                   category="ND", index=step,
                                                   description=f"On step {step_number} does not immediately follow the "
                                                               f"previous on step, as the rule requires")
@@ -489,7 +489,7 @@ class NaturalDeductionSystem:
                         derivation[step_number].justification != rule_step.justification:
                     if not return_error:
                         return False
-                    return False, CorrectionError(code=ErrorCode.ND_INCORRECT_RULE_APPLICATION,
+                    return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED,
                                                   category="ND", index=step,
                                                   description=f"Justification for on step {step_number} does not "
                                                               f"coincide with the justification in rule "
@@ -503,7 +503,7 @@ class NaturalDeductionSystem:
                 if not instance:
                     if not return_error:
                         return False
-                    return False, CorrectionError(code=ErrorCode.ND_INCORRECT_RULE_APPLICATION,
+                    return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED,
                                                   category="ND", index=step,
                                                   description=f"On step {step_number} is not an instance of rule "
                                                               f"premise number {prem_number}")
@@ -525,7 +525,7 @@ class NaturalDeductionSystem:
                             relevant_sup_dict[relevant_step] not in derivation[step_number].open_suppositions:
                         if not return_error:
                             return False
-                        return False, CorrectionError(code=ErrorCode.ND_INCORRECT_RULE_APPLICATION,
+                        return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED,
                                                       category="ND", index=step,
                                                       description=f"Incorrect use of suppositions in 'on step' "
                                                                   f"{step_number}")
@@ -534,7 +534,7 @@ class NaturalDeductionSystem:
                             relevant_sup_dict[relevant_step] in derivation[step_number].open_suppositions:
                         if not return_error:
                             return False
-                        return False, CorrectionError(code=ErrorCode.ND_INCORRECT_RULE_APPLICATION,
+                        return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED,
                                                       category="ND", index=step,
                                                       description=f"Incorrect use of suppositions in 'on step' "
                                                                   f"{step_number}")
@@ -555,7 +555,7 @@ class NaturalDeductionSystem:
         if prev_step is not None and derivation.index(last_step) != prev_step + 1:
             if not return_error:
                 return False
-            return False, CorrectionError(code=ErrorCode.ND_INCORRECT_RULE_APPLICATION, category="ND", index=step,
+            return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED, category="ND", index=step,
                                           description=f"On step {derivation.index(last_step)} does not immediately "
                                                       f"follow the previous on step, as the rule requires")
 

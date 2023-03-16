@@ -227,7 +227,7 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
         except ValueError as e:
             if not return_error:
                 return False
-            return False, CorrectionError(code=ErrorCode.ND_INCORRECT_RULE_APPLICATION, category='ND', index=step,
+            return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED, category='ND', index=step,
                                           description=str(e))
 
         # Super method

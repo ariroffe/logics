@@ -7,6 +7,7 @@ from copy import copy, deepcopy
 from anytree import NodeMixin, RenderTree, PreOrderIter, LevelOrderIter
 
 from logics.classes.propositional import Formula
+from logics.classes.errors import ErrorCode, CorrectionError
 
 
 class TableauxNode(NodeMixin):
@@ -633,9 +634,11 @@ class TableauxSystem:
                 if not traversing_premises:
                     if not return_error_list:
                         return False
-                    error_list.append((tuple(n.child_index for n in node.path),
-                                       f'Premise nodes must be at the beggining of the tableaux, '
-                                       f'before applying any rule and before opening any new branch'))
+                    error_list.append(CorrectionError(code=ErrorCode.TBL_PREMISE_NOT_BEGINNING, category="TBL",
+                                                      index=tuple(n.child_index for n in node.path),
+                                                      description='Premise nodes must be at the beggining of the '
+                                                                  'tableaux, before applying any rule and before '
+                                                                  'opening any new branch'))
 
                 # If an inference was given
                 if inference is not None:
@@ -648,8 +651,10 @@ class TableauxSystem:
                     else:
                         if not return_error_list:
                             return False
-                        error_list.append((tuple(n.child_index for n in node.path),
-                                           f'Node {node._self_string(parser)} is an incorrect premise node'))
+                        error_list.append(CorrectionError(code=ErrorCode.TBL_INCORRECT_PREMISE, category="TBL",
+                                                          index=tuple(n.child_index for n in node.path),
+                                                          description=f'Node {node._self_string(parser)} is an '
+                                                                      f'incorrect premise node'))
                 else:
                     correctly_derived_nodes.add(node)  # Not really necessary but leave it just in case
             if len(node.children) > 1:
@@ -673,8 +678,10 @@ class TableauxSystem:
                     if not correct:
                         if not return_error_list:
                             return False
-                        error_list.append((tuple(n.child_index for n in node.path),
-                                           f'Rule {rule_name} was not applied to node {node._self_string(parser)}'))
+                        error_list.append(CorrectionError(code=ErrorCode.TBL_RULE_NOT_APPLIED, category="TBL",
+                                                          index=tuple(n.child_index for n in node.path),
+                                                          description=f'Rule {rule_name} was not applied to '
+                                                                      f'node {node._self_string(parser)}'))
                     else:
                         correctly_derived_nodes |= result3[1]
 
@@ -695,15 +702,17 @@ class TableauxSystem:
             if not return_error_list:
                 return False
             for node in unaccounted_nodes:
-                error_list.append((tuple(n.child_index for n in node.path),
-                                   f'Rule incorrectly applied in node {node._self_string(parser)}'))
+                error_list.append(CorrectionError(code=ErrorCode.TBL_RULE_INCORRECTLY_APPLIED, category="TBL",
+                                                  index=tuple(n.child_index for n in node.path),
+                                                  description=f'Rule incorrectly applied to '
+                                                              f'node {node._self_string(parser)}'))
 
         # If you got to here with return_error_list = False, then everything is alright
         if not return_error_list:
             return True
         # Oterwise, check if there are errors
         if error_list:
-            return False, sorted(error_list, key=lambda e: (len(e[0]), e[0]))  # errors sorted by LevelOrder
+            return False, sorted(error_list, key=lambda e: (len(e.index), e.index))  # errors sorted by LevelOrder
         return True, []
 
     def _is_correct_premise_node(self, node, inference):
@@ -735,7 +744,8 @@ class TableauxSystem:
                 prem = inference.premises[not_present_premise_idx]
                 if parser:
                     prem = parser.unparse(prem)
-                error_list.append((tuple(), f'Premise {prem} is not present in the tree'))
+                error_list.append(CorrectionError(code=ErrorCode.TBL_PREMISE_NOT_PRESENT, category="TBL", index=tuple(),
+                                                  description=f'Premise {prem} is not present in the tree'))
         if not_present_conclusions:
             if not return_error_list:
                 return False
@@ -743,7 +753,9 @@ class TableauxSystem:
                 concl = inference.conclusions[not_present_conclusion_idx]
                 if parser:
                     concl = parser.unparse(concl)
-                error_list.append((tuple(), f'Negation of conclusion {concl} is not present in the tree'))
+                error_list.append(CorrectionError(code=ErrorCode.TBL_CONCLUSION_NOT_PRESENT, category="TBL",
+                                                  index=tuple(),
+                                                  description=f'Conclusion {concl} is not present in the tree'))
         return True
 
     def _is_correctly_applied(self, start_node, rule_subtree, correctly_derived_nodes, subst_dict=None):
