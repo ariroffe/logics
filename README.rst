@@ -129,6 +129,17 @@ As in `TAUT <https://taut-logic.com/>`_, logics has natural deduction module:
 5. ~A; I~; [2, 4]
 >>> classical_natural_deduction_system.is_correct_derivation(derivation)
 True
+>>> # Also in first order!
+>>> from logics.utils.parsers import classical_predicate_parser
+>>> from logics.utils.solvers.first_order_natural_deduction import first_order_natural_deduction_solver
+>>> derivation = first_order_natural_deduction_solver.solve(classical_predicate_parser.parse('~∃x P(x) / ∀x ~P(x)'))
+>>> derivation.print_derivation(classical_predicate_parser)
+0. ~∃x P(x); premise; []
+|  1. P(a); supposition; []
+|  2. ∃x P(x); I∃; [1]
+|  3. ⊥; E~; [0, 2]
+4. ~P(a); I~; [1, 3]
+5. ∀x ~P(x); I∀; [4]
 
 I have now added tableaux systems:
 
