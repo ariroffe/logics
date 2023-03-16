@@ -99,7 +99,7 @@ class AxiomSystem:
         False
         >>> correct, error_list = classical_logic_axiom_system.is_correct_derivation(deriv3, i, return_error_list=True)
         >>> error_list
-        ["Step 2: ['→', ['p'], ['p']] was marked as mp, but it is not a correct application of that rule"]
+        [2: ['→', ['p'], ['p']] was marked as mp, but it is not a correct application of that rule]
         """
         error_list = list()
 

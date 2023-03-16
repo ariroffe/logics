@@ -1240,7 +1240,7 @@ class SequentCalculus:
         >>> LK.is_correct_tree(n6)
         False
         >>> LK.is_correct_tree(n6, return_error_list=True)
-        (False, [..., "Node [[['p']], [['q']]] is not a valid axiom"])
+        (False, [Node [[['p']], [['q']]]: Axiom None is not a valid axiom name, Node [[['p']], [['q']]] is not a valid axiom])
         >>> LK.is_correct_tree(n6, premises=[classical_parser.parse('p ==> q')])
         True
         """
