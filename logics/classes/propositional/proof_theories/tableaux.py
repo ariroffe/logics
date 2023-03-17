@@ -636,7 +636,7 @@ class TableauxSystem:
                 if not traversing_premises:
                     if not return_error_list:
                         return False
-                    error_list.append(CorrectionError(code=ErrorCode.TBL_PREMISE_NOT_BEGINNING, category="TBL",
+                    error_list.append(CorrectionError(code=ErrorCode.TBL_PREMISE_NOT_BEGINNING,
                                                       index=tuple(n.child_index for n in node.path),
                                                       description='Premise nodes must be at the beggining of the '
                                                                   'tableaux, before applying any rule and before '
@@ -655,7 +655,7 @@ class TableauxSystem:
                     else:
                         if not return_error_list:
                             return False
-                        error_list.append(CorrectionError(code=ErrorCode.TBL_INCORRECT_PREMISE, category="TBL",
+                        error_list.append(CorrectionError(code=ErrorCode.TBL_INCORRECT_PREMISE,
                                                           index=tuple(n.child_index for n in node.path),
                                                           description=f'Node {node._self_string(parser)} is an '
                                                                       f'incorrect premise node'))
@@ -684,7 +684,7 @@ class TableauxSystem:
                     if not correct:
                         if not return_error_list:
                             return False
-                        error_list.append(CorrectionError(code=ErrorCode.TBL_RULE_NOT_APPLIED, category="TBL",
+                        error_list.append(CorrectionError(code=ErrorCode.TBL_RULE_NOT_APPLIED,
                                                           index=tuple(n.child_index for n in node.path),
                                                           description=f'Rule {rule_name} was not applied to '
                                                                       f'node {node._self_string(parser)}'))
@@ -713,7 +713,7 @@ class TableauxSystem:
             if not return_error_list:
                 return False
             for node in unaccounted_nodes:
-                error_list.append(CorrectionError(code=ErrorCode.TBL_RULE_INCORRECTLY_APPLIED, category="TBL",
+                error_list.append(CorrectionError(code=ErrorCode.TBL_RULE_INCORRECTLY_APPLIED,
                                                   index=tuple(n.child_index for n in node.path),
                                                   description=f'Rule incorrectly applied to '
                                                               f'node {node._self_string(parser)}'))
@@ -757,7 +757,7 @@ class TableauxSystem:
                 prem = inference.premises[not_present_premise_idx]
                 if parser:
                     prem = parser.unparse(prem)
-                error_list.append(CorrectionError(code=ErrorCode.TBL_PREMISE_NOT_PRESENT, category="TBL", index=tuple(),
+                error_list.append(CorrectionError(code=ErrorCode.TBL_PREMISE_NOT_PRESENT, index=tuple(),
                                                   description=f'Premise {prem} is not present in the tree'))
                 if exit_on_first_error:
                     return False
@@ -768,8 +768,7 @@ class TableauxSystem:
                 concl = inference.conclusions[not_present_conclusion_idx]
                 if parser:
                     concl = parser.unparse(concl)
-                error_list.append(CorrectionError(code=ErrorCode.TBL_CONCLUSION_NOT_PRESENT, category="TBL",
-                                                  index=tuple(),
+                error_list.append(CorrectionError(code=ErrorCode.TBL_CONCLUSION_NOT_PRESENT, index=tuple(),
                                                   description=f'Conclusion {concl} is not present in the tree'))
                 if exit_on_first_error:
                     return False

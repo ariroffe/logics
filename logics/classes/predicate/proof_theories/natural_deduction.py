@@ -192,7 +192,7 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
 
             # In this case, we also need to check that the existential does not contain the constant as well
             if derivation[derivation[step].on_steps[0]].content.contains_string(arbitrary_constant):
-                return False, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, category="ND", index=step,
+                return False, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, index=step,
                                               description=possible_error)
         else:
             raise NotImplementedError("No arbitrary constant checking for the rule given yet")
@@ -200,7 +200,7 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
 
         # 1) Check that arbitrary_constant is not in the formula at the current step
         if derivation[step].content.contains_string(arbitrary_constant):
-            return False, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, category="ND", index=step,
+            return False, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, index=step,
                                           description=possible_error)
 
         open_sups = derivation[step].open_suppositions
@@ -209,13 +209,13 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
 
             # 2) Check that arbitrary_constant it is not in a premise
             if step2.justification == "premise" and step2.content.contains_string(arbitrary_constant):
-                return False, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, category="ND", index=step,
+                return False, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, index=step,
                                               description=possible_error)
 
             # 3) Check that arbitrary_constant it is not in an open supposition
             if step2.justification == "supposition" and step2_idx in open_sups and \
                     step2.content.contains_string(arbitrary_constant):
-                return False, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, category="ND", index=step,
+                return False, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, index=step,
                                               description=possible_error)
 
         return True, None
@@ -227,8 +227,7 @@ class PredicateNaturalDeductionSystem(NaturalDeductionSystem):
         except ValueError as e:
             if not return_error:
                 return False
-            return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED, category='ND', index=step,
-                                          description=str(e))
+            return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED, index=step, description=str(e))
 
         # Super method
         correct, error = super().is_correct_application(derivation, step, rule, return_error=True)

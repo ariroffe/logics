@@ -146,9 +146,9 @@ class TestTableauxSystem(unittest.TestCase):
         inf = Inference(premises=[Formula(['p'])], conclusions=[Formula(['∨', ['p'], ['q']])])
         self.assertFalse(classical_tableaux_system.is_correct_tree(n1, inference=inf))
         correct, error_list = classical_tableaux_system.is_correct_tree(n1, inference=inf, return_error_list=True)
-        self.assertEqual(error_list, [CorrectionError(code=ErrorCode.TBL_CONCLUSION_NOT_PRESENT, category="TBL",
-                                                      index=(), description="Conclusion ['∨', ['p'], ['q']]"
-                                                                            " is not present in the tree")])
+        self.assertEqual(error_list, [CorrectionError(code=ErrorCode.TBL_CONCLUSION_NOT_PRESENT, index=(),
+                                                      description="Conclusion ['∨', ['p'], ['q']] is not present in "
+                                                                  "the tree")])
 
         # Incorrect tableaux (premise node comes after applying a rule)
         n1 = TableauxNode(content=Formula(['~', ['~', ['p']]]))
@@ -156,8 +156,7 @@ class TestTableauxSystem(unittest.TestCase):
         n3 = TableauxNode(content=Formula(['q']), parent=n2)
         self.assertFalse(classical_tableaux_system.is_correct_tree(n1))
         correct, error_list = classical_tableaux_system.is_correct_tree(n1, return_error_list=True)
-        self.assertEqual(error_list, [CorrectionError(ErrorCode.TBL_PREMISE_NOT_BEGINNING, category="TBL",
-                                                      index=(0, 0, 0),
+        self.assertEqual(error_list, [CorrectionError(ErrorCode.TBL_PREMISE_NOT_BEGINNING, index=(0, 0, 0),
                                                       description='Premise nodes must be at the beggining of the '
                                                                   'tableaux, before applying any rule and before '
                                                                   'opening any new branch')])
@@ -197,13 +196,11 @@ class TestTableauxSystem(unittest.TestCase):
         '''
         self.assertFalse(classical_tableaux_system.is_correct_tree(n1))
         correct, error_list = classical_tableaux_system.is_correct_tree(n1, return_error_list=True)
-        self.assertEqual(error_list, [CorrectionError(code=ErrorCode.TBL_PREMISE_NOT_BEGINNING, category="TBL",
-                                                      index=(0, 0, 0),
+        self.assertEqual(error_list, [CorrectionError(code=ErrorCode.TBL_PREMISE_NOT_BEGINNING, index=(0, 0, 0),
                                                       description='Premise nodes must be at the beggining of the '
                                                                   'tableaux, before applying any rule and before '
                                                                   'opening any new branch'),
-                                      CorrectionError(code=ErrorCode.TBL_PREMISE_NOT_BEGINNING, category="TBL",
-                                                      index=(0, 0, 1),
+                                      CorrectionError(code=ErrorCode.TBL_PREMISE_NOT_BEGINNING, index=(0, 0, 1),
                                                       description='Premise nodes must be at the beggining of the '
                                                                   'tableaux, before applying any rule and before '
                                                                   'opening any new branch')])
@@ -221,7 +218,7 @@ class TestTableauxSystem(unittest.TestCase):
                         conclusions=[Formula(['q'])])
         self.assertFalse(classical_tableaux_system.is_correct_tree(n1))
         correct, error_list = classical_tableaux_system.is_correct_tree(n1, return_error_list=True)
-        self.assertEqual(error_list, [CorrectionError(code=ErrorCode.TBL_RULE_NOT_APPLIED, category="TBL", index=(0, 0),
+        self.assertEqual(error_list, [CorrectionError(code=ErrorCode.TBL_RULE_NOT_APPLIED, index=(0, 0),
                                                       description="Rule R~~ was not applied to node "
                                                                   "['~', ['~', ['~', ['p']]]]")])
 
@@ -240,25 +237,21 @@ class TestTableauxSystem(unittest.TestCase):
         """
         self.assertFalse(classical_tableaux_system.is_correct_tree(n1))
         correct, error_list = classical_tableaux_system.is_correct_tree(n1, return_error_list=True)
-        self.assertEqual(error_list, [CorrectionError(code=ErrorCode.TBL_RULE_NOT_APPLIED, category="TBL", index=(0,),
+        self.assertEqual(error_list, [CorrectionError(code=ErrorCode.TBL_RULE_NOT_APPLIED, index=(0,),
                                                       description="Rule R↔ was not applied to node ['↔', ['p'], ['q']]"),
-                                      CorrectionError(code=ErrorCode.TBL_RULE_INCORRECTLY_APPLIED, category="TBL",
-                                                      index=(0, 0),
+                                      CorrectionError(code=ErrorCode.TBL_RULE_INCORRECTLY_APPLIED, index=(0, 0),
                                                       description="Rule incorrectly applied to node ['p'] (R↔)"),
-                                      CorrectionError(code=ErrorCode.TBL_RULE_INCORRECTLY_APPLIED, category="TBL",
-                                                      index=(0, 1),
+                                      CorrectionError(code=ErrorCode.TBL_RULE_INCORRECTLY_APPLIED, index=(0, 1),
                                                       description="Rule incorrectly applied to node ['~', ['p']] (R↔)"),
-                                      CorrectionError(code=ErrorCode.TBL_RULE_INCORRECTLY_APPLIED, category="TBL",
-                                                      index=(0, 0, 0),
+                                      CorrectionError(code=ErrorCode.TBL_RULE_INCORRECTLY_APPLIED, index=(0, 0, 0),
                                                       description="Rule incorrectly applied to node ['q'] (R↔)"),
-                                      CorrectionError(code=ErrorCode.TBL_RULE_INCORRECTLY_APPLIED, category="TBL",
-                                                      index=(0, 1, 0),
+                                      CorrectionError(code=ErrorCode.TBL_RULE_INCORRECTLY_APPLIED, index=(0, 1, 0),
                                                       description="Rule incorrectly applied to node ['q'] (R↔)")])
 
         # exit_on_first_error - should return only the first of those
         correct, error_list = classical_tableaux_system.is_correct_tree(n1, return_error_list=True,
                                                                         exit_on_first_error=True)
-        self.assertEqual(error_list, [CorrectionError(code=ErrorCode.TBL_RULE_NOT_APPLIED, category="TBL", index=(0,),
+        self.assertEqual(error_list, [CorrectionError(code=ErrorCode.TBL_RULE_NOT_APPLIED, index=(0,),
                                                       description="Rule R↔ was not applied to node ['↔', ['p'], ['q']]")])
 
         # More extensive tests (with the random argument generator) are made in tests/utils/test_tableaux_solver

@@ -1262,7 +1262,6 @@ class SequentCalculus:
                             if not return_error_list:
                                 return False
                             error_list.append(CorrectionError(code=ErrorCode.SEQ_INCORRECT_PREMISE, index=None,
-                                                              category="SEQ",
                                                               description=f"Node {node}: Premise nodes must have either"
                                                                           f" None or 'premise' as justification"))
                             if exit_on_first_error:
@@ -1276,7 +1275,6 @@ class SequentCalculus:
                         if not return_error_list:
                             return False
                         error_list.append(CorrectionError(code=ErrorCode.SEQ_INCORRECT_AXIOM, index=None,
-                                                          category="SEQ",
                                                           description=f'Node {node}: Axiom {axiom_name} is not a valid '
                                                                       f'axiom name'))
                         if exit_on_first_error:
@@ -1285,7 +1283,6 @@ class SequentCalculus:
                         if not return_error_list:
                             return False
                         error_list.append(CorrectionError(code=ErrorCode.SEQ_INCORRECT_AXIOM, index=None,
-                                                          category="SEQ",
                                                           description=f'Node {node} is not a valid axiom'))
                         if exit_on_first_error:
                             return False, error_list
@@ -1298,7 +1295,7 @@ class SequentCalculus:
                     if not return_error_list:
                         return False
                     error_list.append(CorrectionError(code=ErrorCode.SEQ_RULE_INCORRECTLY_APPLIED, index=None,
-                                                      category="SEQ", description=error))
+                                                      description=error))
                     if exit_on_first_error:
                         return False, error_list
 

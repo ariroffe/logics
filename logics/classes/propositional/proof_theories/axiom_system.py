@@ -112,8 +112,7 @@ class AxiomSystem:
                     if not return_error_list:
                         return False
                     else:
-                        error_list.append(CorrectionError(code=ErrorCode.AX_INCORRECT_PREMISE, category="AX",
-                                                          index=step_index,
+                        error_list.append(CorrectionError(code=ErrorCode.AX_INCORRECT_PREMISE, index=step_index,
                                                           description=f"{step.content} was marked as 'premise', "
                                                                       f"but is not a premise of the inference given"))
                         if exit_on_first_error:
@@ -130,8 +129,7 @@ class AxiomSystem:
                     if not return_error_list:
                         return False
                     else:
-                        error_list.append(CorrectionError(code=ErrorCode.AX_INCORRECT_AXIOM, category="AX",
-                                                          index=step_index,
+                        error_list.append(CorrectionError(code=ErrorCode.AX_INCORRECT_AXIOM, index=step_index,
                                                           description=f"{step.content} was marked as 'axiom', but is "
                                                                       f"not an instance of any axiom of the system"))
                         if exit_on_first_error:
@@ -143,8 +141,7 @@ class AxiomSystem:
                     if not return_error_list:
                         return False
                     else:
-                        error_list.append(CorrectionError(code=ErrorCode.AX_INCORRECT_AXIOM, category="AX",
-                                                          index=step_index,
+                        error_list.append(CorrectionError(code=ErrorCode.AX_INCORRECT_AXIOM, index=step_index,
                                                           description=f"{step.content} was marked as "
                                                                       f"{step.justification}, but is not an instance "
                                                                       f"of that axiom"))
@@ -163,8 +160,7 @@ class AxiomSystem:
                     if not return_error_list:
                         return False
                     else:
-                        error_list.append(CorrectionError(code=ErrorCode.AX_RULE_INCORRECTLY_APPLIED, category="AX",
-                                                          index=step_index,
+                        error_list.append(CorrectionError(code=ErrorCode.AX_RULE_INCORRECTLY_APPLIED, index=step_index,
                                                           description=f"{step.content} was marked as "
                                                                       f"{step.justification}, but it is not a correct "
                                                                       f"application of that rule"))
@@ -176,8 +172,7 @@ class AxiomSystem:
                 if not return_error_list:
                     return False
                 else:
-                    error_list.append(CorrectionError(code=ErrorCode.AX_INCORRECT_JUSTIFICATION, category="AX",
-                                                      index=step_index,
+                    error_list.append(CorrectionError(code=ErrorCode.AX_INCORRECT_JUSTIFICATION, index=step_index,
                                                       description="Justification is incorrect, must be either 'premise'"
                                                                   ", 'axiom', or the name of a specific axiom or rule"))
                     if exit_on_first_error:
@@ -189,7 +184,6 @@ class AxiomSystem:
                 return False
             else:
                 error_list.append(CorrectionError(code=ErrorCode.AX_INCORRECT_CONCLUSION, index=len(derivation)-1,
-                                                  category="AX",
                                                   description="Final step of the derivation is not the conclusion of "
                                                               "the inference given"))
                 if exit_on_first_error:

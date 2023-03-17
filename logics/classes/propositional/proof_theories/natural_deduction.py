@@ -247,8 +247,7 @@ class NaturalDeductionSystem:
                     if not return_error_list:
                         return False
                     else:
-                        error_list.append(CorrectionError(code=ErrorCode.ND_INCORRECT_PREMISE, category="ND",
-                                                          index=step_index,
+                        error_list.append(CorrectionError(code=ErrorCode.ND_INCORRECT_PREMISE, index=step_index,
                                                           description="Step was marked as 'premise', but is not a "
                                                                       "premise of the inference given"))
                         if exit_on_first_error:
@@ -259,9 +258,9 @@ class NaturalDeductionSystem:
                         if not return_error_list:
                             return False
                         else:
-                            error_list.append(CorrectionError(code=ErrorCode.ND_INCORRECT_SUPPOSITION, category="ND",
-                                                              index=0, description="Incorrect supposition handling. "
-                                                                       "Premise steps do not open suppositions"))
+                            error_list.append(CorrectionError(code=ErrorCode.ND_INCORRECT_SUPPOSITION, index=0,
+                                                              description="Incorrect supposition handling. Premise "
+                                                                          "steps do not open suppositions"))
                             if exit_on_first_error:
                                 return False, error_list
                 else:
@@ -269,8 +268,7 @@ class NaturalDeductionSystem:
                         if not return_error_list:
                             return False
                         else:
-                            error_list.append(CorrectionError(code=ErrorCode.ND_INCORRECT_SUPPOSITION, category="ND",
-                                                              index=step_index,
+                            error_list.append(CorrectionError(code=ErrorCode.ND_INCORRECT_SUPPOSITION, index=step_index,
                                                               description="Incorrect supposition handling"))
                             if exit_on_first_error:
                                 return False, error_list
@@ -283,8 +281,8 @@ class NaturalDeductionSystem:
                         if not return_error_list:
                             return False
                         else:
-                            error_list.append(CorrectionError(code=ErrorCode.ND_INCORRECT_SUPPOSITION, category="ND",
-                                                              index=0, description="Incorrect supposition handling"))
+                            error_list.append(CorrectionError(code=ErrorCode.ND_INCORRECT_SUPPOSITION, index=0,
+                                                              description="Incorrect supposition handling"))
                             if exit_on_first_error:
                                 return False, error_list
                 else:
@@ -294,8 +292,7 @@ class NaturalDeductionSystem:
                         if not return_error_list:
                             return False
                         else:
-                            error_list.append(CorrectionError(code=ErrorCode.ND_INCORRECT_SUPPOSITION, category="ND",
-                                                              index=step_index,
+                            error_list.append(CorrectionError(code=ErrorCode.ND_INCORRECT_SUPPOSITION, index=step_index,
                                                               description="Incorrect supposition handling"))
                             if exit_on_first_error:
                                 return False, error_list
@@ -307,8 +304,7 @@ class NaturalDeductionSystem:
                     if not return_error_list:
                         return False
                     else:
-                        error_list.append(CorrectionError(code=ErrorCode.ND_INCORRECT_JUSTIFICATION, category="ND",
-                                                          index=step_index,
+                        error_list.append(CorrectionError(code=ErrorCode.ND_INCORRECT_JUSTIFICATION, index=step_index,
                                                           description="Justification is incorrect, must be either "
                                                                       "'premise', 'supposition', or the name of a "
                                                                       "specific axiom or rule"))
@@ -348,7 +344,7 @@ class NaturalDeductionSystem:
                             else:
                                 # If there is more than one possible rule, return a generic error message
                                 error_list.append(CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED,
-                                                                  category="ND", index=step_index,
+                                                                  index=step_index,
                                                                   description="Incorrect application of rule"))
                             if exit_on_first_error:
                                     return False, error_list
@@ -358,8 +354,7 @@ class NaturalDeductionSystem:
             if not return_error_list:
                 return False
             else:
-                error_list.append(CorrectionError(code=ErrorCode.ND_INCORRECT_CONCLUSION, category="ND",
-                                                  index=len(derivation)-1,
+                error_list.append(CorrectionError(code=ErrorCode.ND_INCORRECT_CONCLUSION, index=len(derivation)-1,
                                                   description="Final step of the derivation is not the conclusion "
                                                               "of the inference"))
                 if exit_on_first_error:
@@ -416,7 +411,7 @@ class NaturalDeductionSystem:
         if len(last_step.on_steps) != len(rule) - 1:
             if not return_error:
                 return False
-            return False, CorrectionError(code=ErrorCode.ND_INCORRECT_ON_STEPS, category="ND", index=step,
+            return False, CorrectionError(code=ErrorCode.ND_INCORRECT_ON_STEPS, index=step,
                                           description="Number of on steps given are not equal to the number of rule "
                                                       "premises")
 
@@ -425,7 +420,7 @@ class NaturalDeductionSystem:
             if on_step >= len(derivation) - 1:
                 if not return_error:
                     return False
-                return False, CorrectionError(code=ErrorCode.ND_INCORRECT_ON_STEPS, category="ND", index=step,
+                return False, CorrectionError(code=ErrorCode.ND_INCORRECT_ON_STEPS, index=step,
                                               description=f"On step {on_step} is greater or equal than the current "
                                                           f"step, must be lower")
 
@@ -439,7 +434,7 @@ class NaturalDeductionSystem:
             if not exact_match and not without_num_match:
                 if not return_error:
                     return False
-                return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED, category="ND", index=step,
+                return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED, index=step,
                                               description=f"Justification for step {derivation.index(last_step)} does "
                                                           f"not coincide with the justification in the rule conclusion")
         # (content)
@@ -447,7 +442,7 @@ class NaturalDeductionSystem:
         if not instance:
             if not return_error:
                 return False
-            return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED, category="ND", index=step,
+            return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED, index=step,
                                           description=f"Step {derivation.index(last_step)} is not an instance of the "
                                                       f"conclusion of the rule given")
 
@@ -478,8 +473,7 @@ class NaturalDeductionSystem:
                 if prev_step is not None and step_number != prev_step + 1:
                     if not return_error:
                         return False
-                    return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED,
-                                                  category="ND", index=step,
+                    return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED, index=step,
                                                   description=f"On step {step_number} does not immediately follow the "
                                                               f"previous on step, as the rule requires")
 
@@ -489,8 +483,7 @@ class NaturalDeductionSystem:
                         derivation[step_number].justification != rule_step.justification:
                     if not return_error:
                         return False
-                    return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED,
-                                                  category="ND", index=step,
+                    return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED, index=step,
                                                   description=f"Justification for on step {step_number} does not "
                                                               f"coincide with the justification in rule "
                                                               f"premise {prem_number}")
@@ -503,8 +496,7 @@ class NaturalDeductionSystem:
                 if not instance:
                     if not return_error:
                         return False
-                    return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED,
-                                                  category="ND", index=step,
+                    return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED, index=step,
                                                   description=f"On step {step_number} is not an instance of rule "
                                                               f"premise number {prem_number}")
                 else:
@@ -525,8 +517,7 @@ class NaturalDeductionSystem:
                             relevant_sup_dict[relevant_step] not in derivation[step_number].open_suppositions:
                         if not return_error:
                             return False
-                        return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED,
-                                                      category="ND", index=step,
+                        return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED, index=step,
                                                       description=f"Incorrect use of suppositions in 'on step' "
                                                                   f"{step_number}")
                     # Check that closed suppositions of the rule are not open in the derivation
@@ -534,8 +525,7 @@ class NaturalDeductionSystem:
                             relevant_sup_dict[relevant_step] in derivation[step_number].open_suppositions:
                         if not return_error:
                             return False
-                        return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED,
-                                                      category="ND", index=step,
+                        return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED, index=step,
                                                       description=f"Incorrect use of suppositions in 'on step' "
                                                                   f"{step_number}")
 
@@ -547,15 +537,14 @@ class NaturalDeductionSystem:
                         if open_sup not in last_step.open_suppositions:
                             if not return_error:
                                 return False
-                            return False, CorrectionError(code=ErrorCode.ND_CLOSED_SUPPOSITION,
-                                                          category="ND", index=step,
+                            return False, CorrectionError(code=ErrorCode.ND_CLOSED_SUPPOSITION, index=step,
                                                           description=f"Step {step_number} is in a closed supposition")
 
         # Conclusion again (check that it immediately follows the last step, if it corresponds)
         if prev_step is not None and derivation.index(last_step) != prev_step + 1:
             if not return_error:
                 return False
-            return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED, category="ND", index=step,
+            return False, CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED, index=step,
                                           description=f"On step {derivation.index(last_step)} does not immediately "
                                                       f"follow the previous on step, as the rule requires")
 
@@ -565,13 +554,13 @@ class NaturalDeductionSystem:
                     relevant_sup_dict[relevant_step] not in last_step.open_suppositions:
                 if not return_error:
                     return False
-                return False, CorrectionError(code=ErrorCode.ND_INCORRECT_SUPPOSITION, category="ND", index=step,
+                return False, CorrectionError(code=ErrorCode.ND_INCORRECT_SUPPOSITION, index=step,
                                               description="Incorrect supposition handling")
             if relevant_step not in rule[-1].open_suppositions and \
                     relevant_sup_dict[relevant_step] in last_step.open_suppositions:
                 if not return_error:
                     return False
-                return False, CorrectionError(code=ErrorCode.ND_INCORRECT_SUPPOSITION, category="ND", index=step,
+                return False, CorrectionError(code=ErrorCode.ND_INCORRECT_SUPPOSITION, index=step,
                                               description="Incorrect supposition handling")
         # Outside the rule suppositions, every supposition present in the previous step must still be open,
         # and vice versa (the conclusion step should not open any new suppositions not allowed by the rule)
@@ -579,7 +568,7 @@ class NaturalDeductionSystem:
                 [s2 for s2 in derivation[step].open_suppositions if s2 not in relevant_sup_dict.values()]:
             if not return_error:
                 return False
-            return False, CorrectionError(code=ErrorCode.ND_INCORRECT_SUPPOSITION, category="ND", index=step,
+            return False, CorrectionError(code=ErrorCode.ND_INCORRECT_SUPPOSITION, index=step,
                                           description="Incorrect supposition handling")
 
         # If it got to here and did not return, the application is correct

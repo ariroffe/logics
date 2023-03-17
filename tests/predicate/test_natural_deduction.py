@@ -248,7 +248,7 @@ class TestPredicateNaturalDeduction(unittest.TestCase):
         rule = nd_system.substitute_rule(deriv, 1, nd_system.rules['I∀'])
         arbitrary, error = nd_system.check_arbitrary_constants(deriv, 1, rule)
         self.assertFalse(arbitrary)
-        self.assertEqual(error, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, category="ND", index=1,
+        self.assertEqual(error, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, index=1,
                                                 description="Constant 'a' is not arbitrary"))
 
         deriv = parser.parse_derivation("""
@@ -274,7 +274,7 @@ class TestPredicateNaturalDeduction(unittest.TestCase):
         rule = nd_system.substitute_rule(deriv, 1, nd_system.rules['I∀'])
         arbitrary, error = nd_system.check_arbitrary_constants(deriv, 1, rule)
         self.assertFalse(arbitrary)
-        self.assertEqual(error, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, category="ND", index=1,
+        self.assertEqual(error, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, index=1,
                                                 description="Constant 'a' is not arbitrary"))
 
         deriv = parser.parse_derivation("""
@@ -284,7 +284,7 @@ class TestPredicateNaturalDeduction(unittest.TestCase):
         rule = nd_system.substitute_rule(deriv, 1, nd_system.rules['I∀'])
         arbitrary, error = nd_system.check_arbitrary_constants(deriv, 1, rule)
         self.assertFalse(arbitrary)
-        self.assertEqual(error, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, category="ND", index=1,
+        self.assertEqual(error, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, index=1,
                                                 description="Constant 'a' is not arbitrary"))
 
         deriv = parser.parse_derivation("""
@@ -305,7 +305,7 @@ class TestPredicateNaturalDeduction(unittest.TestCase):
         rule = nd_system.substitute_rule(deriv, 3, nd_system.rules['I∀'])
         arbitrary, error = nd_system.check_arbitrary_constants(deriv, 3, rule)
         self.assertFalse(arbitrary)
-        self.assertEqual(error, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, category="ND", index=3,
+        self.assertEqual(error, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, index=3,
                                                 description="Constant 'a' is not arbitrary"))
 
     def test_arbitrary_constants_exist_elim(self):
@@ -317,7 +317,7 @@ class TestPredicateNaturalDeduction(unittest.TestCase):
         rule = nd_system.substitute_rule(deriv, 2, nd_system.rules['E∃'])
         arbitrary, error = nd_system.check_arbitrary_constants(deriv, 2, rule)
         self.assertFalse(arbitrary)
-        self.assertEqual(error, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, category="ND", index=2,
+        self.assertEqual(error, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, index=2,
                                                 description="Constant 'a' is not arbitrary"))
 
         deriv = parser.parse_derivation("""
@@ -337,7 +337,7 @@ class TestPredicateNaturalDeduction(unittest.TestCase):
         rule = nd_system.substitute_rule(deriv, 2, nd_system.rules['E∃'])
         arbitrary, error = nd_system.check_arbitrary_constants(deriv, 2, rule)
         self.assertFalse(arbitrary)
-        self.assertEqual(error, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, category="ND", index=2,
+        self.assertEqual(error, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, index=2,
                                                 description="Constant 'a' is not arbitrary"))
 
         deriv = parser.parse_derivation("""
@@ -348,7 +348,7 @@ class TestPredicateNaturalDeduction(unittest.TestCase):
         rule = nd_system.substitute_rule(deriv, 2, nd_system.rules['E∃'])
         arbitrary, error = nd_system.check_arbitrary_constants(deriv, 2, rule)
         self.assertFalse(arbitrary)
-        self.assertEqual(error, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, category="ND", index=2,
+        self.assertEqual(error, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, index=2,
                                                 description="Constant 'a' is not arbitrary"))
 
         deriv = parser.parse_derivation("""
@@ -359,7 +359,7 @@ class TestPredicateNaturalDeduction(unittest.TestCase):
         rule = nd_system.substitute_rule(deriv, 2, nd_system.rules['E∃'])
         arbitrary, error = nd_system.check_arbitrary_constants(deriv, 2, rule)
         self.assertFalse(arbitrary)
-        self.assertEqual(error, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, category="ND", index=2,
+        self.assertEqual(error, CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, index=2,
                                                 description="Constant 'a' is not arbitrary"))
 
     def test_is_correct_derivation(self):
@@ -407,7 +407,7 @@ class TestPredicateNaturalDeduction(unittest.TestCase):
         """, natural_deduction=True)
         correct, error = nd_system.is_correct_derivation(deriv, return_error_list=True)
         self.assertFalse(correct)
-        self.assertEqual(error, [CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, category="ND", index=3,
+        self.assertEqual(error, [CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, index=3,
                                                 description="Constant 'a' is not arbitrary")])
 
         deriv = parser.parse_derivation("""
@@ -417,7 +417,7 @@ class TestPredicateNaturalDeduction(unittest.TestCase):
             """, natural_deduction=True)
         correct, error = nd_system.is_correct_derivation(deriv, return_error_list=True)
         self.assertFalse(correct)
-        self.assertEqual(error, [CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, category="ND", index=2,
+        self.assertEqual(error, [CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, index=2,
                                                 description="Constant 'a' is not arbitrary")])
 
         deriv = parser.parse_derivation("""
@@ -446,5 +446,5 @@ class TestPredicateNaturalDeduction(unittest.TestCase):
             """, natural_deduction=True)
         correct, error = nd_system.is_correct_derivation(deriv, return_error_list=True)
         self.assertFalse(correct)
-        self.assertEqual(error, [CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, category="ND", index=4,
+        self.assertEqual(error, [CorrectionError(code=ErrorCode.ND_NONARBITRARY_CONSTANT, index=4,
                                                 description="Constant 'a' is not arbitrary")])
