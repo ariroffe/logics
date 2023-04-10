@@ -228,12 +228,49 @@ class NaturalDeductionSystem:
 
         >>> from logics.utils.parsers import classical_parser
         >>> from logics.instances.propositional.natural_deduction import classical_natural_deduction_system
-        >>> inf = classical_parser.parse('p and q / p')
+        >>> inf = classical_parser.parse('p ∧ q / p')
         >>> deriv = classical_parser.parse_derivation('''
-        ... p and q; premise; []; []
+        ... p ∧ q; premise; []; []
         ... p; E∧; [0]; []''',
         ... natural_deduction=True)
         >>> classical_natural_deduction_system.is_correct_derivation(deriv, inf)
+        True
+
+        Also note that ``on_steps`` need to be provided in the order they were specified in the rule. E.g., the
+        conditional elimination rule states:
+
+        >>> cond_elim = NaturalDeductionRule([
+        >>> '(...)',
+        >>> NaturalDeductionStep(Formula(['→', ['A'], ['B']]), open_suppositions=[]),
+        >>> '(...)',
+        >>> NaturalDeductionStep(Formula(['A']), open_suppositions=[]),
+        >>> '(...)',
+        >>> NaturalDeductionStep(Formula(['B']), 'E→', [0, 1], open_suppositions=[])
+        >>> ]),
+
+        So, if we do:
+
+        >>> from logics.utils.parsers import classical_parser
+        >>> from logics.instances.propositional.natural_deduction import classical_natural_deduction_system
+        >>> inf = classical_parser.parse('p → q, p / q')
+        >>> deriv = classical_parser.parse_derivation('''
+        ... p → q; premise; []; []
+        ... p; premise; []; []
+        ... q; E→; [1, 0]; []''',
+        ... natural_deduction=True)
+        >>> classical_natural_deduction_system.is_correct_derivation(deriv, inf)
+        False
+
+        The last step is incorrect because the conditional elimination rule specifies that the first ``on_step`` is the
+        conditional statement and the second is the antecedent.
+
+        If you want to be able to specify them in reverse order, the solution is to add another rule to the system with
+        the ``on_steps`` reversed. There are some predefined systems that do this
+        (for rules that do not involve suppositions), see the Instances below.
+
+        >>> from logics.instances.propositional.natural_deduction import classical_natural_deduction_system_unordered
+        >>> # define the same inference and derivation as in the example above
+        >>> classical_natural_deduction_system_unordered.is_correct_derivation(deriv, inf)
         True
         """
         error_list = list()

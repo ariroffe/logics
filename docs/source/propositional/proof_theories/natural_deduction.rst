@@ -26,7 +26,7 @@ Instances
 
     .. literalinclude:: ../../../../logics/instances/propositional/natural_deduction.py
        :language: python
-       :lines: 8-109
+       :lines: 11-112
 
 .. data:: logics.instances.propositional.natural_deduction.classical_natural_deduction_system2
 
@@ -37,7 +37,15 @@ Instances
 
     .. literalinclude:: ../../../../logics/instances/propositional/natural_deduction.py
        :language: python
-       :lines: 121-135
+       :lines: 125-138
+
+The following systems are identical to the two above, but do not take into account ``on_steps`` order:
+
+.. data:: logics.instances.propositional.natural_deduction.classical_natural_deduction_system_unordered
+
+.. data:: logics.instances.propositional.natural_deduction.classical_natural_deduction_system2_unordered
+
+See the note to ``is_correct_derivation`` above.
 
 Natural Deduction Solver
 ------------------------
