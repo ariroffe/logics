@@ -24,6 +24,7 @@ class ErrorCode(IntEnum):
     TBL_RULE_INCORRECTLY_APPLIED = 304
     TBL_PREMISE_NOT_PRESENT = 305
     TBL_CONCLUSION_NOT_PRESENT = 306
+    TBL_INCORRECT_INDEX = 307
 
     # Axiom systems
     AX_INCORRECT_PREMISE = 401
@@ -63,6 +64,7 @@ error_names = {
     304: "TBL: Rule incorrectly applied",
     305: "TBL: Premise not present",
     306: "TBL: Conclusion not present",
+    307: "TBL: Incorrect index",
 
     # Axiom systems
     401: "AX: Incorrect premise",

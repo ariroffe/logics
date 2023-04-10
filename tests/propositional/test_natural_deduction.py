@@ -5,6 +5,7 @@ from logics.classes.propositional.proof_theories import NaturalDeductionStep, Na
 from logics.utils.parsers import classical_parser
 from logics.instances.propositional.natural_deduction import classical_natural_deduction_system as nd_system
 from logics.instances.propositional.natural_deduction import classical_natural_deduction_system2 as nd_system2
+from logics.instances.propositional.natural_deduction import classical_natural_deduction_system_unordered as nd_system_unordered
 
 
 class TestClassicalNaturalDeductionSystem(unittest.TestCase):
@@ -206,6 +207,7 @@ class TestClassicalNaturalDeductionSystem(unittest.TestCase):
             (p ∧ q); I∧; [0, 1]; []""",
             natural_deduction=True)
         self.assertTrue(nd_system.is_correct_derivation(deriv1_1, i1))
+        self.assertTrue(nd_system_unordered.is_correct_derivation(deriv1_1, i1))
 
         # Second derivation: reverse on_steps order
         deriv1_2 = classical_parser.parse_derivation(
@@ -214,6 +216,7 @@ class TestClassicalNaturalDeductionSystem(unittest.TestCase):
             (p ∧ q); I∧; [1, 0]; []""",
             natural_deduction=True)
         self.assertFalse(nd_system.is_correct_derivation(deriv1_2, i1))
+        self.assertTrue(nd_system_unordered.is_correct_derivation(deriv1_2, i1))
 
         i2 = Inference([Formula(['p']), Formula(['q'])],
                        [Formula(['∧', ['q'], ['p']])])
@@ -225,6 +228,7 @@ class TestClassicalNaturalDeductionSystem(unittest.TestCase):
             (q ∧ p); I∧; [1, 0]; []""",
             natural_deduction=True)
         self.assertTrue(nd_system.is_correct_derivation(deriv2_1, i2))
+        self.assertTrue(nd_system_unordered.is_correct_derivation(deriv2_1, i2))
 
         # Fourth derivation: reverse the conjuncts and the on_steps
         deriv2_2 = classical_parser.parse_derivation(
@@ -233,6 +237,7 @@ class TestClassicalNaturalDeductionSystem(unittest.TestCase):
             (q ∧ p); I∧; [0, 1]; []""",
             natural_deduction=True)
         self.assertFalse(nd_system.is_correct_derivation(deriv2_2, i2))
+        self.assertTrue(nd_system_unordered.is_correct_derivation(deriv2_2, i2))
 
 
 if __name__ == '__main__':
