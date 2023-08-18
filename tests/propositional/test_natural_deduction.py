@@ -115,6 +115,36 @@ class TestClassicalNaturalDeductionSystem(unittest.TestCase):
             natural_deduction=True)
         self.assertFalse(nd_system.is_correct_derivation(deriv3_6, None))
 
+        # Closing a supposition in the middle
+        deriv3_7 = classical_parser.parse_derivation(
+            """p; premise; []; []
+            q; supposition; []; [1]
+            r; supposition; []; [1, 2]
+            p; repetition; [0]; [2]
+            """,
+            natural_deduction=True)
+        correct, error_list = nd_system.is_correct_derivation(deriv3_7, None, return_error_list=True)
+        self.assertFalse(correct)
+        self.assertEqual(error_list[0].index, 3)
+        self.assertEqual(error_list[0].description, "Incorrect supposition handling. Cannot "
+                                                            "close a supposition that is not the last "
+                                                            "open one")
+        deriv3_8 = classical_parser.parse_derivation(
+            """p; premise; []; []
+            q; supposition; []; [1]
+            r; supposition; []; [1, 2]
+            r; supposition; []; [1, 2, 3]
+            p; repetition; [0]; [3]
+            """,
+            natural_deduction=True)
+        correct, error_list = nd_system.is_correct_derivation(deriv3_8, None, return_error_list=True)
+        self.assertFalse(correct)
+        self.assertEqual(error_list[0].index, 4)
+        self.assertEqual(error_list[0].description, "Incorrect supposition handling. Cannot "
+                                                    "close a supposition that is not the last "
+                                                    "open one")
+
+
         # -------------------------------------------------
         # Rules with multiple versions, check that they are accepted without number
         inf = classical_parser.parse('p and q / p')

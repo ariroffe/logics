@@ -274,9 +274,25 @@ class NaturalDeductionSystem:
         True
         """
         error_list = list()
+        prev_open_sups = []
 
         for step_index in range(len(derivation)):
             step = derivation[step_index]
+
+            # Check that we are not closing a supposition before the last open one
+            if len(prev_open_sups) > 1:
+                for idx, prev_sup in enumerate(prev_open_sups[:-1]):
+                    if prev_sup not in step.open_suppositions and prev_open_sups[idx+1] in step.open_suppositions:
+                        if not return_error_list:
+                            return False
+                        else:
+                            error_list.append(CorrectionError(code=ErrorCode.ND_INCORRECT_SUPPOSITION, index=step_index,
+                                                              description="Incorrect supposition handling. Cannot "
+                                                                          "close a supposition that is not the last "
+                                                                          "open one"))
+                            if exit_on_first_error:
+                                return False, error_list
+            prev_open_sups = sorted(step.open_suppositions[:])
 
             # If the justification is 'premise'
             if step.justification == 'premise':
