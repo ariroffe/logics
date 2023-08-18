@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.5] - 2023-08-18
+### Changed
+- If the different versions of an ND system's rule return the same
+  error in its application, return that error instead of a generic error message.
+
+### Fixed
+- Use ``license_files`` instead of ``license_file`` (deprecated) in ``setup.cfg``
+
 ## [1.6.4] - 2023-08-18
 ### Fixed
 - Natural deduction system's ``check_derivation`` method now detects if you close 

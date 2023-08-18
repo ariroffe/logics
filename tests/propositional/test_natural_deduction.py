@@ -116,14 +116,16 @@ class TestClassicalNaturalDeductionSystem(unittest.TestCase):
         self.assertFalse(nd_system.is_correct_derivation(deriv3_6, None))
 
         # Closing a supposition in the middle
+        inf = classical_parser.parse('p / p ∨ p')
         deriv3_7 = classical_parser.parse_derivation(
             """p; premise; []; []
             q; supposition; []; [1]
             r; supposition; []; [1, 2]
-            p; repetition; [0]; [2]
+            p; premise; []; [2]
+            p ∨ p; I∨; [0]; []
             """,
             natural_deduction=True)
-        correct, error_list = nd_system.is_correct_derivation(deriv3_7, None, return_error_list=True)
+        correct, error_list = nd_system.is_correct_derivation(deriv3_7, inf, return_error_list=True)
         self.assertFalse(correct)
         self.assertEqual(error_list[0].index, 3)
         self.assertEqual(error_list[0].description, "Incorrect supposition handling. Cannot "
@@ -144,14 +146,25 @@ class TestClassicalNaturalDeductionSystem(unittest.TestCase):
                                                     "close a supposition that is not the last "
                                                     "open one")
 
-
         # -------------------------------------------------
         # Rules with multiple versions, check that they are accepted without number
-        inf = classical_parser.parse('p and q / p')
+        inf = classical_parser.parse('p ∧ q / p')
         deriv4 = classical_parser.parse_derivation('''
-            p and q; premise; []; []
+            p ∧ q; premise; []; []
             p; E∧; [0]; []''', natural_deduction=True)
         self.assertTrue(nd_system.is_correct_derivation(deriv4, inf))
+
+        # If all attempts to use a rule with multiple versions return the same error, return that error instead of a
+        # generic error message
+        inf = classical_parser.parse('p ∧ q / p')
+        deriv4 = classical_parser.parse_derivation('''
+                    p ∧ q; premise; []; []
+                    p ∧ q; repetition; [0]; [];
+                    p; E∧; [0, 1]; []''', natural_deduction=True)
+        correct, error_list = nd_system.is_correct_derivation(deriv4, inf, return_error_list=True)
+        self.assertFalse(correct)
+        self.assertEqual(error_list[0].description, "Number of on steps given are not equal to the number of "
+                                                    "rule premises")
 
         # -------------------------------------------------
         # Test for exit_on_first_error

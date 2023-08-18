@@ -380,6 +380,8 @@ class NaturalDeductionSystem:
 
                     # Try to apply each of the relevant rule names
                     correct = False
+                    same_error = True  # for rules that have more than one version
+                    prev_error = None  # for rules that have more than one version
                     for rule_name in rule_names_to_try:
                         correct, error = self.is_correct_application(derivation=derivation[:step_index+1],
                                                                      step=step_index,  # last step
@@ -387,18 +389,24 @@ class NaturalDeductionSystem:
                                                                      return_error=True)
                         if correct:
                             break  # if one of the rules to try is correct, exit
+                        else:
+                            if prev_error is not None and error != prev_error:
+                                same_error = False
+                            prev_error = error
 
                     if not correct:
                         if not return_error_list:
                             return False
                         else:
-                            if len(rule_names_to_try) == 1:
-                                error_list.append(error)
-                            else:
-                                # If there is more than one possible rule, return a generic error message
+                            if len(rule_names_to_try) > 1 and not same_error:
+                                # If there is more than one possible rule, and different versions return a different
+                                # error, return a generic error message
                                 error_list.append(CorrectionError(code=ErrorCode.ND_RULE_INCORRECTLY_APPLIED,
                                                                   index=step_index,
                                                                   description="Incorrect application of rule"))
+
+                            else:
+                                error_list.append(error)
                             if exit_on_first_error:
                                     return False, error_list
 
@@ -622,7 +630,8 @@ class NaturalDeductionSystem:
             if not return_error:
                 return False
             return False, CorrectionError(code=ErrorCode.ND_INCORRECT_SUPPOSITION, index=step,
-                                          description="Incorrect supposition handling")
+                                          description="Incorrect supposition handling. The chosen rule does not open or"
+                                                      " close suppositions in its conclusion")
 
         # If it got to here and did not return, the application is correct
         if not return_error:
