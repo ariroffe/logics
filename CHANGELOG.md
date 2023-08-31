@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.6] - 2023-08-31
+### Fixed
+- Natural deduction derivations cannot end with open supopsitions.
+
 ## [1.6.5] - 2023-08-18
 ### Changed
 - If the different versions of an ND system's rule return the same

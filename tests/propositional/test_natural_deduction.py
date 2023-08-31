@@ -67,6 +67,15 @@ class TestClassicalNaturalDeductionSystem(unittest.TestCase):
         # -------------------------------------------------
         # Test incorrect use of suppositions
 
+        # Last step is inside a supposition
+        deriv3_0 = classical_parser.parse_derivation(
+            "p; supposition; []; [0]",
+            natural_deduction=True)
+        self.assertFalse(nd_system.is_correct_derivation(deriv3_0, None))
+        # same if we provide an inference
+        inf = classical_parser.parse('p / p')
+        self.assertFalse(nd_system.is_correct_derivation(deriv3_0, inf))
+
         # Using a step in a closed supposition
         deriv3_1 = classical_parser.parse_derivation(
             """p; supposition; []; [0]

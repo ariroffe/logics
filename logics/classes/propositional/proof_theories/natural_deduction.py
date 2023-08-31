@@ -410,6 +410,17 @@ class NaturalDeductionSystem:
                             if exit_on_first_error:
                                     return False, error_list
 
+        # Check that the last step of the derivation is not inside a supposition
+        if len(derivation[-1].open_suppositions) > 0:
+            if not return_error_list:
+                return False
+            else:
+                error_list.append(CorrectionError(code=ErrorCode.ND_INCORRECT_CONCLUSION, index=len(derivation)-1,
+                                                  description="Final step of the derivation cannot be inside a "
+                                                              "supposition"))
+                if exit_on_first_error:
+                    return False, error_list
+
         # Finally, checks if the last step is the conclusion of the inference
         if inference is not None and derivation.conclusion != inference.conclusion:
             if not return_error_list:
