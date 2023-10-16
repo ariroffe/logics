@@ -1,6 +1,8 @@
 import unittest
 
-from logics.classes.propositional.proof_theories.tableaux import TableauxNode, ConstructiveTreeSystem
+from logics.classes.propositional.proof_theories.tableaux import (
+    TableauxNode, MetainferentialTableauxNode, ConstructiveTreeSystem
+)
 from logics.classes.propositional import Formula, Inference
 from logics.classes.errors import ErrorCode, CorrectionError
 from logics.instances.propositional.languages import classical_infinite_language as lang
@@ -284,6 +286,40 @@ class TestTableauxSystem(unittest.TestCase):
         self.assertTrue(correct)
 
         # More extensive tests (with the random argument generator) are made in tests/utils/test_tableaux_solver
+
+
+class TestMetainferentialTableauxSystem(unittest.TestCase):
+    def test_index_is_instance_of(self):
+        simple_standard = MetainferentialTableauxNode(content=Formula(['p']), index={'1', 'i'})  # T
+        # Index variable
+        self.assertTrue(simple_standard.index_is_instance_of(simple_standard.index, 'X'))
+        # Sets
+        self.assertTrue(simple_standard.index_is_instance_of(simple_standard.index, {'1', 'i'}))
+        self.assertFalse(simple_standard.index_is_instance_of(simple_standard.index, {'1'}))
+        self.assertFalse(simple_standard.index_is_instance_of(simple_standard.index, ['X', 'Y']))
+
+        complex_standard = MetainferentialTableauxNode(content=Formula(['p']), index=[{'1', 'i'}, {'1'}])  # TS
+        # Index variables
+        self.assertTrue(complex_standard.index_is_instance_of(complex_standard.index, 'X'))
+        self.assertTrue(complex_standard.index_is_instance_of(complex_standard.index, ['X', 'Y']))
+        self.assertFalse(complex_standard.index_is_instance_of(complex_standard.index, ['X', 'X']))
+        # List
+        self.assertTrue(complex_standard.index_is_instance_of(complex_standard.index, [{'1', 'i'}, {'1'}]))
+        self.assertFalse(complex_standard.index_is_instance_of(complex_standard.index, [{'1'}, {'1'}]))
+
+        complex_standard2 = MetainferentialTableauxNode(content=Formula(['p']),
+                                                        index=[[{'1', 'i'}, {'1'}], [{'1', 'i'}, {'1'}]])  # TS/TS
+        # Index variables
+        self.assertTrue(complex_standard2.index_is_instance_of(complex_standard2.index, 'X'))
+        self.assertTrue(complex_standard2.index_is_instance_of(complex_standard2.index, ['X', 'Y']))
+        self.assertTrue(complex_standard2.index_is_instance_of(complex_standard2.index, ['X', 'X']))
+        # List
+        self.assertTrue(complex_standard2.index_is_instance_of(complex_standard2.index, [[{'1', 'i'}, {'1'}],
+                                                                                         [{'1', 'i'}, {'1'}]]))
+        self.assertFalse(complex_standard2.index_is_instance_of(complex_standard2.index, [[{'1', 'i'}, {'1'}],
+                                                                                         [{'1'}, {'1'}]]))
+        self.assertFalse(complex_standard2.index_is_instance_of(complex_standard2.index, [{'1', 'i'}, {'1'}]))
+
 
 class TestConstructiveTrees(unittest.TestCase):
     def test_constructive_tree_system_rules(self):
