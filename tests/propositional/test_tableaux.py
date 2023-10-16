@@ -301,6 +301,12 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
         self.assertTrue(isinstance(standard.content[0], MetainferentialTableauxStandard))  # X
         self.assertTrue(isinstance(standard.content[1], MetainferentialTableauxStandard))  # Y
 
+    def test_standard_level(self):
+        standard = MetainferentialTableauxStandard([[{'1', 'i'}, {'1'}], [{'1', 'i'}, {'1'}]], bar=False)
+        self.assertEqual(standard.level, 3)  # TS/TS
+        self.assertEqual(standard.content[0].level, 2)  # TS
+        self.assertEqual(standard.content[0].content[0].level, 1)  # T
+
     def test_standard_is_instance_of(self):
         simple_standard = MetainferentialTableauxStandard({'1', 'i'}, bar=False)  # T
         # Index variable

@@ -123,21 +123,25 @@ class TableauxNode(NodeMixin):
             subst_dict = dict()
 
         # First check the index and justification (it is less costly)
-        if (node.index is not None and not self.index_is_instance_of(self.index, node.index)) or \
+        if (node.index is not None and not self.index_is_instance_of(node.index)) or \
                 (node.justification is not None and self.justification != node.justification):
             if not return_subst_dict:
                 return False
             return False, subst_dict
 
         # Then check the content
-        instance, subst_dict = self.content.is_instance_of(node.content, language, subst_dict, return_subst_dict=True)
+        instance, subst_dict = self.content_is_instance_of(node.content, language, subst_dict, return_subst_dict=True)
         if not return_subst_dict:
             return instance
         return instance, subst_dict
 
-    def index_is_instance_of(self, idx1, idx2):
+    def content_is_instance_of(self, content2, language, subst_dict, return_subst_dict):
+        # Can be overriden in systems with more complex rules (e.g. metainferential tableaux)
+        return self.content.is_instance_of(content2, language, subst_dict, return_subst_dict)
+
+    def index_is_instance_of(self, idx2):
         # Can be overriden in systems with more complex labels (e.g. metainferential tableaux)
-        return idx1 == idx2
+        return self.index == idx2
 
     def instantiate(self, language, subst_dict, instantiate_children=True, first_iteration=True):
         """Given a TableauxNode with a schematic formula as content and a substitution dict, returns the schema

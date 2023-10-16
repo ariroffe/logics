@@ -1,3 +1,4 @@
+from logics.classes.propositional import Formula, Inference
 from .tableaux import TableauxNode
 
 
@@ -17,6 +18,17 @@ class MetainferentialTableauxStandard:
                 argument = self.content[index]
                 argument = self.__class__(argument)
                 self.content[index] = argument
+
+    @property
+    def level(self):
+        # The standard is something like 'X'
+        if self.content in self.standard_variables:
+            raise ValueError('Variable standard can have any level')
+        # Sets are standards of level 0
+        elif type(self.content) == set:
+            return 1
+        # For lists -i.e. type [S1, S2], return the maximum level between S1 and S2 + 1
+        return max(self.content[0].level, self.content[1].level) + 1
 
     def is_instance_of(self, idx2, subst_dict=None, return_subst_dict=False):
         if subst_dict is None:
@@ -82,3 +94,50 @@ class MetainferentialTableauxStandard:
 class MetainferentialTableauxNode(TableauxNode):
     def index_is_instance_of(self, idx2):
         return self.index.is_instance_of(idx2)
+
+    def content_is_instance_of(self, content2, language, subst_dict, return_subst_dict):
+        # This is kind of a hack, it states any inference's content is an instance of Γ / Δ (useful for inf0, inf1)
+        # Since logics has no inference variables, we must treat Γ and Δ as formulae
+        if (content2 == Inference(premises=[Formula(['Γ'])], conclusions=[Formula(['Δ'])]) and
+                isinstance(self.content, Inference)):
+            if return_subst_dict:
+                subst_dict['Γ'] = content2.premises
+                subst_dict['Δ'] = content2.conclusions
+                return True, subst_dict
+            return True
+        return super().content_is_instance_of(content2, language, subst_dict, return_subst_dict)
+
+    def instantiate(self, language, subst_dict, instantiate_children=True, first_iteration=True):
+        # Again, these are hacks to instantiate the rules inf0 and inf1
+        # Instantiate nodes of the form Γ / Δ
+        if first_iteration and self.content == Inference(premises=[Formula(['Γ'])], conclusions=[Formula(['Δ'])]):
+            # For the first node, replace Γ with the list of premises and Δ with the list of conclusions
+            self_content_substitution = Inference(premises=subst_dict['Γ'], conclusions=subst_dict['Δ'])
+            new_tableaux = self.__class__(content=self_content_substitution, index=self.index,
+                                          justification=self.justification)
+            for idx, premise in enumerate(subst_dict['Γ']):
+                subst_dict[f'γ{idx}'] = premise
+            for idx, conclusion in enumerate(subst_dict['Δ']):
+                subst_dict[f'δ{idx}'] = conclusion
+
+            for child_node in self.children:
+                new_child = child_node.instantiate(language, subst_dict, instantiate_children, first_iteration=False)
+                new_child.parent = new_tableaux
+
+            return new_tableaux
+
+        # Instantiate nodes of the form γ1, ...
+        elif self.content[0] in ('γ', 'δ'):
+            if self.content in subst_dict:
+                new_tableaux = self.__class__(content=subst_dict[self.content], index=self.index,
+                                              justification=self.justification)
+                for child_node in self.children:
+                    new_child = child_node.instantiate(language, subst_dict, instantiate_children,
+                                                       first_iteration=False)
+                    if new_child is not None:
+                        new_child.parent = new_tableaux
+                return new_tableaux
+            else:  # if you get γ5 but the actual inference only has 2 premises
+                return None
+        else:
+            return super().instantiate(language, subst_dict, instantiate_children, first_iteration)

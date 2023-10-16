@@ -83,7 +83,7 @@ class TableauxSolver:
                 if applicable:
                     subst_dict = result[1]
                     rule = tableaux_system.rules[rule_name]
-                    rule_application = rule.instantiate(tableaux_system.language, subst_dict)  # Has no parent
+                    rule_application = rule.instantiate(tableaux_system.language, subst_dict, instantiate_children=True)
 
                     # applied_rules contains a list of the instantiations of the rules. Done like this because
                     # in some modal systems, a rule may be applied twice to the same node & yield different results
