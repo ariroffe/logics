@@ -309,50 +309,6 @@ class TableauxNode(NodeMixin):
     #     return not self.__eq__(other)
 
 
-class MetainferentialTableauxNode(TableauxNode):
-    standard_variables = ['X', 'Y', 'Z']
-
-    def index_is_instance_of(self, idx1, idx2, subst_dict=None, return_subst_dict=False):
-        """
-        Idx1 is the index of the tableaux node you want to test, idx2 is the rule's index.
-        """
-        if subst_dict is None:
-            subst_dict = dict()
-
-        if idx2 in self.standard_variables:
-            if idx2 in subst_dict:
-                if return_subst_dict:
-                    return subst_dict[idx2] == idx1, subst_dict
-                return subst_dict[idx2] == idx1
-            else:
-                # Every standard is an instance of the standard variables
-                if return_subst_dict:
-                    subst_dict[idx2] = idx1
-                    return True, subst_dict
-                return True
-
-        # Complex index (e.g. [[{1, 'i'}, {'1'}], [{1}, {'1', 'i'}]], aka TS/ST)
-        elif isinstance(idx1, list) and isinstance(idx2, list) and len(idx2) == 2:
-            result, subst_dict = self.index_is_instance_of(idx1[0], idx2[0], subst_dict, True)
-            if not result:
-                if return_subst_dict:
-                    return False, subst_dict
-                return False
-            result2, subst_dict = self.index_is_instance_of(idx1[1], idx2[1], subst_dict, True)
-            if return_subst_dict:
-                return result2, subst_dict
-            return result2
-
-        # Simple index, e.g. {'1', 'i'} or {'1'}
-        elif isinstance(idx1, set) and isinstance(idx2, set):
-            if return_subst_dict:
-                return idx1 == idx2, subst_dict
-            return idx1 == idx2
-
-        if return_subst_dict:
-            return False, subst_dict
-        return False
-
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 

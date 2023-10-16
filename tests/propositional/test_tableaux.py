@@ -1,8 +1,7 @@
 import unittest
 
-from logics.classes.propositional.proof_theories.tableaux import (
-    TableauxNode, MetainferentialTableauxNode, ConstructiveTreeSystem
-)
+from logics.classes.propositional.proof_theories.tableaux import TableauxNode, ConstructiveTreeSystem
+from logics.classes.propositional.proof_theories.metainferential_tableaux import MetainferentialTableauxStandard
 from logics.classes.propositional import Formula, Inference
 from logics.classes.errors import ErrorCode, CorrectionError
 from logics.instances.propositional.languages import classical_infinite_language as lang
@@ -289,36 +288,48 @@ class TestTableauxSystem(unittest.TestCase):
 
 
 class TestMetainferentialTableauxSystem(unittest.TestCase):
-    def test_index_is_instance_of(self):
-        simple_standard = MetainferentialTableauxNode(content=Formula(['p']), index={'1', 'i'})  # T
+    def test_standard_init(self):
+        standard = MetainferentialTableauxStandard([[{'1', 'i'}, {'1'}], [{'1', 'i'}, {'1'}]], bar=False)
+        self.assertTrue(isinstance(standard, MetainferentialTableauxStandard))  # TS/TS
+        self.assertTrue(isinstance(standard.content[0], MetainferentialTableauxStandard))  # TS
+        self.assertTrue(isinstance(standard.content[1], MetainferentialTableauxStandard))  # TS
+        self.assertTrue(isinstance(standard.content[0].content[0], MetainferentialTableauxStandard))  # T
+        self.assertTrue(isinstance(standard.content[0].content[1], MetainferentialTableauxStandard))  # S
+
+        standard = MetainferentialTableauxStandard(['X', 'Y'], bar=True)
+        self.assertTrue(isinstance(standard, MetainferentialTableauxStandard))  # -X/Y
+        self.assertTrue(isinstance(standard.content[0], MetainferentialTableauxStandard))  # X
+        self.assertTrue(isinstance(standard.content[1], MetainferentialTableauxStandard))  # Y
+
+    def test_standard_is_instance_of(self):
+        simple_standard = MetainferentialTableauxStandard({'1', 'i'}, bar=False)  # T
         # Index variable
-        self.assertTrue(simple_standard.index_is_instance_of(simple_standard.index, 'X'))
+        self.assertTrue(simple_standard.is_instance_of(MetainferentialTableauxStandard('X')))
         # Sets
-        self.assertTrue(simple_standard.index_is_instance_of(simple_standard.index, {'1', 'i'}))
-        self.assertFalse(simple_standard.index_is_instance_of(simple_standard.index, {'1'}))
-        self.assertFalse(simple_standard.index_is_instance_of(simple_standard.index, ['X', 'Y']))
+        self.assertTrue(simple_standard.is_instance_of(MetainferentialTableauxStandard({'1', 'i'})))
+        self.assertFalse(simple_standard.is_instance_of(MetainferentialTableauxStandard({'1'})))
+        self.assertFalse(simple_standard.is_instance_of(MetainferentialTableauxStandard(['X', 'Y'])))
 
-        complex_standard = MetainferentialTableauxNode(content=Formula(['p']), index=[{'1', 'i'}, {'1'}])  # TS
+        complex_standard = MetainferentialTableauxStandard([{'1', 'i'}, {'1'}], bar=False)  # TS
         # Index variables
-        self.assertTrue(complex_standard.index_is_instance_of(complex_standard.index, 'X'))
-        self.assertTrue(complex_standard.index_is_instance_of(complex_standard.index, ['X', 'Y']))
-        self.assertFalse(complex_standard.index_is_instance_of(complex_standard.index, ['X', 'X']))
+        self.assertTrue(complex_standard.is_instance_of(MetainferentialTableauxStandard('X')))
+        self.assertTrue(complex_standard.is_instance_of(MetainferentialTableauxStandard(['X', 'Y'])))
+        self.assertFalse(complex_standard.is_instance_of(MetainferentialTableauxStandard(['X', 'X'])))
         # List
-        self.assertTrue(complex_standard.index_is_instance_of(complex_standard.index, [{'1', 'i'}, {'1'}]))
-        self.assertFalse(complex_standard.index_is_instance_of(complex_standard.index, [{'1'}, {'1'}]))
+        self.assertTrue(complex_standard.is_instance_of(MetainferentialTableauxStandard([{'1', 'i'}, {'1'}])))
+        self.assertFalse(complex_standard.is_instance_of(MetainferentialTableauxStandard([{'1'}, {'1'}])))
 
-        complex_standard2 = MetainferentialTableauxNode(content=Formula(['p']),
-                                                        index=[[{'1', 'i'}, {'1'}], [{'1', 'i'}, {'1'}]])  # TS/TS
+        complex_standard2 = MetainferentialTableauxStandard([[{'1', 'i'}, {'1'}], [{'1', 'i'}, {'1'}]], bar=False)  # TS/TS
         # Index variables
-        self.assertTrue(complex_standard2.index_is_instance_of(complex_standard2.index, 'X'))
-        self.assertTrue(complex_standard2.index_is_instance_of(complex_standard2.index, ['X', 'Y']))
-        self.assertTrue(complex_standard2.index_is_instance_of(complex_standard2.index, ['X', 'X']))
+        self.assertTrue(complex_standard2.is_instance_of(MetainferentialTableauxStandard('X')))
+        self.assertTrue(complex_standard2.is_instance_of(MetainferentialTableauxStandard(['X', 'Y'])))
+        self.assertTrue(complex_standard2.is_instance_of(MetainferentialTableauxStandard(['X', 'X'])))
         # List
-        self.assertTrue(complex_standard2.index_is_instance_of(complex_standard2.index, [[{'1', 'i'}, {'1'}],
-                                                                                         [{'1', 'i'}, {'1'}]]))
-        self.assertFalse(complex_standard2.index_is_instance_of(complex_standard2.index, [[{'1', 'i'}, {'1'}],
-                                                                                         [{'1'}, {'1'}]]))
-        self.assertFalse(complex_standard2.index_is_instance_of(complex_standard2.index, [{'1', 'i'}, {'1'}]))
+        self.assertTrue(complex_standard2.is_instance_of(MetainferentialTableauxStandard([[{'1', 'i'}, {'1'}],
+                                                                                          [{'1', 'i'}, {'1'}]])))
+        self.assertFalse(complex_standard2.is_instance_of(MetainferentialTableauxStandard([[{'1', 'i'}, {'1'}],
+                                                                                           [{'1'}, {'1'}]])))
+        self.assertFalse(complex_standard2.is_instance_of(MetainferentialTableauxStandard([{'1', 'i'}, {'1'}])))
 
 
 class TestConstructiveTrees(unittest.TestCase):
