@@ -161,6 +161,13 @@ class TestTableauxSolver(unittest.TestCase):
 
 
 class TestMetainferentialTableauxSolver(unittest.TestCase):
+    def test_begin_tableaux(self):
+        inference = Inference(premises=[Formula(['p']), Formula(['q'])], conclusions=[Formula(['p'])])
+        initial_node = metainferential_tableaux_solver._begin_tableaux(inference, [{'1', 'i'}, {'1'}])
+        self.assertEqual(initial_node.content, inference)
+        self.assertEqual(initial_node.index, MetainferentialTableauxStandard([{'1', 'i'}, {'1'}], bar=True))
+        self.assertEqual(len(initial_node.children), 0)
+
     def test_apply_rule(self):
         # inf0
         T, S = MetainferentialTableauxStandard({'1', 'i'}), MetainferentialTableauxStandard({'1'})

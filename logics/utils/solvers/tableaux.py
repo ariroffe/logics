@@ -30,7 +30,7 @@ class TableauxSolver:
     beggining_premise_index = None
     beggining_conclusion_index = None
 
-    def solve(self, inference, tableaux_system, max_depth=100):
+    def solve(self, inference, tableaux_system, beggining_index=None, max_depth=100):
         """Builds a tableaux for an inference, given a tableaux system with which to operate.
 
         Parameters
@@ -39,6 +39,10 @@ class TableauxSolver:
             The Inference to build a tableaux for
         tableaux_system: logics.classes.propositional.proof_theories.TableauxSystem
             A TableauxSystem or any class that inherits from it.
+        beggining_index: list or set, optional
+            For systems that require you to specify a label at the beginning of the proof (e.g. for metainferential tableaux
+            it can be things like {'1'}, {'1', 'i'}, [{'1', 'i'}, {'1'}], [[{'1', 'i'}, {'1'}], [{'1'}, {'1', 'i'}]]
+            for S, T, TS, TS/ST, respectively)
         max_depth: int, optional
             The maximum depth that a tableaux can have. Default is 100. Set it to ``None`` if you want infinity.
 
@@ -74,7 +78,7 @@ class TableauxSolver:
                                     ├── ~q (R→)
                                     └── r (R→)
         """
-        tableaux = self._begin_tableaux(inference)
+        tableaux = self._begin_tableaux(inference, beggining_index)
         applied_rules = {rule_name: [] for rule_name in tableaux_system.rules}
 
         # For each node of the tableaux (including the ones we add dynamically)
@@ -120,7 +124,7 @@ class TableauxSolver:
     def apply_rule(self, language, rule_name, rule, subst_dict):
         return rule.instantiate(language, subst_dict, instantiate_children=True)
 
-    def _begin_tableaux(self, inference):
+    def _begin_tableaux(self, inference, beggining_index=None):
         """
         Initialize the tableaux by putting every premise and negated conclusion as a node
         May need to be overwritten for some non-classical systems
@@ -171,7 +175,7 @@ class IndexedTableauxSolver(TableauxSolver):
     beggining_premise_index = 1
     beggining_conclusion_index = 0
 
-    def _begin_tableaux(self, inference):
+    def _begin_tableaux(self, inference, beggining_index=None):
         """
         Conclusions are not negated in MV systems
         """
@@ -189,6 +193,15 @@ indexed_tableaux_solver = IndexedTableauxSolver()
 
 
 class MetainferentialTableauxSolver(TableauxSolver):
+    def _begin_tableaux(self, inference, beggining_index):
+        """
+        Conclusions are not negated in MV systems
+        """
+        return MetainferentialTableauxNode(
+            content=inference,
+            index=MetainferentialTableauxStandard(beggining_index, bar=True)
+        )
+
     def apply_rule(self, language, rule_name, rule, subst_dict):
         # This is kind of a hack. Since some rules in this system are more complicated, we hardcode their instantiaton.
         # e.g. contain inference variables (which logics does not have) -inf0, inf1, lowering and lifting rules
