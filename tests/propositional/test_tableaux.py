@@ -370,8 +370,11 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
         self.assertTrue(node1.is_instance_of(node5, lang))
         self.assertFalse(node1.is_instance_of(node5bar, lang))
         self.assertFalse(node1.is_instance_of(node6, lang))
+
+        T = MetainferentialTableauxStandard({'1', 'i'})
+        S = MetainferentialTableauxStandard({'1'})
         _, subst_dict = node1.is_instance_of(node5, lang, return_subst_dict=True)
-        self.assertEqual(subst_dict, {'A': Formula(['~', ['p']]), 'X': {'1', 'i'}, 'Y': {'1'}})
+        self.assertEqual(subst_dict, {'A': Formula(['~', ['p']]), 'X': T, 'Y': S})
 
         # Inference nodes
         node7 = MetainferentialTableauxNode(Inference(premises=[Formula(['p'])], conclusions=[Formula(['p'])]),
