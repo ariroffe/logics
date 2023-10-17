@@ -2,9 +2,12 @@ from copy import deepcopy
 
 from anytree import PreOrderIter, LevelOrderIter
 
-from logics.classes.propositional import Formula
+from logics.classes.propositional import Formula, Inference
 from logics.classes.exceptions import SolverError
 from logics.classes.propositional.proof_theories.tableaux import TableauxNode
+from logics.classes.propositional.proof_theories.metainferential_tableaux import (
+    MetainferentialTableauxNode, MetainferentialTableauxStandard
+)
 
 
 class TableauxSolver:
@@ -83,7 +86,7 @@ class TableauxSolver:
                 if applicable:
                     subst_dict = result[1]
                     rule = tableaux_system.rules[rule_name]
-                    rule_application = rule.instantiate(tableaux_system.language, subst_dict, instantiate_children=True)
+                    rule_application = self.apply_rule(tableaux_system.language, rule_name, rule, subst_dict)
 
                     # applied_rules contains a list of the instantiations of the rules. Done like this because
                     # in some modal systems, a rule may be applied twice to the same node & yield different results
@@ -113,6 +116,9 @@ class TableauxSolver:
                             return tableaux
 
         return tableaux
+
+    def apply_rule(self, language, rule_name, rule, subst_dict):
+        return rule.instantiate(language, subst_dict, instantiate_children=True)
 
     def _begin_tableaux(self, inference):
         """
@@ -180,6 +186,49 @@ class IndexedTableauxSolver(TableauxSolver):
 
 
 indexed_tableaux_solver = IndexedTableauxSolver()
+
+
+class MetainferentialTableauxSolver(TableauxSolver):
+    def apply_rule(self, language, rule_name, rule, subst_dict):
+        # This is kind of a hack. Since some rules in this system are more complicated, we hardcode their instantiaton.
+        # e.g. contain inference variables (which logics does not have) -inf0, inf1, lowering and lifting rules
+        # or require you to do complex operations on the standards (e.g. the singleton, intersection, and bar rules)
+        if rule_name == "inf0":
+            premises, conclusions = subst_dict['Γ'], subst_dict['Δ']
+            X, Y = subst_dict['X'], subst_dict['Y']
+            last_node = MetainferentialTableauxNode(
+                content=Inference(premises=premises, conclusions=conclusions),
+                index=MetainferentialTableauxStandard([subst_dict['X'], subst_dict['Y']], bar=True),
+                justification=None
+            )
+
+            # Premises
+            for premise in premises:
+                last_node = MetainferentialTableauxNode(content=deepcopy(premise), index=deepcopy(X),
+                                                        justification="inf0", parent=last_node)
+            # Conclusions
+            Ybar = deepcopy(Y)
+            Ybar.bar = True
+            for conclusion in conclusions:
+                last_node = MetainferentialTableauxNode(content=deepcopy(conclusion), index=deepcopy(Ybar),
+                                                        justification="inf0", parent=last_node)
+
+            return last_node.root
+
+        elif rule_name == "inf1":
+            pass
+        elif rule_name == "singleton":
+            pass
+        elif rule_name == "intersection":
+            pass
+        elif rule_name == "bar":
+            pass
+        else:
+            # In every other case, the rules behave as usual, so we return the super method
+            return super().apply_rule(language, rule_name, rule, subst_dict)
+
+
+metainferential_tableaux_solver = MetainferentialTableauxSolver()
 
 
 class ModalTableauxSolver(TableauxSolver):

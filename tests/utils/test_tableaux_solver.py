@@ -1,9 +1,12 @@
 import unittest
 
-from logics.classes.propositional import Formula
-from logics.instances.propositional.tableaux import classical_tableaux_system, classical_indexed_tableaux_system, \
-    LP_tableaux_system, classical_constructive_tree_system
-from logics.utils.solvers.tableaux import standard_tableaux_solver, indexed_tableaux_solver
+from logics.classes.propositional import Formula, Inference
+from logics.classes.propositional.proof_theories.metainferential_tableaux import MetainferentialTableauxStandard
+from logics.instances.propositional.tableaux import (
+    classical_tableaux_system, classical_indexed_tableaux_system, LP_tableaux_system, classical_constructive_tree_system
+)
+from logics.instances.propositional.metainferential_tableaux import metainferential_tableaux_rules
+from logics.utils.solvers.tableaux import standard_tableaux_solver, indexed_tableaux_solver, metainferential_tableaux_solver
 from logics.utils.parsers import classical_parser
 from logics.utils.formula_generators.generators_biased import random_formula_generator
 from logics.instances.propositional.languages import classical_infinite_language as cl_language
@@ -155,6 +158,43 @@ class TestTableauxSolver(unittest.TestCase):
                 correct, error_list = LP_tableaux_system.is_correct_tree(tableaux, inf, return_error_list=True)
                 print("ERROR LIST:", error_list)
                 raise e
+
+
+class TestMetainferentialTableauxSolver(unittest.TestCase):
+    def test_apply_rule(self):
+        # inf0
+        T, S = MetainferentialTableauxStandard({'1', 'i'}), MetainferentialTableauxStandard({'1'})
+        subst_dict = {'Γ': [Formula(['p']), Formula(['q'])], 'Δ': [Formula(['p'])], 'X': T, 'Y': S}
+        applied_rule = metainferential_tableaux_solver.apply_rule(cl_language, "inf0",
+                                                                  metainferential_tableaux_rules['inf0'], subst_dict)
+        # print(applied_rule.print_tree(classical_parser))
+        """
+        p, q / p, -[{'1', 'i'}, {'1'}]
+        └── p, {'1', 'i'} (inf0)
+            └── q, {'1', 'i'} (inf0)
+                └── p, -{'1'} (inf0)
+        """
+        # First node: p, q / p, -TS
+        self.assertEqual(applied_rule.content, Inference(premises=[Formula(['p']), Formula(['q'])],
+                                                         conclusions=[Formula(['p'])]))
+        self.assertEqual(applied_rule.index, MetainferentialTableauxStandard([T, S], bar=True))
+        self.assertEqual(len(applied_rule.children), 1)
+        # Second node: p, T
+        child = applied_rule.children[0]
+        self.assertEqual(child.content, Formula(['p']))
+        self.assertEqual(child.index, T)
+        self.assertEqual(len(child.children), 1)
+        # Third node: q, T
+        child = child.children[0]
+        self.assertEqual(child.content, Formula(['q']))
+        self.assertEqual(child.index, T)
+        self.assertEqual(len(child.children), 1)
+        # Third node: p, -S
+        Sbar = MetainferentialTableauxStandard({'1'}, bar=True)
+        child = child.children[0]
+        self.assertEqual(child.content, Formula(['p']))
+        self.assertEqual(child.index, Sbar)
+        self.assertEqual(len(child.children), 0)
 
 
 class TestConstructiveTreeSolver(unittest.TestCase):

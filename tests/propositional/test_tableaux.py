@@ -340,6 +340,9 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
                                                                                            [{'1'}, {'1'}]])))
         self.assertFalse(complex_standard2.is_instance_of(MetainferentialTableauxStandard([{'1', 'i'}, {'1'}])))
 
+        _, subst_dict = complex_standard2.is_instance_of(MetainferentialTableauxStandard(['X', 'Y']), return_subst_dict=True)
+        self.assertEqual(type(subst_dict['X']), MetainferentialTableauxStandard)
+
         # We do not treat -X as an instance of X, and viceverse
         X = MetainferentialTableauxStandard('X', bar=False)
         Xbar = MetainferentialTableauxStandard('X', bar=True)

@@ -46,12 +46,12 @@ class MetainferentialTableauxStandard:
         if std2 in self.standard_variables:
             if std2 in subst_dict:
                 if return_subst_dict:
-                    return subst_dict[std2] == std1, subst_dict
-                return subst_dict[std2] == std1
+                    return subst_dict[std2] == self, subst_dict
+                return subst_dict[std2] == self
             else:
                 # Every standard is an instance of the standard variables
                 if return_subst_dict:
-                    subst_dict[std2] = std1
+                    subst_dict[std2] = self
                     return True, subst_dict
                 return True
 
