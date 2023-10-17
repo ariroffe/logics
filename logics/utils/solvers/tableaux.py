@@ -193,30 +193,47 @@ class MetainferentialTableauxSolver(TableauxSolver):
         # This is kind of a hack. Since some rules in this system are more complicated, we hardcode their instantiaton.
         # e.g. contain inference variables (which logics does not have) -inf0, inf1, lowering and lifting rules
         # or require you to do complex operations on the standards (e.g. the singleton, intersection, and bar rules)
-        if rule_name == "inf0":
+        if rule_name == "inf0" or rule_name == "inf1":
             premises, conclusions = subst_dict['Γ'], subst_dict['Δ']
+            root_inference = Inference(premises=premises, conclusions=conclusions)
             X, Y = subst_dict['X'], subst_dict['Y']
-            last_node = MetainferentialTableauxNode(
-                content=Inference(premises=premises, conclusions=conclusions),
-                index=MetainferentialTableauxStandard([subst_dict['X'], subst_dict['Y']], bar=True),
-                justification=None
-            )
 
-            # Premises
-            for premise in premises:
-                last_node = MetainferentialTableauxNode(content=deepcopy(premise), index=deepcopy(X),
-                                                        justification="inf0", parent=last_node)
-            # Conclusions
-            Ybar = deepcopy(Y)
-            Ybar.bar = True
-            for conclusion in conclusions:
-                last_node = MetainferentialTableauxNode(content=deepcopy(conclusion), index=deepcopy(Ybar),
-                                                        justification="inf0", parent=last_node)
+            if rule_name == "inf0":
+                # Root node
+                last_node = MetainferentialTableauxNode(content=root_inference,
+                                                        index=MetainferentialTableauxStandard([X, Y], bar=True),
+                                                        justification=None)
+                # Premises
+                for premise in premises:
+                    last_node = MetainferentialTableauxNode(content=deepcopy(premise), index=deepcopy(X),
+                                                            justification="inf0", parent=last_node)
+                # Conclusions
+                Ybar = deepcopy(Y)
+                Ybar.bar = True
+                for conclusion in conclusions:
+                    last_node = MetainferentialTableauxNode(content=deepcopy(conclusion), index=deepcopy(Ybar),
+                                                            justification="inf0", parent=last_node)
+                return last_node.root
 
-            return last_node.root
+            elif rule_name == "inf1":
+                # Root node
+                root_node = MetainferentialTableauxNode(
+                    content=Inference(premises=premises, conclusions=conclusions),
+                    index=MetainferentialTableauxStandard([subst_dict['X'], subst_dict['Y']]),
+                    justification=None
+                )
+                # Premises
+                Xbar = deepcopy(X)
+                Xbar.bar = True
+                for premise in premises:
+                    MetainferentialTableauxNode(content=deepcopy(premise), index=deepcopy(Xbar), justification="inf1",
+                                                parent=root_node)
+                # Conclusions
+                for conclusion in conclusions:
+                    MetainferentialTableauxNode(content=deepcopy(conclusion), index=deepcopy(Y), justification="inf1",
+                                                parent=root_node)
+                return root_node
 
-        elif rule_name == "inf1":
-            pass
         elif rule_name == "singleton":
             pass
         elif rule_name == "intersection":
