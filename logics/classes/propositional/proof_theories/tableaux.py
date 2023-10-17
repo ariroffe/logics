@@ -122,14 +122,19 @@ class TableauxNode(NodeMixin):
         if subst_dict is None:
             subst_dict = dict()
 
-        # First check the index and justification (it is less costly)
-        if (node.index is not None and not self.index_is_instance_of(node.index)) or \
-                (node.justification is not None and self.justification != node.justification):
+        # Check the justification (less costly)
+        if node.justification is not None and self.justification != node.justification:
             if not return_subst_dict:
                 return False
             return False, subst_dict
-
-        # Then check the content
+        # Check the index
+        if node.index is not None:
+            index_instance, subst_dict = self.index_is_instance_of(node.index, subst_dict, return_subst_dict=True)
+            if not index_instance:
+                if not return_subst_dict:
+                    return False
+                return False, subst_dict
+        # Check the content
         instance, subst_dict = self.content_is_instance_of(node.content, language, subst_dict, return_subst_dict=True)
         if not return_subst_dict:
             return instance
@@ -139,8 +144,10 @@ class TableauxNode(NodeMixin):
         # Can be overriden in systems with more complex rules (e.g. metainferential tableaux)
         return self.content.is_instance_of(content2, language, subst_dict, return_subst_dict)
 
-    def index_is_instance_of(self, idx2):
+    def index_is_instance_of(self, idx2, subst_dict, return_subst_dict):
         # Can be overriden in systems with more complex labels (e.g. metainferential tableaux)
+        if return_subst_dict:
+            return self.index == idx2, subst_dict
         return self.index == idx2
 
     def instantiate(self, language, subst_dict, instantiate_children=True, first_iteration=True):

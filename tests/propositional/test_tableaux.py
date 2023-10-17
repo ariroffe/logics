@@ -1,7 +1,9 @@
 import unittest
 
 from logics.classes.propositional.proof_theories.tableaux import TableauxNode, ConstructiveTreeSystem
-from logics.classes.propositional.proof_theories.metainferential_tableaux import MetainferentialTableauxStandard
+from logics.classes.propositional.proof_theories.metainferential_tableaux import (
+    MetainferentialTableauxStandard, MetainferentialTableauxNode
+)
 from logics.classes.propositional import Formula, Inference
 from logics.classes.errors import ErrorCode, CorrectionError
 from logics.instances.propositional.languages import classical_infinite_language as lang
@@ -323,7 +325,8 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
         self.assertFalse(complex_standard.is_instance_of(MetainferentialTableauxStandard(['X', 'X'])))
         # List
         self.assertTrue(complex_standard.is_instance_of(MetainferentialTableauxStandard([{'1', 'i'}, {'1'}])))
-        self.assertFalse(complex_standard.is_instance_of(MetainferentialTableauxStandard([{'1'}, {'1'}])))
+        self.assertFalse(complex_standard.is_instance_of(MetainferentialTableauxStandard([{'1'}, {'1'}])))  # SS
+        self.assertFalse(complex_standard.is_instance_of(MetainferentialTableauxStandard([{'1'}, {'1', 'i'}])))  # ST
 
         complex_standard2 = MetainferentialTableauxStandard([[{'1', 'i'}, {'1'}], [{'1', 'i'}, {'1'}]], bar=False)  # TS/TS
         # Index variables
@@ -336,6 +339,64 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
         self.assertFalse(complex_standard2.is_instance_of(MetainferentialTableauxStandard([[{'1', 'i'}, {'1'}],
                                                                                            [{'1'}, {'1'}]])))
         self.assertFalse(complex_standard2.is_instance_of(MetainferentialTableauxStandard([{'1', 'i'}, {'1'}])))
+
+        # We do not treat -X as an instance of X, and viceverse
+        X = MetainferentialTableauxStandard('X', bar=False)
+        Xbar = MetainferentialTableauxStandard('X', bar=True)
+        self.assertFalse(Xbar.is_instance_of(X))
+        self.assertFalse(X.is_instance_of(Xbar))
+
+    def test_node_is_instance_of(self):
+        TS = MetainferentialTableauxStandard([{'1', 'i'}, {'1'}], bar=False)
+        ST = MetainferentialTableauxStandard([{'1'}, {'1', 'i'}], bar=False)
+        XY = MetainferentialTableauxStandard(['X', 'Y'], bar=False)
+        XYbar = MetainferentialTableauxStandard(['X', 'Y'], bar=True)
+        # Formula nodes
+        node1 = MetainferentialTableauxNode(Formula(['~', ['p']]), index=TS)
+        node2 = MetainferentialTableauxNode(Formula(['~', ['p']]), index=ST)
+        node3 = MetainferentialTableauxNode(Formula(['p']), index=TS)
+        self.assertTrue(node1.is_instance_of(node1, lang))
+        self.assertFalse(node1.is_instance_of(node2, lang))
+        self.assertFalse(node1.is_instance_of(node3, lang))
+        # standard and formula variables
+        node4 = MetainferentialTableauxNode(Formula(['~', ['p']]), index=XY)
+        node5 = MetainferentialTableauxNode(Formula(['A']), index=XY)
+        node5bar = MetainferentialTableauxNode(Formula(['A']), index=XYbar)
+        node6 = MetainferentialTableauxNode(Formula(['~', ['~', ['A']]]), index=XY)
+        self.assertTrue(node1.is_instance_of(node4, lang))
+        self.assertTrue(node1.is_instance_of(node5, lang))
+        self.assertFalse(node1.is_instance_of(node5bar, lang))
+        self.assertFalse(node1.is_instance_of(node6, lang))
+        _, subst_dict = node1.is_instance_of(node5, lang, return_subst_dict=True)
+        self.assertEqual(subst_dict, {'A': Formula(['~', ['p']]), 'X': {'1', 'i'}, 'Y': {'1'}})
+
+        # Inference nodes
+        node7 = MetainferentialTableauxNode(Inference(premises=[Formula(['p'])], conclusions=[Formula(['p'])]),
+                                            index=TS)
+        node8 = MetainferentialTableauxNode(Inference(premises=[Formula(['p'])], conclusions=[Formula(['p'])]),
+                                            index=ST)
+        node9 = MetainferentialTableauxNode(Inference(premises=[Formula(['~', ['p']])], conclusions=[Formula(['p'])]),
+                                            index=TS)
+        self.assertTrue(node7.is_instance_of(node7, lang))
+        self.assertFalse(node7.is_instance_of(node8, lang))
+        self.assertFalse(node7.is_instance_of(node9, lang))
+        # standard and formula variables
+        node10 = MetainferentialTableauxNode(Inference(premises=[Formula(['p'])], conclusions=[Formula(['p'])]),
+                                             index=XY)
+        node11 = MetainferentialTableauxNode(Inference(premises=[Formula(['A'])], conclusions=[Formula(['A'])]),
+                                             index=XY)
+        node11bar = MetainferentialTableauxNode(Inference(premises=[Formula(['A'])], conclusions=[Formula(['A'])]),
+                                                index=XYbar)
+        node12 = MetainferentialTableauxNode(Inference(premises=[Formula(['~', ['A']])], conclusions=[Formula(['A'])]),
+                                             index=XY)
+        self.assertTrue(node7.is_instance_of(node10, lang))
+        self.assertTrue(node7.is_instance_of(node11, lang))
+        self.assertFalse(node7.is_instance_of(node11bar, lang))
+        self.assertFalse(node7.is_instance_of(node12, lang))
+
+        # Mixing formulae and inferences returns False
+        self.assertFalse(node5.is_instance_of(node11, lang))
+        self.assertFalse(node11.is_instance_of(node5, lang))
 
 
 class TestConstructiveTrees(unittest.TestCase):

@@ -6,7 +6,7 @@ class MetainferentialTableauxStandard:
     """
     todo Document class and add to the docs/ folder
     """
-    standard_variables = ['W', 'X', 'Y', 'Z']
+    standard_variables = ['W', 'X', 'Y', 'Z']  # These should not coincide with the formula metavariables of the lang
 
     def __init__(self, content, bar=False):
         self.content = content
@@ -92,11 +92,18 @@ class MetainferentialTableauxStandard:
 
 
 class MetainferentialTableauxNode(TableauxNode):
-    def index_is_instance_of(self, idx2):
-        return self.index.is_instance_of(idx2)
+    def index_is_instance_of(self, idx2, subst_dict, return_subst_dict):
+        # This method will update the subst dict (add things like 'X': {'1', 'i'})
+        return self.index.is_instance_of(idx2, subst_dict, return_subst_dict)
 
     def content_is_instance_of(self, content2, language, subst_dict, return_subst_dict):
-        # This is kind of a hack, it states any inference's content is an instance of Γ / Δ (useful for inf0, inf1)
+        # Nodes of different types (formula and inference) are never instances of each other
+        if type(self.content) != type(content2):
+            if return_subst_dict:
+                return False, subst_dict
+            return False
+
+        # This is kind of a hack, it states any inference node's content is an instance of Γ / Δ (useful for inf0, inf1)
         # Since logics has no inference variables, we must treat Γ and Δ as formulae
         if (content2 == Inference(premises=[Formula(['Γ'])], conclusions=[Formula(['Δ'])]) and
                 isinstance(self.content, Inference)):
