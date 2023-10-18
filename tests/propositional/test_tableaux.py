@@ -405,6 +405,35 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
         self.assertFalse(node5.is_instance_of(node11, lang))
         self.assertFalse(node11.is_instance_of(node5, lang))
 
+    def test_node_is_closed(self):
+        O = MetainferentialTableauxStandard(set())
+        T = MetainferentialTableauxStandard({'1', 'i'})
+        ST = MetainferentialTableauxStandard([{'1'}, {'1', 'i'}], bar=False)
+
+        formula = Formula(['p'])
+        inference = Inference(premises=[Formula(['p'])], conclusions=[Formula(['p'])])
+
+        node1 = MetainferentialTableauxNode(inference, index=ST)
+        node2 = MetainferentialTableauxNode(formula, index=T, parent=node1)
+        node3 = MetainferentialTableauxNode(formula, index=T, parent=node2)
+        node4 = MetainferentialTableauxNode(formula, index=O, parent=node2)
+        node5 = MetainferentialTableauxNode(formula, index=T, parent=node4)
+
+        # from logics.utils.parsers import classical_parser
+        # node1.print_tree(classical_parser)
+        """
+        p / p, [{'1'}, {'1', 'i'}]
+        └── p, {'1', 'i'}
+            ├── p, {'1', 'i'}
+            └── p, set()
+                └── p, {'1', 'i'}
+        """
+        self.assertFalse(sk_tableaux.node_is_closed(node1))
+        self.assertFalse(sk_tableaux.node_is_closed(node2))
+        self.assertFalse(sk_tableaux.node_is_closed(node3))
+        self.assertTrue(sk_tableaux.node_is_closed(node4))
+        self.assertTrue(sk_tableaux.node_is_closed(node5))
+
     def test_rule_is_applicable(self):
         T = MetainferentialTableauxStandard({'1', 'i'})
         S = MetainferentialTableauxStandard({'1'})

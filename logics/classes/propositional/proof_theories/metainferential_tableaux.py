@@ -154,9 +154,18 @@ class MetainferentialTableauxSystem(TableauxSystem):
     """
     Document the base_indexes param
     """
+    fast_node_is_closed_enabled = True
+
     def __init__(self, base_indexes, language, rules, closure_rules, solver=None):
         self.base_indexes = base_indexes
         super().__init__(language, rules, closure_rules, solver)
+
+    @staticmethod
+    def _fast_node_is_closed(node):
+        for node in node.path:
+            if node.index.content == set():  # if it finds the empty set at the right, close
+                return True
+        return False
 
     def rule_is_applicable(self, node, rule_name, return_subst_dict=False):
         """Basically applies the super rule, but checks a few additional things"""
