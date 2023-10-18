@@ -434,6 +434,12 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
         self.assertTrue(sk_tableaux.node_is_closed(node4))
         self.assertTrue(sk_tableaux.node_is_closed(node5))
 
+        self.assertFalse(sk_tableaux.tree_is_closed(node1))
+        self.assertFalse(sk_tableaux.tree_is_closed(node2))
+        self.assertFalse(sk_tableaux.tree_is_closed(node3))
+        self.assertTrue(sk_tableaux.tree_is_closed(node4))
+        self.assertFalse(sk_tableaux.tree_is_closed(node5))
+
     def test_rule_is_applicable(self):
         T = MetainferentialTableauxStandard({'1', 'i'})
         S = MetainferentialTableauxStandard({'1'})
