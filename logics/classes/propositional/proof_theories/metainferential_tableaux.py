@@ -1,5 +1,5 @@
 from logics.classes.propositional import Formula, Inference
-from .tableaux import TableauxNode
+from .tableaux import TableauxNode, TableauxSystem
 
 
 class MetainferentialTableauxStandard:
@@ -148,3 +148,12 @@ class MetainferentialTableauxNode(TableauxNode):
                 return None
         else:
             return super().instantiate(language, subst_dict, instantiate_children, first_iteration)
+
+
+class MetainferentialTableauxSystem(TableauxSystem):
+    """
+    Document the base_indexes param
+    """
+    def __init__(self, base_indexes, language, rules, closure_rules, solver=None):
+        self.base_indexes = base_indexes
+        super().__init__(language, rules, closure_rules, solver)

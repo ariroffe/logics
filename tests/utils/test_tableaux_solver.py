@@ -5,8 +5,12 @@ from logics.classes.propositional.proof_theories.metainferential_tableaux import
 from logics.instances.propositional.tableaux import (
     classical_tableaux_system, classical_indexed_tableaux_system, LP_tableaux_system, classical_constructive_tree_system
 )
-from logics.instances.propositional.metainferential_tableaux import metainferential_tableaux_rules
-from logics.utils.solvers.tableaux import standard_tableaux_solver, indexed_tableaux_solver, metainferential_tableaux_solver
+from logics.instances.propositional.metainferential_tableaux import (
+    metainferential_tableaux_rules, sk_metainferential_tableaux_system as sk_tableaux
+)
+from logics.utils.solvers.tableaux import (
+    standard_tableaux_solver, indexed_tableaux_solver, metainferential_tableaux_solver
+)
 from logics.utils.parsers import classical_parser
 from logics.utils.formula_generators.generators_biased import random_formula_generator
 from logics.instances.propositional.languages import classical_infinite_language as cl_language
@@ -168,11 +172,14 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
         self.assertEqual(initial_node.index, MetainferentialTableauxStandard([{'1', 'i'}, {'1'}], bar=True))
         self.assertEqual(len(initial_node.children), 0)
 
-    def test_apply_rule(self):
-        # inf0
+    def test_apply_rule_inferences(self):
         T, S = MetainferentialTableauxStandard({'1', 'i'}), MetainferentialTableauxStandard({'1'})
+        Tbar = MetainferentialTableauxStandard({'1', 'i'}, bar=True)
+        Sbar = MetainferentialTableauxStandard({'1'}, bar=True)
+
+        # inf0
         subst_dict = {'Γ': [Formula(['p']), Formula(['q'])], 'Δ': [Formula(['p'])], 'X': T, 'Y': S}
-        applied_rule = metainferential_tableaux_solver.apply_rule(cl_language, "inf0",
+        applied_rule = metainferential_tableaux_solver.apply_rule(sk_tableaux, "inf0",
                                                                   metainferential_tableaux_rules['inf0'], subst_dict)
         # print(applied_rule.print_tree(classical_parser))
         """
@@ -197,14 +204,14 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
         self.assertEqual(child.index, T)
         self.assertEqual(len(child.children), 1)
         # Third node: p, -S
-        Sbar = MetainferentialTableauxStandard({'1'}, bar=True)
         child = child.children[0]
         self.assertEqual(child.content, Formula(['p']))
         self.assertEqual(child.index, Sbar)
         self.assertEqual(len(child.children), 0)
 
+        # ----------------------------------------------------
         # inf1
-        applied_rule = metainferential_tableaux_solver.apply_rule(cl_language, "inf1",
+        applied_rule = metainferential_tableaux_solver.apply_rule(sk_tableaux, "inf1",
                                                                   metainferential_tableaux_rules['inf1'], subst_dict)
         # print(applied_rule.print_tree(classical_parser))
         """
@@ -219,7 +226,6 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
         self.assertEqual(applied_rule.index, MetainferentialTableauxStandard([T, S], bar=False))
         self.assertEqual(len(applied_rule.children), 3)
         # Second node: p, -T
-        Tbar = MetainferentialTableauxStandard({'1', 'i'}, bar=True)
         child = applied_rule.children[0]
         self.assertEqual(child.content, Formula(['p']))
         self.assertEqual(child.index, Tbar)
@@ -234,6 +240,98 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
         self.assertEqual(child.content, Formula(['p']))
         self.assertEqual(child.index, S)
         self.assertEqual(len(child.children), 0)
+
+    def test_apply_rule_formulae(self):
+        T, S = MetainferentialTableauxStandard({'1', 'i'}), MetainferentialTableauxStandard({'1'})
+        N, F = MetainferentialTableauxStandard({'0', 'i'}), MetainferentialTableauxStandard({'0'})
+        Tbar = MetainferentialTableauxStandard({'1', 'i'}, bar=True)
+        Sbar = MetainferentialTableauxStandard({'1'}, bar=True)
+
+        # Singleton
+        subst_dict = {'A': Formula(['p']), 'X': T}
+        applied_rule = metainferential_tableaux_solver.apply_rule(sk_tableaux, 'singleton',
+                                                                  metainferential_tableaux_rules['singleton'],
+                                                                  subst_dict)
+        # print(applied_rule.print_tree(classical_parser))
+        """
+        p, {'1', 'i'}
+        ├── p, {'1'} (singleton)
+        └── p, {'i'} (singleton)
+        """
+        # First node: p, T
+        self.assertEqual(applied_rule.content, Formula(['p']))
+        self.assertEqual(applied_rule.index, T)
+        self.assertEqual(len(applied_rule.children), 2)
+        # Second node: p, 1
+        child = applied_rule.children[0]
+        self.assertEqual(child.content, Formula(['p']))
+        self.assertEqual(len(child.index.content), 1)
+        # since the basic indexes are sets, the rule can return the two in different order
+        if child.index.content == {'1'}:
+            one_first = True
+        elif child.index.content == {'i'}:
+            one_first = False
+        else:
+            raise ValueError("incorrect standard for the first child node")
+        self.assertEqual(len(child.children), 0)
+        # Third node: p, i
+        child = applied_rule.children[1]
+        self.assertEqual(child.content, Formula(['p']))
+        self.assertEqual(len(child.index.content), 1)
+        if one_first:
+            self.assertEqual(child.index, MetainferentialTableauxStandard({'i'}))
+        else:
+            self.assertEqual(child.index, MetainferentialTableauxStandard({'1'}))
+        self.assertEqual(len(child.children), 0)
+
+        # ----------------------------------------------------
+        # intersection
+        subst_dict = {'A': Formula(['p']), 'X': T, 'Y': N}
+        applied_rule = metainferential_tableaux_solver.apply_rule(sk_tableaux, 'intersection',
+                                                                  metainferential_tableaux_rules['intersection'],
+                                                                  subst_dict)
+        # print(applied_rule.print_tree(classical_parser))
+        """
+        p, {'i', '1'}
+        └── p, {'i', '0'}
+            └── p, {'i'}
+        """
+        # First node: p, T
+        self.assertEqual(applied_rule.content, Formula(['p']))
+        self.assertEqual(applied_rule.index, T)
+        self.assertEqual(len(applied_rule.children), 1)
+        # Second node: p, N
+        child = applied_rule.children[0]
+        self.assertEqual(child.content, Formula(['p']))
+        self.assertEqual(child.index, N)
+        self.assertEqual(len(child.children), 1)
+        # Third node: p, i
+        child = child.children[0]
+        self.assertEqual(child.content, Formula(['p']))
+        self.assertEqual(child.index, MetainferentialTableauxStandard({'i'}))
+        self.assertEqual(len(child.children), 0)
+
+        # ----------------------------------------------------
+        # bar
+        subst_dict = {'A': Formula(['p']), 'X': Sbar}
+        applied_rule = metainferential_tableaux_solver.apply_rule(sk_tableaux, 'complement',
+                                                                  metainferential_tableaux_rules['complement'],
+                                                                  subst_dict)
+        # print(applied_rule.print_tree(classical_parser))
+        """
+        p, -{'1'}
+        └── p, {'0', 'i'}
+        """
+        # First node: p, T
+        self.assertEqual(applied_rule.content, Formula(['p']))
+        self.assertEqual(applied_rule.index, Sbar)
+        self.assertEqual(len(applied_rule.children), 1)
+        # Second node: p, N
+        child = applied_rule.children[0]
+        self.assertEqual(child.content, Formula(['p']))
+        self.assertEqual(child.index, N)
+        self.assertEqual(len(child.children), 0)
+
 
 class TestConstructiveTreeSolver(unittest.TestCase):
     def test_constructive_tree_solver(self):

@@ -90,7 +90,7 @@ class TableauxSolver:
                 if applicable:
                     subst_dict = result[1]
                     rule = tableaux_system.rules[rule_name]
-                    rule_application = self.apply_rule(tableaux_system.language, rule_name, rule, subst_dict)
+                    rule_application = self.apply_rule(tableaux_system, rule_name, rule, subst_dict)
 
                     # applied_rules contains a list of the instantiations of the rules. Done like this because
                     # in some modal systems, a rule may be applied twice to the same node & yield different results
@@ -121,8 +121,8 @@ class TableauxSolver:
 
         return tableaux
 
-    def apply_rule(self, language, rule_name, rule, subst_dict):
-        return rule.instantiate(language, subst_dict, instantiate_children=True)
+    def apply_rule(self, tableaux_system, rule_name, rule, subst_dict):
+        return rule.instantiate(tableaux_system.language, subst_dict, instantiate_children=True)
 
     def _begin_tableaux(self, inference, beggining_index=None):
         """
@@ -202,10 +202,12 @@ class MetainferentialTableauxSolver(TableauxSolver):
             index=MetainferentialTableauxStandard(beggining_index, bar=True)
         )
 
-    def apply_rule(self, language, rule_name, rule, subst_dict):
+    def apply_rule(self, tableaux_system, rule_name, rule, subst_dict):
         # This is kind of a hack. Since some rules in this system are more complicated, we hardcode their instantiaton.
-        # e.g. contain inference variables (which logics does not have) -inf0, inf1, lowering and lifting rules
+        # e.g. they contain inference variables (which logics does not have) -inf0, inf1, lowering and lifting rules
         # or require you to do complex operations on the standards (e.g. the singleton, intersection, and bar rules)
+
+        # Rules for inferences
         if rule_name == "inf0" or rule_name == "inf1":
             premises, conclusions = subst_dict['Γ'], subst_dict['Δ']
             root_inference = Inference(premises=premises, conclusions=conclusions)
@@ -247,15 +249,44 @@ class MetainferentialTableauxSolver(TableauxSolver):
                                                 parent=root_node)
                 return root_node
 
-        elif rule_name == "singleton":
-            pass
-        elif rule_name == "intersection":
-            pass
-        elif rule_name == "bar":
-            pass
+        # Rules for formulae
+        elif rule_name == "singleton" or rule_name == "intersection" or rule_name == "complement":
+            formula = subst_dict['A']
+            beginning_standard = subst_dict['X']
+
+            if rule_name == "singleton":
+                root = MetainferentialTableauxNode(content=deepcopy(formula), index=deepcopy(beginning_standard))
+                for value in beginning_standard.content:
+                    MetainferentialTableauxNode(
+                        content=deepcopy(formula),
+                        index=MetainferentialTableauxStandard(content={value}),
+                        justification='singleton',
+                        parent=root,
+                    )
+                return root
+
+            elif rule_name == "intersection":
+                beginning_standard2 = subst_dict['Y']
+                root = MetainferentialTableauxNode(content=deepcopy(formula), index=deepcopy(beginning_standard))
+                root2 = MetainferentialTableauxNode(content=deepcopy(formula), index=deepcopy(beginning_standard2),
+                                                    parent=root)
+                intersection_standard = MetainferentialTableauxStandard(
+                    content=beginning_standard.content.intersection(beginning_standard2.content), bar=False
+                )
+                MetainferentialTableauxNode(content=deepcopy(formula), index=intersection_standard, parent=root2)
+                return root
+
+            elif rule_name == "complement":
+                new_standard = MetainferentialTableauxStandard(
+                    content=tableaux_system.base_indexes.difference(beginning_standard.content), bar=False
+                )
+                root = MetainferentialTableauxNode(content=deepcopy(formula), index=deepcopy(beginning_standard))
+                MetainferentialTableauxNode(content=deepcopy(formula), index=new_standard, parent=root)
+                return root
+
         else:
             # In every other case, the rules behave as usual, so we return the super method
-            return super().apply_rule(language, rule_name, rule, subst_dict)
+            return super().apply_rule(tableaux_system, rule_name, rule, subst_dict)
 
 
 metainferential_tableaux_solver = MetainferentialTableauxSolver()
