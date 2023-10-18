@@ -26,7 +26,7 @@ class TableauxSolver:
         Class attribute representing the index that the conclusion has at the beggining of the derivation.
         ``None`` by default.
     """
-
+    allow_repetition_of_nodes = True
     beggining_premise_index = None
     beggining_conclusion_index = None
 
@@ -101,20 +101,25 @@ class TableauxSolver:
                         rule_application_last_prem = [n for n in PreOrderIter(rule_application) if
                                                       n.justification is None][-1]
                         for leaf in node.leaves:
-                            if max_depth is not None and leaf.depth == max_depth:
-                                raise SolverError('Could not solve the tree. Maximum depth exceeded')
                             if not tableaux_system.node_is_closed(leaf):
                                 rule_application_children = list()
                                 while rule_application_last_prem.children:
                                     # In order to put a copy of the rule child, we detach it, deepcopy, append
                                     # We reattach them all in the end so as to not modify the original order
                                     rule_child = rule_application_last_prem.children[0]
-                                    rule_child.parent = None
-                                    new_child = deepcopy(rule_child)
-                                    new_child.parent = leaf
-                                    rule_application_children.append(rule_child)
-                                # Reattach all
-                                rule_application_last_prem.children = rule_application_children
+                                    rule_child.parent = None  # detach
+                                    new_child = deepcopy(rule_child)  # copy
+                                    if not self.allow_repetition_of_nodes:
+                                        if not new_child in leaf.path:
+                                            new_child.parent = leaf  # add the copy to the tableaux leaf
+                                    else:
+                                        new_child.parent = leaf  # add the copy to the tableaux leaf
+                                    rule_application_children.append(rule_child)  # save the child in a temp list
+                                rule_application_last_prem.children = rule_application_children  # reatach all
+
+                            # After applying the rule, check that you have not reached maximum depth
+                            if max_depth is not None and leaf.depth == max_depth:
+                                raise SolverError('Could not solve the tree. Maximum depth exceeded')
 
                         if tableaux_system.tree_is_closed(tableaux):
                             return tableaux
@@ -193,9 +198,11 @@ indexed_tableaux_solver = IndexedTableauxSolver()
 
 
 class MetainferentialTableauxSolver(TableauxSolver):
+    allow_repetition_of_nodes = False
+
     def _begin_tableaux(self, inference, beggining_index):
         """
-        Conclusions are not negated in MV systems
+        Beggining index must be a list / set, not a MetainferentialTableauxStandard
         """
         return MetainferentialTableauxNode(
             content=inference,
@@ -273,7 +280,11 @@ class MetainferentialTableauxSolver(TableauxSolver):
                 intersection_standard = MetainferentialTableauxStandard(
                     content=beginning_standard.content.intersection(beginning_standard2.content), bar=False
                 )
-                MetainferentialTableauxNode(content=deepcopy(formula), index=intersection_standard, parent=root2)
+                MetainferentialTableauxNode(
+                    content=deepcopy(formula),
+                    index=intersection_standard,
+                    justification='intersection',
+                    parent=root2)
                 return root
 
             elif rule_name == "complement":
@@ -281,7 +292,12 @@ class MetainferentialTableauxSolver(TableauxSolver):
                     content=tableaux_system.base_indexes.difference(beginning_standard.content), bar=False
                 )
                 root = MetainferentialTableauxNode(content=deepcopy(formula), index=deepcopy(beginning_standard))
-                MetainferentialTableauxNode(content=deepcopy(formula), index=new_standard, parent=root)
+                MetainferentialTableauxNode(
+                    content=deepcopy(formula),
+                    index=new_standard,
+                    justification='complement',
+                    parent=root
+                )
                 return root
 
         else:

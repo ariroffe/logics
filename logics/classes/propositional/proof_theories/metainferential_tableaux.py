@@ -108,8 +108,8 @@ class MetainferentialTableauxNode(TableauxNode):
         if (content2 == Inference(premises=[Formula(['Γ'])], conclusions=[Formula(['Δ'])]) and
                 isinstance(self.content, Inference)):
             if return_subst_dict:
-                subst_dict['Γ'] = content2.premises
-                subst_dict['Δ'] = content2.conclusions
+                subst_dict['Γ'] = self.content.premises
+                subst_dict['Δ'] = self.content.conclusions
                 return True, subst_dict
             return True
         return super().content_is_instance_of(content2, language, subst_dict, return_subst_dict)
@@ -202,10 +202,14 @@ class MetainferentialTableauxSystem(TableauxSystem):
                     return False
                 return False, subst_dict
             # The intersection rule is applicalbe only if both standards are of level 0
-            if rule_name == "intersection" and subst_dict['X'].level != 0:
-                if not return_subst_dict:
-                    return False
-                return False, subst_dict
+            # And none of the standards is a subset of the other (i.e., none is the empty set)
+            if rule_name == "intersection":
+                if (subst_dict['X'].level != 0 or
+                        subst_dict['X'].content.issubset(subst_dict['Y'].content) or
+                        subst_dict['Y'].content.issubset(subst_dict['X'].content)):
+                    if not return_subst_dict:
+                        return False
+                    return False, subst_dict
 
         if return_subst_dict:
             return applicable, subst_dict

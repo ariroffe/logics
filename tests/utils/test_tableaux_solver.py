@@ -311,6 +311,12 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
         self.assertEqual(child.index, MetainferentialTableauxStandard({'i'}))
         self.assertEqual(len(child.children), 0)
 
+        subst_dict = {'A': Formula(['p']), 'X': S, 'Y': F}
+        applied_rule = metainferential_tableaux_solver.apply_rule(sk_tableaux, 'intersection',
+                                                                  sk_tableaux.rules['intersection'],
+                                                                  subst_dict)
+        self.assertEqual(applied_rule.leaves[0].index.content, set())
+
         # ----------------------------------------------------
         # bar
         subst_dict = {'A': Formula(['p']), 'X': Sbar}
@@ -331,6 +337,39 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
         self.assertEqual(child.content, Formula(['p']))
         self.assertEqual(child.index, N)
         self.assertEqual(len(child.children), 0)
+
+    def test_some_inferences(self):
+        meta_explosion = classical_parser.parse('(/ p ∧ ~p) // (/q)')
+
+        # TSST, closed
+        tree = metainferential_tableaux_solver.solve(
+            inference=meta_explosion,
+            tableaux_system=sk_tableaux,
+            beggining_index=[[{'1', 'i'}, {'1'}], [{'1'}, {'1', 'i'}]]
+        )
+        # tree.print_tree(classical_parser)
+        """
+        (/ p ∧ ~p) // (/ q), -[[{'i', '1'}, {'1'}], [{'1'}, {'i', '1'}]]
+        └── / p ∧ ~p, [{'i', '1'}, {'1'}] (inf0)
+            └── / q, -[{'1'}, {'i', '1'}] (inf0)
+                └── p ∧ ~p, {'1'} (inf1)
+                    └── q, -{'i', '1'} (inf0)
+                        └── p, {'1'} (R∧1)
+                            └── ~p, {'1'} (R∧1)
+                                └── q, {'0'} (complement)
+                                    └── p, {'0'} (R~1)
+                                        └── p, set() (intersection)
+        """
+        self.assertTrue(sk_tableaux.tree_is_closed(tree))
+
+        # STST, not closed
+        tree = metainferential_tableaux_solver.solve(
+            inference=meta_explosion,
+            tableaux_system=sk_tableaux,
+            beggining_index=[[{'1'}, {'1', 'i'}], [{'1'}, {'1', 'i'}]],
+        )
+        tree.print_tree(classical_parser)
+        self.assertFalse(sk_tableaux.tree_is_closed(tree))
 
 
 class TestConstructiveTreeSolver(unittest.TestCase):

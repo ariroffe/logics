@@ -310,6 +310,11 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
         self.assertEqual(standard.content[0].level, 1)  # TS
         self.assertEqual(standard.content[0].content[0].level, 0)  # T
 
+        standard = MetainferentialTableauxStandard([[{'1', 'i'}, {'1'}], [{'1'}, {'1', 'i'}]])
+        self.assertEqual(standard.level, 2)  # TS/ST
+        self.assertEqual(standard.content[1].level, 1)  # ST
+        self.assertEqual(standard.content[1].content[0].level, 0)  # S
+
     def test_standard_is_instance_of(self):
         simple_standard = MetainferentialTableauxStandard({'1', 'i'}, bar=False)  # T
         # Index variable
@@ -441,10 +446,11 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
         self.assertFalse(sk_tableaux.tree_is_closed(node5))
 
     def test_rule_is_applicable(self):
+        O = MetainferentialTableauxStandard(set())
         T = MetainferentialTableauxStandard({'1', 'i'})
         S = MetainferentialTableauxStandard({'1'})
+        F = MetainferentialTableauxStandard({'0'})
         Sbar = MetainferentialTableauxStandard({'1'}, bar=True)
-        TS = MetainferentialTableauxStandard([{'1', 'i'}, {'1'}], bar=False)
         ST = MetainferentialTableauxStandard([{'1'}, {'1', 'i'}], bar=False)
         STbar = MetainferentialTableauxStandard([{'1'}, {'1', 'i'}], bar=True)
 
@@ -518,17 +524,38 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
 
         # Intersection rule (has more than one premise so is a bit more difficult to test)
         node1 = MetainferentialTableauxNode(formula, index=S)
-        node2 = MetainferentialTableauxNode(formula, index=T, parent=node1)
+        node2 = MetainferentialTableauxNode(formula, index=F, parent=node1)
         self.assertTrue(sk_tableaux.rule_is_applicable(node2, 'intersection'))
+
+        # When one is a subset of the other, do not apply the rule
+        node1 = MetainferentialTableauxNode(formula, index=S)
+        node2 = MetainferentialTableauxNode(formula, index=T, parent=node1)
+        self.assertFalse(sk_tableaux.rule_is_applicable(node2, 'intersection'))
+
+        # When one of the nodes is the empty node, do not apply the intersection rule
+        # (otherwise it leads to infinite recursion in the solver)
+        node1 = MetainferentialTableauxNode(formula, index=O)
+        node2 = MetainferentialTableauxNode(formula, index=F, parent=node1)
+        self.assertFalse(sk_tableaux.rule_is_applicable(node2, 'intersection'))
+        node1 = MetainferentialTableauxNode(formula, index=F)
+        node2 = MetainferentialTableauxNode(formula, index=O, parent=node1)
+        self.assertFalse(sk_tableaux.rule_is_applicable(node2, 'intersection'))
+
 
         formula2 = Formula(['q'])
         node1 = MetainferentialTableauxNode(formula, index=S)
         node2 = MetainferentialTableauxNode(formula2, index=T, parent=node1)
-        self.assertFalse(sk_tableaux.rule_is_applicable(node2, 'intersection'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node2, 'intersection'))  # Different formulas, should not apply
 
         node1 = MetainferentialTableauxNode(formula, index=ST)
         node2 = MetainferentialTableauxNode(formula, index=T, parent=node1)
-        self.assertFalse(sk_tableaux.rule_is_applicable(node2, 'intersection'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node2, 'intersection'))  # Different standard levels
+
+        # Try with one node in the middle
+        node1 = MetainferentialTableauxNode(formula, index=S)
+        node2 = MetainferentialTableauxNode(formula2, index=S, parent=node1)
+        node3 = MetainferentialTableauxNode(formula, index=F, parent=node2)
+        self.assertTrue(sk_tableaux.rule_is_applicable(node3, 'intersection'))
 
 
 class TestConstructiveTrees(unittest.TestCase):

@@ -86,10 +86,10 @@ MetainferentialTableauxNode(content=Formula(['B']), index=S, justification='R∧
 '''
 
 SK_conjunction_i = MetainferentialTableauxNode(content=Formula(['∧', ['A'], ['B']]), index=I)
-SKcji_1 = MetainferentialTableauxNode(content=Formula(['A']), index=S, justification='R∧i', parent=SK_conjunction_i)
-MetainferentialTableauxNode(content=Formula(['B']), index=T, justification='R∧i', parent=SKcji_1)
-SKcji_2 = MetainferentialTableauxNode(content=Formula(['A']), index=T, justification='R∧i', parent=SK_conjunction_i)
-MetainferentialTableauxNode(content=Formula(['B']), index=S, justification='R∧i', parent=SKcji_2)
+SKcji_1 = MetainferentialTableauxNode(content=Formula(['A']), index=T, justification='R∧i', parent=SK_conjunction_i)
+MetainferentialTableauxNode(content=Formula(['B']), index=I, justification='R∧i', parent=SKcji_1)
+SKcji_2 = MetainferentialTableauxNode(content=Formula(['A']), index=I, justification='R∧i', parent=SK_conjunction_i)
+MetainferentialTableauxNode(content=Formula(['B']), index=T, justification='R∧i', parent=SKcji_2)
 '''
 ['∧', ['A'], ['B']], {'i'}
 └── ['A'], {'1'} (R∧i)
@@ -121,6 +121,6 @@ SK_metainferential_tableaux_system = MetainferentialTableauxSystem(
     base_indexes={'1', 'i', '0'},
     language=classical_infinite_language,
     rules=SK_metainferential_tableaux_rules,
-    closure_rules= [],
+    closure_rules= [],  # we are using fast_node_is_closed
     solver=metainferential_tableaux_solver,
 )

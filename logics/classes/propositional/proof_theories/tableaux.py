@@ -558,11 +558,11 @@ class TableauxSystem:
                     if first_elem:  # discard the first element (the current node)
                         first_elem = False
                         continue
-                    result2 = node2.is_instance_of(remaining_prems[-1], self.language, subst_dict,
-                                                   return_subst_dict=True)
-                    instance2 = result2[0]
-                    if instance2:
-                        subst_dict.update(result2[1])
+                    subst_dict2 = deepcopy(subst_dict)
+                    instance2, subst_dict2 = node2.is_instance_of(remaining_prems[-1], self.language, subst_dict2,
+                                                                  return_subst_dict=True)
+                    if instance2:  # do not update subst_dict unless instance2 is true
+                        subst_dict.update(subst_dict2)
                         del remaining_prems[-1]
                         if not remaining_prems:
                             break
