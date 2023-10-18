@@ -546,8 +546,16 @@ class TableauxSystem:
             # If it is, check that the rest of the premises of the rule (if there are any) are present
             remaining_prems = rule_prems[:-1]
             if remaining_prems:
+                # If the rule has remaining premises and the node is the root of the tree, return False
+                if node.is_root:
+                    if not return_subst_dict:
+                        return False
+                    return False, subst_dict
+
                 # Walk up the path from the current node
-                for node2 in node.iter_path_reverse():
+                reverse_path_iterator = node.iter_path_reverse
+                next(reverse_path_iterator)  # discard the current node
+                for node2 in reverse_path_iterator():
                     result2 = node2.is_instance_of(remaining_prems[-1], self.language, subst_dict,
                                                    return_subst_dict=True)
                     instance2 = result2[0]

@@ -310,7 +310,7 @@ class ConstructiveTreeSolver(TableauxSolver):
     --------
 
     """
-    def _begin_tableaux(self, inference):
+    def _begin_tableaux(self, inference, beggining_index=None):
         # In this case inference will be a formula
         return TableauxNode(content=inference, parent=None)
 

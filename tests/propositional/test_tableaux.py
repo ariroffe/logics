@@ -441,6 +441,13 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
         self.assertFalse(sk_tableaux.rule_is_applicable(node4, 'complement'))
         self.assertFalse(sk_tableaux.rule_is_applicable(node5, 'complement'))
 
+        # Intersection rule is False for all because it needs two nodes as premises
+        self.assertFalse(sk_tableaux.rule_is_applicable(node1, 'intersection'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node2, 'intersection'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node3, 'intersection'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node4, 'intersection'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node5, 'intersection'))
+
         # Inference nodes
         node1 = MetainferentialTableauxNode(inference, index=S)
         node2 = MetainferentialTableauxNode(inference, index=T)
@@ -467,6 +474,12 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
         self.assertFalse(sk_tableaux.rule_is_applicable(node3, 'complement'))
         self.assertFalse(sk_tableaux.rule_is_applicable(node4, 'complement'))
         self.assertFalse(sk_tableaux.rule_is_applicable(node5, 'complement'))
+
+        self.assertFalse(sk_tableaux.rule_is_applicable(node1, 'intersection'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node2, 'intersection'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node3, 'intersection'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node4, 'intersection'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node5, 'intersection'))
 
         # Intersection rule (has more than one premise so is a bit more difficult to test)
 
