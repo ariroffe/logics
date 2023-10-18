@@ -26,7 +26,7 @@ class MetainferentialTableauxStandard:
             raise ValueError('Variable standard can have any level')
         # Sets are standards of level 0
         elif type(self.content) == set:
-            return 1
+            return 0
         # For lists -i.e. type [S1, S2], return the maximum level between S1 and S2 + 1
         return max(self.content[0].level, self.content[1].level) + 1
 
@@ -157,3 +157,34 @@ class MetainferentialTableauxSystem(TableauxSystem):
     def __init__(self, base_indexes, language, rules, closure_rules, solver=None):
         self.base_indexes = base_indexes
         super().__init__(language, rules, closure_rules, solver)
+
+    def rule_is_applicable(self, node, rule_name, return_subst_dict=False):
+        """Basically applies the super rule, but checks a few additional things"""
+        # Apply the super rule
+        applicable, subst_dict = super().rule_is_applicable(node, rule_name, return_subst_dict=True)
+        if not applicable:
+            if not return_subst_dict:
+                return False
+            return False, subst_dict
+
+        # For the inf0 and inf1 rules, check that the level of the inference and of the standard is the same
+        if rule_name == 'inf0' or rule_name == 'inf1':
+            if type(node.content) != Inference or node.content.level != node.index.level:
+                if not return_subst_dict:
+                    return False
+                return False, subst_dict
+
+        # The lowering and lifting rules apply to inferences
+        # (we have not implemented these rules yet but I leave this here just in case we do it)
+        elif (rule_name == 'lowering' or rule_name == 'lifting') and type(node.content) != Inference:
+            return False
+
+        else:
+            # For all the other rules, check that the standard is of level 1
+            if node.index.level != 0:
+                return False
+            # The singleton rule is only applicable if the standard has two or more values
+            if rule_name == "singleton" and len(node.index.content) < 2:
+                return False
+
+        return applicable

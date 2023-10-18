@@ -8,6 +8,7 @@ from logics.classes.propositional import Formula, Inference
 from logics.classes.errors import ErrorCode, CorrectionError
 from logics.instances.propositional.languages import classical_infinite_language as lang
 from logics.instances.propositional.tableaux import classical_tableaux_system, classical_indexed_tableaux_system
+from logics.instances.propositional.metainferential_tableaux import sk_metainferential_tableaux_system as sk_tableaux
 
 
 class TestTableauxSystem(unittest.TestCase):
@@ -305,9 +306,9 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
 
     def test_standard_level(self):
         standard = MetainferentialTableauxStandard([[{'1', 'i'}, {'1'}], [{'1', 'i'}, {'1'}]], bar=False)
-        self.assertEqual(standard.level, 3)  # TS/TS
-        self.assertEqual(standard.content[0].level, 2)  # TS
-        self.assertEqual(standard.content[0].content[0].level, 1)  # T
+        self.assertEqual(standard.level, 2)  # TS/TS
+        self.assertEqual(standard.content[0].level, 1)  # TS
+        self.assertEqual(standard.content[0].content[0].level, 0)  # T
 
     def test_standard_is_instance_of(self):
         simple_standard = MetainferentialTableauxStandard({'1', 'i'}, bar=False)  # T
@@ -403,6 +404,71 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
         # Mixing formulae and inferences returns False
         self.assertFalse(node5.is_instance_of(node11, lang))
         self.assertFalse(node11.is_instance_of(node5, lang))
+
+    def test_rule_is_applicable(self):
+        T = MetainferentialTableauxStandard({'1', 'i'})
+        S = MetainferentialTableauxStandard({'1'})
+        Sbar = MetainferentialTableauxStandard({'1'}, bar=True)
+        TS = MetainferentialTableauxStandard([{'1', 'i'}, {'1'}], bar=False)
+        ST = MetainferentialTableauxStandard([{'1'}, {'1', 'i'}], bar=False)
+        STbar = MetainferentialTableauxStandard([{'1'}, {'1', 'i'}], bar=True)
+
+        formula = Formula(['p'])
+        inference = Inference(premises=[Formula(['p'])], conclusions=[Formula(['p'])])
+
+        # Formula nodes
+        node1 = MetainferentialTableauxNode(formula, index=S)
+        node2 = MetainferentialTableauxNode(formula, index=T)
+        node3 = MetainferentialTableauxNode(formula, index=Sbar)
+        node4 = MetainferentialTableauxNode(formula, index=ST)
+        node5 = MetainferentialTableauxNode(formula, index=STbar)
+
+        self.assertFalse(sk_tableaux.rule_is_applicable(node1, 'inf0'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node2, 'inf1'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node3, 'inf0'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node4, 'inf1'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node5, 'inf0'))
+
+        self.assertFalse(sk_tableaux.rule_is_applicable(node1, 'singleton'))
+        self.assertTrue(sk_tableaux.rule_is_applicable(node2, 'singleton'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node3, 'singleton'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node4, 'singleton'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node5, 'singleton'))
+
+        self.assertFalse(sk_tableaux.rule_is_applicable(node1, 'complement'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node2, 'complement'))
+        self.assertTrue(sk_tableaux.rule_is_applicable(node3, 'complement'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node4, 'complement'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node5, 'complement'))
+
+        # Inference nodes
+        node1 = MetainferentialTableauxNode(inference, index=S)
+        node2 = MetainferentialTableauxNode(inference, index=T)
+        node3 = MetainferentialTableauxNode(inference, index=Sbar)
+        node4 = MetainferentialTableauxNode(inference, index=ST)
+        node5 = MetainferentialTableauxNode(inference, index=STbar)
+
+        self.assertFalse(sk_tableaux.rule_is_applicable(node1, 'inf0'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node2, 'inf1'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node3, 'inf0'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node4, 'inf0'))
+        self.assertTrue(sk_tableaux.rule_is_applicable(node4, 'inf1'))
+        self.assertTrue(sk_tableaux.rule_is_applicable(node5, 'inf0'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node5, 'inf1'))
+
+        self.assertFalse(sk_tableaux.rule_is_applicable(node1, 'singleton'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node2, 'singleton'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node3, 'singleton'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node4, 'singleton'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node5, 'singleton'))
+
+        self.assertFalse(sk_tableaux.rule_is_applicable(node1, 'complement'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node2, 'complement'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node3, 'complement'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node4, 'complement'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node5, 'complement'))
+
+        # Intersection rule (has more than one premise so is a bit more difficult to test)
 
 
 class TestConstructiveTrees(unittest.TestCase):
