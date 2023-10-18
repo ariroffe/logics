@@ -6,7 +6,7 @@ from logics.instances.propositional.tableaux import (
     classical_tableaux_system, classical_indexed_tableaux_system, LP_tableaux_system, classical_constructive_tree_system
 )
 from logics.instances.propositional.metainferential_tableaux import (
-    metainferential_tableaux_rules, sk_metainferential_tableaux_system as sk_tableaux
+    metainferential_tableaux_rules, SK_metainferential_tableaux_system as sk_tableaux
 )
 from logics.utils.solvers.tableaux import (
     standard_tableaux_solver, indexed_tableaux_solver, metainferential_tableaux_solver

@@ -8,7 +8,7 @@ from logics.classes.propositional import Formula, Inference
 from logics.classes.errors import ErrorCode, CorrectionError
 from logics.instances.propositional.languages import classical_infinite_language as lang
 from logics.instances.propositional.tableaux import classical_tableaux_system, classical_indexed_tableaux_system
-from logics.instances.propositional.metainferential_tableaux import sk_metainferential_tableaux_system as sk_tableaux
+from logics.instances.propositional.metainferential_tableaux import SK_metainferential_tableaux_system as sk_tableaux
 
 
 class TestTableauxSystem(unittest.TestCase):
