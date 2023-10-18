@@ -177,14 +177,27 @@ class MetainferentialTableauxSystem(TableauxSystem):
         # The lowering and lifting rules apply to inferences
         # (we have not implemented these rules yet but I leave this here just in case we do it)
         elif (rule_name == 'lowering' or rule_name == 'lifting') and type(node.content) != Inference:
-            return False
+            if not return_subst_dict:
+                return False
+            return False, subst_dict
 
         else:
             # For all the other rules, check that the standard is of level 1
             if node.index.level != 0:
-                return False
+                if not return_subst_dict:
+                    return False
+                return False, subst_dict
             # The singleton rule is only applicable if the standard has two or more values
             if rule_name == "singleton" and len(node.index.content) < 2:
-                return False
+                if not return_subst_dict:
+                    return False
+                return False, subst_dict
+            # The intersection rule is applicalbe only if both standards are of level 0
+            if rule_name == "intersection" and subst_dict['X'].level != 0:
+                if not return_subst_dict:
+                    return False
+                return False, subst_dict
 
+        if return_subst_dict:
+            return applicable, subst_dict
         return applicable

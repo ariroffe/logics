@@ -553,9 +553,11 @@ class TableauxSystem:
                     return False, subst_dict
 
                 # Walk up the path from the current node
-                reverse_path_iterator = node.iter_path_reverse
-                next(reverse_path_iterator)  # discard the current node
-                for node2 in reverse_path_iterator():
+                first_elem = True
+                for node2 in node.iter_path_reverse():
+                    if first_elem:  # discard the first element (the current node)
+                        first_elem = False
+                        continue
                     result2 = node2.is_instance_of(remaining_prems[-1], self.language, subst_dict,
                                                    return_subst_dict=True)
                     instance2 = result2[0]
@@ -570,10 +572,9 @@ class TableauxSystem:
                     return True
                 return True, subst_dict
 
-        else:
-            if not return_subst_dict:
-                return False
-            return False, subst_dict
+        if not return_subst_dict:
+            return False
+        return False, subst_dict
 
     def is_correct_tree(self, tree, inference=None, return_error_list=False, exit_on_first_error=False, parser=None):
         """Checks if a given tableaux (a node and its descendants) is correctly derived, given the rules of the system.

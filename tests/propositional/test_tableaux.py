@@ -482,6 +482,18 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
         self.assertFalse(sk_tableaux.rule_is_applicable(node5, 'intersection'))
 
         # Intersection rule (has more than one premise so is a bit more difficult to test)
+        node1 = MetainferentialTableauxNode(formula, index=S)
+        node2 = MetainferentialTableauxNode(formula, index=T, parent=node1)
+        self.assertTrue(sk_tableaux.rule_is_applicable(node2, 'intersection'))
+
+        formula2 = Formula(['q'])
+        node1 = MetainferentialTableauxNode(formula, index=S)
+        node2 = MetainferentialTableauxNode(formula2, index=T, parent=node1)
+        self.assertFalse(sk_tableaux.rule_is_applicable(node2, 'intersection'))
+
+        node1 = MetainferentialTableauxNode(formula, index=ST)
+        node2 = MetainferentialTableauxNode(formula, index=T, parent=node1)
+        self.assertFalse(sk_tableaux.rule_is_applicable(node2, 'intersection'))
 
 
 class TestConstructiveTrees(unittest.TestCase):
