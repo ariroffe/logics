@@ -54,6 +54,7 @@ S = MetainferentialTableauxStandard({'1'})
 I = MetainferentialTableauxStandard({'i'})
 F = MetainferentialTableauxStandard({'0'})
 T = MetainferentialTableauxStandard({'1', 'i'})
+N = MetainferentialTableauxStandard({'i', '0'})
 
 SK_negation_1 = MetainferentialTableauxNode(content=Formula(['~', ['A']]), index=S)
 MetainferentialTableauxNode(content=Formula(['A']), index=F, justification='R~1', parent=SK_negation_1)
@@ -107,6 +108,37 @@ MetainferentialTableauxNode(content=Formula(['B']), index=F, justification='R∧
 └── ['B'], {'0'} (R∧0)
 '''
 
+SK_disjunction_1 = MetainferentialTableauxNode(content=Formula(['∨', ['A'], ['B']]), index=S)
+MetainferentialTableauxNode(content=Formula(['A']), index=S, justification='R∨1', parent=SK_disjunction_1)
+MetainferentialTableauxNode(content=Formula(['B']), index=S, justification='R∨1', parent=SK_disjunction_1)
+'''
+['∨', ['A'], ['B']], {'1'}
+└── ['A'], {'1'} (R∨0)
+└── ['B'], {'1'} (R∨0)
+'''
+
+SK_disjunction_i = MetainferentialTableauxNode(content=Formula(['∨', ['A'], ['B']]), index=I)
+SKdji_1 = MetainferentialTableauxNode(content=Formula(['A']), index=N, justification='R∨i', parent=SK_disjunction_i)
+MetainferentialTableauxNode(content=Formula(['B']), index=I, justification='R∨i', parent=SKdji_1)
+SKdji_2 = MetainferentialTableauxNode(content=Formula(['A']), index=I, justification='R∨i', parent=SK_disjunction_i)
+MetainferentialTableauxNode(content=Formula(['B']), index=N, justification='R∨i', parent=SKdji_2)
+'''
+['∨', ['A'], ['B']], {'i'}
+└── ['A'], {'1', 'i'} (R∧i)
+    └── ['B'], {'i'} (R∧i)
+└── ['A'], {'i'} (R∧i)
+    └── ['B'], {'1', 'i'} (R∧i)
+'''
+
+SK_disjunction_0 = MetainferentialTableauxNode(content=Formula(['∨', ['A'], ['B']]), index=F)
+SKdj0 = MetainferentialTableauxNode(content=Formula(['A']), index=F, justification='R∨0', parent=SK_disjunction_0)
+MetainferentialTableauxNode(content=Formula(['B']), index=F, justification='R∨0', parent=SKdj0)
+'''
+['∨', ['A'], ['B']], {'0'}
+└── ['A'], {'0'} (R∨1)
+    └── ['B'], {'1'} (R∨1)
+'''
+
 SK_metainferential_tableaux_rules = deepcopy(metainferential_tableaux_rules)
 SK_metainferential_tableaux_rules.update({
     'R~1': SK_negation_1,
@@ -115,12 +147,15 @@ SK_metainferential_tableaux_rules.update({
     'R∧1': SK_conjunction_1,
     'R∧i': SK_conjunction_i,
     'R∧0': SK_conjunction_0,
+    'R∨1': SK_disjunction_1,
+    'R∨i': SK_disjunction_i,
+    'R∨0': SK_disjunction_0,
 })
 
 SK_metainferential_tableaux_system = MetainferentialTableauxSystem(
     base_indexes={'1', 'i', '0'},
     language=classical_infinite_language,
     rules=SK_metainferential_tableaux_rules,
-    closure_rules= [],  # we are using fast_node_is_closed
+    closure_rules= [],  # we are using fast_node_is_closed so this is not necessary
     solver=metainferential_tableaux_solver,
 )
