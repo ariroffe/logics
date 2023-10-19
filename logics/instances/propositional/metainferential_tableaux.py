@@ -136,7 +136,38 @@ MetainferentialTableauxNode(content=Formula(['B']), index=F, justification='R∨
 '''
 ['∨', ['A'], ['B']], {'0'}
 └── ['A'], {'0'} (R∨1)
-    └── ['B'], {'1'} (R∨1)
+    └── ['B'], {'0'} (R∨1)
+'''
+
+SK_conditional_1 = MetainferentialTableauxNode(content=Formula(['→', ['A'], ['B']]), index=S)
+MetainferentialTableauxNode(content=Formula(['A']), index=F, justification='R→0', parent=SK_conditional_1)
+MetainferentialTableauxNode(content=Formula(['B']), index=S, justification='R→0', parent=SK_conditional_1)
+'''
+['→', ['A'], ['B']], {'1'}
+└── ['A'], {'0'} (R→1)
+└── ['B'], {'1'} (R→1)
+'''
+
+SK_conditional_i = MetainferentialTableauxNode(content=Formula(['→', ['A'], ['B']]), index=I)
+SKcdi_1 = MetainferentialTableauxNode(content=Formula(['A']), index=I, justification='R→i', parent=SK_conditional_i)
+MetainferentialTableauxNode(content=Formula(['B']), index=N, justification='R→i', parent=SKcdi_1)
+SKcdi_2 = MetainferentialTableauxNode(content=Formula(['A']), index=T, justification='R→i', parent=SK_conditional_i)
+MetainferentialTableauxNode(content=Formula(['B']), index=I, justification='R→i', parent=SKcdi_2)
+'''
+['→', ['A'], ['B']], {'i'}
+└── ['A'], {'i'} (R→i)
+    └── ['B'], {'i'} (R→i)
+└── ['A'], {'1', 'i'} (R→i)
+    └── ['B'], {'i'} (R→i)
+'''
+
+SK_conditional_0 = MetainferentialTableauxNode(content=Formula(['→', ['A'], ['B']]), index=F)
+SKcd0 = MetainferentialTableauxNode(content=Formula(['A']), index=S, justification='R→0', parent=SK_conditional_0)
+MetainferentialTableauxNode(content=Formula(['B']), index=F, justification='R→0', parent=SKcd0)
+'''
+['→', ['A'], ['B']], {'0'}
+└── ['A'], {'1'} (R→1)
+    └── ['B'], {'0'} (R→1)
 '''
 
 SK_metainferential_tableaux_rules = deepcopy(metainferential_tableaux_rules)
@@ -144,12 +175,18 @@ SK_metainferential_tableaux_rules.update({
     'R~1': SK_negation_1,
     'R~i': SK_negation_i,
     'R~0': SK_negation_0,
+
     'R∧1': SK_conjunction_1,
     'R∧i': SK_conjunction_i,
     'R∧0': SK_conjunction_0,
+
     'R∨1': SK_disjunction_1,
     'R∨i': SK_disjunction_i,
     'R∨0': SK_disjunction_0,
+
+    'R→1': SK_conditional_1,
+    'R→i': SK_conditional_i,
+    'R→0': SK_conditional_0,
 })
 
 SK_metainferential_tableaux_system = MetainferentialTableauxSystem(

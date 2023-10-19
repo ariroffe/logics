@@ -1,5 +1,4 @@
 import unittest
-from copy import deepcopy
 
 from logics.classes.propositional import Formula, Inference
 from logics.classes.propositional.proof_theories.metainferential_tableaux import MetainferentialTableauxStandard
@@ -16,7 +15,7 @@ from logics.utils.parsers import classical_parser
 from logics.utils.formula_generators.generators_biased import random_formula_generator
 from logics.instances.propositional.languages import (
     classical_infinite_language as cl_language,
-    classical_infinite_language_noconditional as cl_reduced_language,
+    classical_infinite_language_nobiconditional as cl_reduced_language,
 )
 from logics.instances.propositional.languages import classical_infinite_language_noconditional as mvl_language
 from logics.instances.propositional.many_valued_semantics import (
