@@ -201,7 +201,7 @@ class MetainferentialTableauxSolver(TableauxSolver):
         """
         return MetainferentialTableauxNode(
             content=inference,
-            index=MetainferentialTableauxStandard(beggining_index, bar=True)
+            index=MetainferentialTableauxStandard(deepcopy(beggining_index), bar=True)
         )
 
     def apply_rule(self, tableaux_system, rule_name, rule, subst_dict):

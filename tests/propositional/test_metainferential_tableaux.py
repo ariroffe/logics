@@ -184,6 +184,7 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
         formula = Formula(['p'])
         inference = Inference(premises=[Formula(['p'])], conclusions=[Formula(['p'])])
 
+        # -------------------------------
         # Formula nodes
         node1 = MetainferentialTableauxNode(formula, index=S)
         node2 = MetainferentialTableauxNode(formula, index=T)
@@ -216,6 +217,7 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
         self.assertFalse(sk_tableaux.rule_is_applicable(node4, 'intersection'))
         self.assertFalse(sk_tableaux.rule_is_applicable(node5, 'intersection'))
 
+        # -------------------------------
         # Inference nodes
         node1 = MetainferentialTableauxNode(inference, index=S)
         node2 = MetainferentialTableauxNode(inference, index=T)
@@ -268,7 +270,6 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
         node2 = MetainferentialTableauxNode(formula, index=O, parent=node1)
         self.assertFalse(sk_tableaux.rule_is_applicable(node2, 'intersection'))
 
-
         formula2 = Formula(['q'])
         node1 = MetainferentialTableauxNode(formula, index=S)
         node2 = MetainferentialTableauxNode(formula2, index=T, parent=node1)
@@ -283,3 +284,27 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
         node2 = MetainferentialTableauxNode(formula2, index=S, parent=node1)
         node3 = MetainferentialTableauxNode(formula, index=F, parent=node2)
         self.assertTrue(sk_tableaux.rule_is_applicable(node3, 'intersection'))
+
+        # -------------------------------
+        # Metainference nodes
+        TSST = MetainferentialTableauxStandard([[{'1', 'i'}, {'1'}],[{'1'}, {'1', 'i'}]], bar=False)
+        TSSTbar = MetainferentialTableauxStandard([[{'1', 'i'}, {'1'}],[{'1'}, {'1', 'i'}]], bar=True)
+        metainference = Inference(premises=[Inference(premises=[Formula(['p'])], conclusions=[Formula(['q'])])],
+                                  conclusions=[Inference(premises=[Formula(['p'])], conclusions=[Formula(['p'])])])
+
+        node1 = MetainferentialTableauxNode(metainference, index=TSST)
+        node2 = MetainferentialTableauxNode(metainference, index=TSSTbar)
+        self.assertFalse(sk_tableaux.rule_is_applicable(node1, 'inf0'))
+        self.assertTrue(sk_tableaux.rule_is_applicable(node1, 'inf1'))
+        self.assertTrue(sk_tableaux.rule_is_applicable(node2, 'inf0'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node2, 'inf1'))
+
+        # Try one with empty premises somewhere
+        metainference = Inference(premises=[Inference(premises=[], conclusions=[Formula(['p'])])],
+                                  conclusions=[Inference(premises=[Formula(['r'])], conclusions=[Formula(['p'])])])
+        node1 = MetainferentialTableauxNode(metainference, index=TSST)
+        node2 = MetainferentialTableauxNode(metainference, index=TSSTbar)
+        self.assertFalse(sk_tableaux.rule_is_applicable(node1, 'inf0'))
+        self.assertTrue(sk_tableaux.rule_is_applicable(node1, 'inf1'))
+        self.assertTrue(sk_tableaux.rule_is_applicable(node2, 'inf0'))
+        self.assertFalse(sk_tableaux.rule_is_applicable(node2, 'inf1'))
