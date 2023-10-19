@@ -13,9 +13,14 @@ from logics.utils.solvers.tableaux import (
 )
 from logics.utils.parsers import classical_parser
 from logics.utils.formula_generators.generators_biased import random_formula_generator
-from logics.instances.propositional.languages import classical_infinite_language as cl_language
+from logics.instances.propositional.languages import (
+    classical_infinite_language as cl_language,
+    classical_infinite_language_noconditional as cl_reduced_language,
+)
 from logics.instances.propositional.languages import classical_infinite_language_noconditional as mvl_language
-from logics.instances.propositional.many_valued_semantics import classical_mvl_semantics, LP_mvl_semantics
+from logics.instances.propositional.many_valued_semantics import (
+    classical_mvl_semantics, LP_mvl_semantics, ST_mvl_semantics
+)
 
 
 class TestTableauxSolver(unittest.TestCase):
@@ -399,6 +404,33 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
                                             └── p, set() (intersection)
         """
         self.assertFalse(sk_tableaux.tree_is_closed(tree))
+
+    def test_with_generator(self):
+        for level in range(1, 4):
+            for _ in range(10):
+                inf = random_formula_generator.random_inference(num_premises=1, num_conclusions=1,
+                                                                max_depth=2, atomics=['p', 'q', 'r'],
+                                                                language=cl_reduced_language, level=level,
+                                                                exact_num_premises=False, exact_num_conclusions=False)
+                # ST
+                tree = metainferential_tableaux_solver.solve(
+                    inference=inf,
+                    tableaux_system=sk_tableaux,
+                    beggining_index=[{'1'}, {'1', 'i'}],
+                )
+
+                if ST_mvl_semantics.is_locally_valid(inf):
+                    if not sk_tableaux.tree_is_closed(tree):
+                        print(f"ERROR - inference {classical_parser.unparse(inf)} is valid but the tree is not closed")
+                        tree.print_tree(classical_parser)
+                        print(len(tree.children))
+                    self.assertTrue(sk_tableaux.tree_is_closed(tree))
+                else:
+                    if sk_tableaux.tree_is_closed(tree):
+                        print(f"ERROR - inference {classical_parser.unparse(inf)} is invalid but the tree is closed")
+                        tree.print_tree(classical_parser)
+                        print(len(tree.children))
+                    self.assertFalse(sk_tableaux.tree_is_closed(tree))
 
 
 class TestConstructiveTreeSolver(unittest.TestCase):
