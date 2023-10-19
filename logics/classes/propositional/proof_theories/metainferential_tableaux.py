@@ -163,7 +163,12 @@ class MetainferentialTableauxSystem(TableauxSystem):
     @staticmethod
     def _fast_node_is_closed(node):
         for node in node.path:
-            if node.index.content == set():  # if it finds the empty set at the right, close
+            # if it finds the empty set at the right, close
+            if node.index.content == set():
+                return True
+            # If it finds the empty inference with no bar, close
+            if (type(node.content) == Inference and
+                    len(node.content.premises) == 0 and len(node.content.conclusions) == 0 and not node.index.bar):
                 return True
         return False
 

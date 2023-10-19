@@ -445,6 +445,15 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
         self.assertTrue(sk_tableaux.tree_is_closed(node4))
         self.assertFalse(sk_tableaux.tree_is_closed(node5))
 
+        # Test the other rule, that a branch closes if the empty inference with no bar appears
+        node1 = MetainferentialTableauxNode(inference, index=ST)
+        node2 = MetainferentialTableauxNode(Inference(premises=[], conclusions=[]), index=T, parent=node1)
+        node3 = MetainferentialTableauxNode(formula, index=T, parent=node2)
+
+        self.assertFalse(sk_tableaux.node_is_closed(node1))
+        self.assertTrue(sk_tableaux.node_is_closed(node2))
+        self.assertTrue(sk_tableaux.node_is_closed(node3))
+
     def test_rule_is_applicable(self):
         O = MetainferentialTableauxStandard(set())
         T = MetainferentialTableauxStandard({'1', 'i'})
