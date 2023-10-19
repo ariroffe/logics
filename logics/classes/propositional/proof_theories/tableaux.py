@@ -546,12 +546,6 @@ class TableauxSystem:
             # If it is, check that the rest of the premises of the rule (if there are any) are present
             remaining_prems = rule_prems[:-1]
             if remaining_prems:
-                # If the rule has remaining premises and the node is the root of the tree, return False
-                if node.is_root:
-                    if not return_subst_dict:
-                        return False
-                    return False, subst_dict
-
                 # Walk up the path from the current node
                 first_elem = True
                 for node2 in node.iter_path_reverse():
@@ -561,11 +555,21 @@ class TableauxSystem:
                     subst_dict2 = deepcopy(subst_dict)
                     instance2, subst_dict2 = node2.is_instance_of(remaining_prems[-1], self.language, subst_dict2,
                                                                   return_subst_dict=True)
-                    if instance2:  # do not update subst_dict unless instance2 is true
-                        subst_dict.update(subst_dict2)
+                    # We have to check here as well for the additional conditions before updating the subst_dict,
+                    # bc node2 may not satisfy them (will be known from subst_dict2)
+                    # todo THIS MAY FAIL FOR RULES THAT HAVE MORE THAN TWO PREMISES, WE HAVE NONE LIKE THAT NOW
+                    if instance2 and self._rule_is_applicable_additional_conditions(node, subst_dict2, rule_name):
+                        subst_dict.update(subst_dict2)  # do not update subst_dict unless we know the rule is applicable
                         del remaining_prems[-1]
                         if not remaining_prems:
                             break
+            else:
+                # Check the additional conditions
+                # (e.g. inf0, inf1 rules in metainferential tableaux apply to inf, standard of the same level)
+                if not self._rule_is_applicable_additional_conditions(node, subst_dict, rule_name):
+                    if not return_subst_dict:
+                        return False
+                    return False, subst_dict
 
             if not remaining_prems:  # The rule can be applied
                 if not return_subst_dict:
@@ -575,6 +579,10 @@ class TableauxSystem:
         if not return_subst_dict:
             return False
         return False, subst_dict
+
+    def _rule_is_applicable_additional_conditions(self, node, subst_dict, rule_name):
+        # Hook for more complex tableaux systems
+        return True
 
     def is_correct_tree(self, tree, inference=None, return_error_list=False, exit_on_first_error=False, parser=None):
         """Checks if a given tableaux (a node and its descendants) is correctly derived, given the rules of the system.

@@ -172,50 +172,31 @@ class MetainferentialTableauxSystem(TableauxSystem):
                 return True
         return False
 
-    def rule_is_applicable(self, node, rule_name, return_subst_dict=False):
-        """Basically applies the super rule, but checks a few additional things"""
-        # Apply the super rule
-        applicable, subst_dict = super().rule_is_applicable(node, rule_name, return_subst_dict=True)
-        if not applicable:
-            if not return_subst_dict:
-                return False
-            return False, subst_dict
-
+    def _rule_is_applicable_additional_conditions(self, node, subst_dict, rule_name):
         # For the inf0 and inf1 rules, check that the level of the inference and of the standard is the same
         if rule_name == 'inf0' or rule_name == 'inf1':
             if type(node.content) != Inference or node.content.level != node.index.level:
-                if not return_subst_dict:
-                    return False
-                return False, subst_dict
+                return False
 
         # The lowering and lifting rules apply to inferences
         # (we have not implemented these rules yet but I leave this here just in case we do it)
         elif (rule_name == 'lowering' or rule_name == 'lifting') and type(node.content) != Inference:
-            if not return_subst_dict:
-                return False
-            return False, subst_dict
+            # Here we would need to check that for one the level is higher and for the other lower
+            return False
 
         else:
             # For all the other rules, check that the standard is of level 1
             if node.index.level != 0:
-                if not return_subst_dict:
-                    return False
-                return False, subst_dict
+                return False
             # The singleton rule is only applicable if the standard has two or more values
             if rule_name == "singleton" and len(node.index.content) < 2:
-                if not return_subst_dict:
-                    return False
-                return False, subst_dict
+                return False
             # The intersection rule is applicalbe only if both standards are of level 0
             # And none of the standards is a subset of the other (i.e., none is the empty set)
             if rule_name == "intersection":
                 if (subst_dict['X'].level != 0 or
                         subst_dict['X'].content.issubset(subst_dict['Y'].content) or
                         subst_dict['Y'].content.issubset(subst_dict['X'].content)):
-                    if not return_subst_dict:
-                        return False
-                    return False, subst_dict
+                    return False
 
-        if return_subst_dict:
-            return applicable, subst_dict
-        return applicable
+        return True

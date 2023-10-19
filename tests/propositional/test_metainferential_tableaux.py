@@ -6,6 +6,7 @@ from logics.classes.propositional.proof_theories.metainferential_tableaux import
 from logics.classes.propositional import Formula, Inference
 from logics.instances.propositional.languages import classical_infinite_language as lang
 from logics.instances.propositional.metainferential_tableaux import SK_metainferential_tableaux_system as sk_tableaux
+from logics.utils.parsers import classical_parser
 
 
 class TestMetainferentialTableauxSystem(unittest.TestCase):
@@ -284,6 +285,17 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
         node2 = MetainferentialTableauxNode(formula2, index=S, parent=node1)
         node3 = MetainferentialTableauxNode(formula, index=F, parent=node2)
         self.assertTrue(sk_tableaux.rule_is_applicable(node3, 'intersection'))
+
+        # One in the middle with one of the provisos in the daughter class
+        """
+        r, {'1'} (inf0)
+        └──  r, {'0'} (R∧i)
+             └── r, {'0'} (singleton)
+        """
+        root = MetainferentialTableauxNode(content=classical_parser.parse('r'), index=S)
+        node1 = MetainferentialTableauxNode(content=classical_parser.parse('r'), index=F, parent=root)
+        node2 = MetainferentialTableauxNode(content=classical_parser.parse('r'), index=F, parent=node1)
+        self.assertTrue(sk_tableaux.rule_is_applicable(node2, 'intersection'))
 
         # -------------------------------
         # Metainference nodes

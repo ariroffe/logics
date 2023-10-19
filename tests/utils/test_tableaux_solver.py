@@ -20,7 +20,7 @@ from logics.instances.propositional.languages import (
 )
 from logics.instances.propositional.languages import classical_infinite_language_noconditional as mvl_language
 from logics.instances.propositional.many_valued_semantics import (
-    classical_mvl_semantics, LP_mvl_semantics
+    classical_mvl_semantics, LP_mvl_semantics, K3_mvl_semantics
 )
 
 
@@ -417,12 +417,11 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
         }
 
         for level in range(1, 4):
-            for _ in range(10):
-                inf = random_formula_generator.random_inference(num_premises=2, num_conclusions=2,
+            for _ in range(25):
+                inf = random_formula_generator.random_inference(num_premises=2, num_conclusions=1,
                                                                 max_depth=2, atomics=['p', 'q', 'r'],
                                                                 language=cl_reduced_language, level=level,
                                                                 exact_num_premises=False, exact_num_conclusions=False)
-                # ST
                 tree = metainferential_tableaux_solver.solve(
                     inference=inf,
                     tableaux_system=sk_tableaux,
@@ -430,13 +429,48 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
                 )
 
                 if classical_mvl_semantics.is_locally_valid(inf):
-                    if not sk_tableaux.tree_is_closed(tree):
-                        tree.print_tree(classical_parser)
+                    # if not sk_tableaux.tree_is_closed(tree):
+                    #     tree.print_tree(classical_parser)
                     self.assertTrue(sk_tableaux.tree_is_closed(tree))
                 else:
-                    if sk_tableaux.tree_is_closed(tree):
-                        tree.print_tree(classical_parser)
+                    # if sk_tableaux.tree_is_closed(tree):
+                    #     tree.print_tree(classical_parser)
                     self.assertFalse(sk_tableaux.tree_is_closed(tree))
+
+                # Tests with LP and K3 for level 1
+                if level == 1:
+                    tree = metainferential_tableaux_solver.solve(
+                        inference=inf,
+                        tableaux_system=sk_tableaux,
+                        beggining_index=[T, T],
+                    )
+                    if LP_mvl_semantics.is_locally_valid(inf):
+                        # if not sk_tableaux.tree_is_closed(tree):
+                        #     print(classical_parser.unparse(inf), "is valid in LP but the tree did not close:")
+                        #     tree.print_tree(classical_parser)
+                        self.assertTrue(sk_tableaux.tree_is_closed(tree))
+                    else:
+                        # if sk_tableaux.tree_is_closed(tree):
+                        #     print(classical_parser.unparse(inf), "is not valid in LP but the tree did close:")
+                        #     tree.print_tree(classical_parser)
+                        self.assertFalse(sk_tableaux.tree_is_closed(tree))
+
+                    tree = metainferential_tableaux_solver.solve(
+                        inference=inf,
+                        tableaux_system=sk_tableaux,
+                        beggining_index=[S, S],
+                    )
+                    if K3_mvl_semantics.is_locally_valid(inf):
+                        # if not sk_tableaux.tree_is_closed(tree):
+                        #     print(classical_parser.unparse(inf), "is valid in K3 but the tree did not close:")
+                        #     tree.print_tree(classical_parser)
+                        self.assertTrue(sk_tableaux.tree_is_closed(tree))
+                    else:
+                        # if sk_tableaux.tree_is_closed(tree):
+                        #     print(classical_parser.unparse(inf), "is valid in K3 but the tree did not close:")
+                        #     tree.print_tree(classical_parser)
+                        self.assertFalse(sk_tableaux.tree_is_closed(tree))
+
 
 
 class TestConstructiveTreeSolver(unittest.TestCase):
