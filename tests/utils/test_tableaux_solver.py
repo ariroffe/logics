@@ -368,7 +368,36 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
             tableaux_system=sk_tableaux,
             beggining_index=[[{'1'}, {'1', 'i'}], [{'1'}, {'1', 'i'}]],
         )
-        tree.print_tree(classical_parser)
+        # tree.print_tree(classical_parser)
+        """
+        (/ p ∧ ~p) // (/ q), -[[{'1'}, {'i', '1'}], [{'1'}, {'i', '1'}]]
+        └── / p ∧ ~p, [{'1'}, {'i', '1'}] (inf0)
+            └── / q, -[{'1'}, {'i', '1'}] (inf0)
+                └── p ∧ ~p, {'i', '1'} (inf1)
+                    └── q, -{'i', '1'} (inf0)
+                        ├── p ∧ ~p, {'i'} (singleton)
+                        │   └── q, {'0'} (complement)
+                        │       ├── p, {'i', '1'} (R∧i)
+                        │       │   └── ~p, {'i'} (R∧i)
+                        │       │       ├── p, {'i'} (singleton)
+                        │       │       │   └── p, {'i'} (R~1)
+                        │       │       └── p, {'1'} (singleton)
+                        │       │           └── p, {'i'} (R~1)
+                        │       │               └── p, set() (intersection)
+                        │       └── p, {'i'} (R∧i)
+                        │           └── ~p, {'i', '1'} (R∧i)
+                        │               ├── ~p, {'i'} (singleton)
+                        │               │   └── p, {'i'} (R~1)
+                        │               └── ~p, {'1'} (singleton)
+                        │                   └── p, {'0'} (R~1)
+                        │                       └── p, set() (intersection)
+                        └── p ∧ ~p, {'1'} (singleton)
+                            └── q, {'0'} (complement)
+                                └── p, {'1'} (R∧1)
+                                    └── ~p, {'1'} (R∧1)
+                                        └── p, {'0'} (R~1)
+                                            └── p, set() (intersection)
+        """
         self.assertFalse(sk_tableaux.tree_is_closed(tree))
 
 

@@ -79,7 +79,6 @@ class TableauxSolver:
                                     └── r (R→)
         """
         tableaux = self._begin_tableaux(inference, beggining_index)
-        applied_rules = {rule_name: [] for rule_name in tableaux_system.rules}
 
         # For each node of the tableaux (including the ones we add dynamically)
         for node in LevelOrderIter(tableaux):  # LevelOrder so that it does not get stuck on a branch
@@ -88,41 +87,37 @@ class TableauxSolver:
                 result = tableaux_system.rule_is_applicable(node, rule_name, return_subst_dict=True)
                 applicable = result[0]
                 if applicable:
+                    # Get the rule and substitute the metavariables for formulae in it
                     subst_dict = result[1]
                     rule = tableaux_system.rules[rule_name]
                     rule_application = self.apply_rule(tableaux_system, rule_name, rule, subst_dict)
 
-                    # applied_rules contains a list of the instantiations of the rules. Done like this because
-                    # in some modal systems, a rule may be applied twice to the same node & yield different results
-                    if rule_application not in applied_rules[rule_name]:
-                        applied_rules[rule_name].append(rule_application)
-
-                        # We need to add the rule application last premise's children to every open branch
-                        rule_application_last_prem = [n for n in PreOrderIter(rule_application) if
-                                                      n.justification is None][-1]
-                        for leaf in node.leaves:
-                            if not tableaux_system.node_is_closed(leaf):
-                                rule_application_children = list()
-                                while rule_application_last_prem.children:
-                                    # In order to put a copy of the rule child, we detach it, deepcopy, append
-                                    # We reattach them all in the end so as to not modify the original order
-                                    rule_child = rule_application_last_prem.children[0]
-                                    rule_child.parent = None  # detach
-                                    new_child = deepcopy(rule_child)  # copy
-                                    if not self.allow_repetition_of_nodes:
-                                        if not new_child in leaf.path:
-                                            new_child.parent = leaf  # add the copy to the tableaux leaf
-                                    else:
+                    # Now get everything that isn't a premise in the tree obtained and add it to every open branch
+                    rule_application_last_prem = [n for n in PreOrderIter(rule_application) if
+                                                  n.justification is None][-1]
+                    for leaf in node.leaves:
+                        if not tableaux_system.node_is_closed(leaf):
+                            rule_application_children = list()
+                            while rule_application_last_prem.children:
+                                # In order to put a copy of the rule child, we detach it, deepcopy, append
+                                # We reattach them all in the end so as to not modify the original order
+                                rule_child = rule_application_last_prem.children[0]
+                                rule_child.parent = None  # detach
+                                new_child = deepcopy(rule_child)  # copy
+                                if not self.allow_repetition_of_nodes:
+                                    if not new_child in leaf.path:
                                         new_child.parent = leaf  # add the copy to the tableaux leaf
-                                    rule_application_children.append(rule_child)  # save the child in a temp list
-                                rule_application_last_prem.children = rule_application_children  # reatach all
+                                else:
+                                    new_child.parent = leaf  # add the copy to the tableaux leaf
+                                rule_application_children.append(rule_child)  # save the child in a temp list
+                            rule_application_last_prem.children = rule_application_children  # reatach all
 
-                            # After applying the rule, check that you have not reached maximum depth
-                            if max_depth is not None and leaf.depth == max_depth:
-                                raise SolverError('Could not solve the tree. Maximum depth exceeded')
+                        # After applying the rule, check that you have not reached maximum depth
+                        if max_depth is not None and leaf.depth == max_depth:
+                            raise SolverError('Could not solve the tree. Maximum depth exceeded')
 
-                        if tableaux_system.tree_is_closed(tableaux):
-                            return tableaux
+                    if tableaux_system.tree_is_closed(tableaux):
+                        return tableaux
 
         return tableaux
 
