@@ -36,6 +36,7 @@ Table of Contents
    propositional/proof_theories/axiom_system
    propositional/proof_theories/natural_deduction
    propositional/proof_theories/tableaux
+   propositional/proof_theories/metainferential_tableaux
    propositional/proof_theories/sequents
 
 .. toctree::

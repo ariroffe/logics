@@ -192,7 +192,79 @@ class IndexedTableauxSolver(TableauxSolver):
 indexed_tableaux_solver = IndexedTableauxSolver()
 
 
+# -----------------------------------------------
 class MetainferentialTableauxSolver(TableauxSolver):
+    """Solver class for many-valued metainferential systems
+
+    The default instance of the class it at ``logics.utils.solvers.tableaux.metainferential_tableaux_solver``
+
+    The ``solve`` method takes as parameters:
+
+    * `inference`: a `logics.classes.propositional.Inference`
+    * `tableaux_system`: a `logics.classes.propositional.proof_theories.tableaux.MetainferentialTableauxSystem`
+    * `beggining_index`: a list or set like ``[{'1', 'i'}, {'1'}]``. Note that this is **not** a
+      ``MetainferentialTableauxStandard`` -those are reserved for tableaux nodes.
+
+    Examples
+    --------
+    >>> from logics.utils.parsers import classical_parser
+    >>> from logics.instances.propositional.metainferential_tableaux import SK_metainferential_tableaux_system as sk_tableaux
+    >>> from logics.utils.solvers.tableaux import metainferential_tableaux_solver
+    >>> meta_explosion = classical_parser.parse('(/ p ∧ ~p) // (/q)')
+    >>> tree = metainferential_tableaux_solver.solve(
+    ...     inference=meta_explosion,
+    ...     tableaux_system=sk_tableaux,
+    ...     beggining_index=[[{'1', 'i'}, {'1'}], [{'1'}, {'1', 'i'}]]  # TS/ST, closed
+    ... )
+    >>> tree.print_tree(classical_parser)
+    (/ p ∧ ~p) // (/ q), -[[{'i', '1'}, {'1'}], [{'1'}, {'i', '1'}]]
+    └── / p ∧ ~p, [{'i', '1'}, {'1'}] (inf0)
+        └── / q, -[{'1'}, {'i', '1'}] (inf0)
+            └── p ∧ ~p, {'1'} (inf1)
+                └── q, -{'i', '1'} (inf0)
+                    └── p, {'1'} (R∧1)
+                        └── ~p, {'1'} (R∧1)
+                            └── q, {'0'} (complement)
+                                └── p, {'0'} (R~1)
+                                    └── p, set() (intersection)
+    >>> sk_tableaux.tree_is_closed(tree)
+    True
+    >>> tree = metainferential_tableaux_solver.solve(
+    ...     inference=meta_explosion,
+    ...     tableaux_system=sk_tableaux,
+    ...     beggining_index=[[{'1'}, {'1', 'i'}], [{'1'}, {'1', 'i'}]], # ST/ST, not closed
+    ... )
+    >>> tree.print_tree(classical_parser)
+    (/ p ∧ ~p) // (/ q), -[[{'1'}, {'1', 'i'}], [{'1'}, {'1', 'i'}]]
+    └── / p ∧ ~p, [{'1'}, {'1', 'i'}] (inf0)
+        └── / q, -[{'1'}, {'i', '1'}] (inf0)
+            └── p ∧ ~p, {'1', 'i'} (inf1)
+                └── q, -{'1', 'i'} (inf0)
+                    ├── p ∧ ~p, {'1'} (singleton)
+                    │   └── q, {'0'} (complement)
+                    │       └── p, {'1'} (R∧1)
+                    │           └── ~p, {'1'} (R∧1)
+                    │               └── p, {'0'} (R~1)
+                    │                   └── p, set() (intersection)
+                    └── p ∧ ~p, {'i'} (singleton)
+                        └── q, {'0'} (complement)
+                            ├── p, {'1', 'i'} (R∧i)
+                            │   └── ~p, {'i'} (R∧i)
+                            │       ├── p, {'1'} (singleton)
+                            │       │   └── p, {'i'} (R~1)
+                            │       │       └── p, set() (intersection)
+                            │       └── p, {'i'} (singleton)
+                            │           └── p, {'i'} (R~1)
+                            └── p, {'i'} (R∧i)
+                                └── ~p, {'1', 'i'} (R∧i)
+                                    ├── ~p, {'1'} (singleton)
+                                    │   └── p, {'0'} (R~1)
+                                    │       └── p, set() (intersection)
+                                    └── ~p, {'i'} (singleton)
+                                        └── p, {'i'} (R~1)
+    >>> sk_tableaux.tree_is_closed(tree)
+    False
+    """
     allow_repetition_of_nodes = False
 
     def _begin_tableaux(self, inference, beggining_index):
