@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7] - 2023-10-20
+### Added
+- Classes, instances and solvers for metainferential tableaux
+
+### Fixed
+- Various bug fixes in tableaux systems
+
 ## [1.6.6] - 2023-08-31
 ### Fixed
 - Natural deduction derivations cannot end with open supopsitions.

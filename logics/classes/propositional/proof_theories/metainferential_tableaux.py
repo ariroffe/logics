@@ -292,8 +292,9 @@ class MetainferentialTableauxSystem(TableauxSystem):
 
     Notes
     -----
-    This subclasses ``logics.classes.propositional.proof_theories.tableaux.TableauxSystem``,
-    and overrides a few methods. The functioning is almost identical
+    * This subclasses ``logics.classes.propositional.proof_theories.tableaux.TableauxSystem``,
+      and overrides a few methods. The functioning is almost identical
+    * Also note that the ``is_correct_tree`` **method has not been implemented yet for this class.**
     """
     fast_node_is_closed_enabled = True
 
@@ -341,3 +342,6 @@ class MetainferentialTableauxSystem(TableauxSystem):
                     return False
 
         return True
+
+    def is_correct_tree(self, tree, inference=None, return_error_list=False, exit_on_first_error=False, parser=None):
+        raise NotImplementedError()
