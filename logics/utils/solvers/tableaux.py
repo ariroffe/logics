@@ -96,6 +96,7 @@ class TableauxSolver:
                     rule_application_last_prem = [n for n in PreOrderIter(rule_application) if
                                                   n.justification is None][-1]
                     for leaf in node.leaves:
+                        new_leaf = leaf
                         if not tableaux_system.node_is_closed(leaf):
                             rule_application_children = list()
                             while rule_application_last_prem.children:
@@ -105,10 +106,12 @@ class TableauxSolver:
                                 rule_child.parent = None  # detach
                                 new_child = deepcopy(rule_child)  # copy
                                 if not self.allow_repetition_of_nodes:
-                                    if not new_child in leaf.path:
+                                    if not (new_child.content, new_child.index) in [(n.content, n.index) for n in new_leaf.path]:
                                         new_child.parent = leaf  # add the copy to the tableaux leaf
+                                        new_leaf = new_child
                                 else:
                                     new_child.parent = leaf  # add the copy to the tableaux leaf
+                                    new_leaf = new_child
                                 rule_application_children.append(rule_child)  # save the child in a temp list
                             rule_application_last_prem.children = rule_application_children  # reatach all
 
@@ -217,11 +220,11 @@ class MetainferentialTableauxSolver(TableauxSolver):
     ...     beggining_index=[[{'1', 'i'}, {'1'}], [{'1'}, {'1', 'i'}]]  # TS/ST, closed
     ... )
     >>> tree.print_tree(classical_parser)
-    (/ p ∧ ~p) // (/ q), -[[{'i', '1'}, {'1'}], [{'1'}, {'i', '1'}]]
-    └── / p ∧ ~p, [{'i', '1'}, {'1'}] (inf0)
-        └── / q, -[{'1'}, {'i', '1'}] (inf0)
+    (/ p ∧ ~p) // (/ q), -[[{'1', 'i'}, {'1'}], [{'1'}, {'1', 'i'}]]
+    └── / p ∧ ~p, [{'1', 'i'}, {'1'}] (inf0)
+        └── / q, -[{'1'}, {'1', 'i'}] (inf0)
             └── p ∧ ~p, {'1'} (inf1)
-                └── q, -{'i', '1'} (inf0)
+                └── q, -{'1', 'i'} (inf0)
                     └── p, {'1'} (R∧1)
                         └── ~p, {'1'} (R∧1)
                             └── q, {'0'} (complement)
@@ -237,7 +240,7 @@ class MetainferentialTableauxSolver(TableauxSolver):
     >>> tree.print_tree(classical_parser)
     (/ p ∧ ~p) // (/ q), -[[{'1'}, {'1', 'i'}], [{'1'}, {'1', 'i'}]]
     └── / p ∧ ~p, [{'1'}, {'1', 'i'}] (inf0)
-        └── / q, -[{'1'}, {'i', '1'}] (inf0)
+        └── / q, -[{'1'}, {'1', 'i'}] (inf0)
             └── p ∧ ~p, {'1', 'i'} (inf1)
                 └── q, -{'1', 'i'} (inf0)
                     ├── p ∧ ~p, {'1'} (singleton)
@@ -254,14 +257,12 @@ class MetainferentialTableauxSolver(TableauxSolver):
                             │       │   └── p, {'i'} (R~1)
                             │       │       └── p, set() (intersection)
                             │       └── p, {'i'} (singleton)
-                            │           └── p, {'i'} (R~1)
                             └── p, {'i'} (R∧i)
                                 └── ~p, {'1', 'i'} (R∧i)
                                     ├── ~p, {'1'} (singleton)
                                     │   └── p, {'0'} (R~1)
                                     │       └── p, set() (intersection)
                                     └── ~p, {'i'} (singleton)
-                                        └── p, {'i'} (R~1)
     >>> sk_tableaux.tree_is_closed(tree)
     False
     """
