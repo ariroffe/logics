@@ -266,7 +266,7 @@ class MetainferentialTableauxSolver(TableauxSolver):
     >>> sk_tableaux.tree_is_closed(tree)
     False
     """
-    allow_repetition_of_nodes = False
+    allow_repetition_of_nodes = True
 
     def _begin_tableaux(self, inference, beggining_index):
         """

@@ -245,9 +245,7 @@ class MetainferentialTableauxNode(TableauxNode):
         return super().content_is_instance_of(content2, language, subst_dict, return_subst_dict)
 
     # def instantiate(self, language, subst_dict, instantiate_children=True, first_iteration=True):
-
         # See if we need this for is_correct_tree. Otherwise delete it.
-
         # Again, these are hacks to instantiate the rules inf0 and inf1
         # Instantiate nodes of the form Γ / Δ
         # if first_iteration and self.content == Inference(premises=[Formula(['Γ'])], conclusions=[Formula(['Δ'])]):

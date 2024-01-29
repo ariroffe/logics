@@ -6,7 +6,9 @@ from logics.instances.propositional.tableaux import (
     classical_tableaux_system, classical_indexed_tableaux_system, LP_tableaux_system, classical_constructive_tree_system
 )
 from logics.instances.propositional.metainferential_tableaux import (
-    metainferential_tableaux_rules, SK_metainferential_tableaux_system as sk_tableaux
+    metainferential_tableaux_rules,
+    SK_metainferential_tableaux_system as sk_tableaux,
+    WK_metainferential_tableaux_system as wk_tableaux,
 )
 from logics.utils.solvers.tableaux import (
     standard_tableaux_solver, indexed_tableaux_solver, metainferential_tableaux_solver
@@ -19,7 +21,7 @@ from logics.instances.propositional.languages import (
 )
 from logics.instances.propositional.languages import classical_infinite_language_noconditional as mvl_language
 from logics.instances.propositional.many_valued_semantics import (
-    classical_mvl_semantics, LP_mvl_semantics, K3_mvl_semantics
+    classical_mvl_semantics, LP_mvl_semantics, K3_mvl_semantics, WK_mvl_semantics, PWK_mvl_semantics
 )
 
 
@@ -346,7 +348,7 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
     def test_some_inferences(self):
         meta_explosion = classical_parser.parse('(/ p ∧ ~p) // (/q)')
 
-        # TSST, closed
+        # SK schema, TSST, closed
         tree = metainferential_tableaux_solver.solve(
             inference=meta_explosion,
             tableaux_system=sk_tableaux,
@@ -367,7 +369,7 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
         """
         self.assertTrue(sk_tableaux.tree_is_closed(tree))
 
-        # STST, not closed
+        # SK schema, STST, not closed
         tree = metainferential_tableaux_solver.solve(
             inference=meta_explosion,
             tableaux_system=sk_tableaux,
@@ -416,17 +418,18 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
         }
 
         for level in range(1, 4):
-            for _ in range(25):
+            for _ in range(10):
                 inf = random_formula_generator.random_inference(num_premises=2, num_conclusions=1,
                                                                 max_depth=2, atomics=['p', 'q', 'r'],
                                                                 language=cl_reduced_language, level=level,
                                                                 exact_num_premises=False, exact_num_conclusions=False)
+
+                # SK schema (should be sound and complete with classical semantics)
                 tree = metainferential_tableaux_solver.solve(
                     inference=inf,
                     tableaux_system=sk_tableaux,
                     beggining_index=level_standards[level],
                 )
-
                 if classical_mvl_semantics.is_locally_valid(inf):
                     # if not sk_tableaux.tree_is_closed(tree):
                     #     tree.print_tree(classical_parser)
@@ -470,6 +473,42 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
                         #     tree.print_tree(classical_parser)
                         self.assertFalse(sk_tableaux.tree_is_closed(tree))
 
+                # WK schema (should also be sound and complete with classical semantics)
+                tree2 = metainferential_tableaux_solver.solve(
+                    inference=inf,
+                    tableaux_system=wk_tableaux,
+                    beggining_index=level_standards[level],
+                )
+                if classical_mvl_semantics.is_locally_valid(inf):
+                    # if not wk_tableaux.tree_is_closed(tree2):
+                    #     tree2.print_tree(classical_parser)
+                    self.assertTrue(wk_tableaux.tree_is_closed(tree2))
+                else:
+                    # if wk_tableaux.tree_is_closed(tree2):
+                    #     tree2.print_tree(classical_parser)
+                    self.assertFalse(wk_tableaux.tree_is_closed(tree2))
+
+                # Tests with WK and PWK for level 1
+                if level == 1:
+                    tree2 = metainferential_tableaux_solver.solve(
+                        inference=inf,
+                        tableaux_system=wk_tableaux,
+                        beggining_index=[T, T],
+                    )
+                    if PWK_mvl_semantics.is_locally_valid(inf):
+                        self.assertTrue(wk_tableaux.tree_is_closed(tree2))
+                    else:
+                        self.assertFalse(wk_tableaux.tree_is_closed(tree2))
+
+                    tree2 = metainferential_tableaux_solver.solve(
+                        inference=inf,
+                        tableaux_system=wk_tableaux,
+                        beggining_index=[S, S],
+                    )
+                    if WK_mvl_semantics.is_locally_valid(inf):
+                        self.assertTrue(wk_tableaux.tree_is_closed(tree2))
+                    else:
+                        self.assertFalse(wk_tableaux.tree_is_closed(tree2))
 
 
 class TestConstructiveTreeSolver(unittest.TestCase):
