@@ -93,36 +93,62 @@ class TableauxSolver:
                     rule_application = self.apply_rule(tableaux_system, rule_name, rule, subst_dict)
 
                     # Now get everything that isn't a premise in the tree obtained and add it to every open branch
-                    rule_application_last_prem = [n for n in PreOrderIter(rule_application) if
-                                                  n.justification is None][-1]
+                    rule_application_last_prem = self._get_last_premise_node(rule_application)
+                    counter = 1
                     for leaf in node.leaves:
-                        new_leaf = leaf
                         if not tableaux_system.node_is_closed(leaf):
-                            rule_application_children = list()
-                            while rule_application_last_prem.children:
-                                # In order to put a copy of the rule child, we detach it, deepcopy, append
-                                # We reattach them all in the end so as to not modify the original order
-                                rule_child = rule_application_last_prem.children[0]
-                                rule_child.parent = None  # detach
-                                new_child = deepcopy(rule_child)  # copy
-                                if not self.allow_repetition_of_nodes:
-                                    if not (new_child.content, new_child.index) in [(n.content, n.index) for n in new_leaf.path]:
-                                        new_child.parent = leaf  # add the copy to the tableaux leaf
-                                        new_leaf = new_child
-                                else:
-                                    new_child.parent = leaf  # add the copy to the tableaux leaf
-                                    new_leaf = new_child
-                                rule_application_children.append(rule_child)  # save the child in a temp list
-                            rule_application_last_prem.children = rule_application_children  # reatach all
+                            # _add_children_to_leaf may change the root, so if this is not the last leaf,
+                            # we need to copy the rule last prem subtree
+                            root = rule_application_last_prem
+                            if counter != len(node.leaves):
+                                root = deepcopy(root)
+                            counter += 1
 
-                        # After applying the rule, check that you have not reached maximum depth
+                            self._add_children_to_leaf(root, leaf)
+
+                    # After applying the rule we may have new leaves
+                    some_leaf_open = False
+                    for leaf in tableaux.leaves:
                         if max_depth is not None and leaf.depth == max_depth:
                             raise SolverError('Could not solve the tree. Maximum depth exceeded')
 
-                    if tableaux_system.tree_is_closed(tableaux):
+                        if not tableaux_system.node_is_closed(leaf):
+                            some_leaf_open = True
+                    if not some_leaf_open:
                         return tableaux
 
         return tableaux
+
+    def _get_last_premise_node(self, rule_application):
+        last_prem = None
+        for node in PreOrderIter(rule_application):  # This assumes that the rule premises do not branch
+            if node.justification is None:
+                last_prem = node
+            else:
+                break
+        return last_prem
+
+    def _add_children_to_leaf(self, root, leaf):
+        """
+        Takes a tree (a root node, e.g. the last premise of a rule application) and a leaf from a different tree
+        (e.g. a leaf in the current solver tree) and adds all the children of the first to the second.
+
+        WARNING: It may modify the `root` tree, do not use again after passing it to this function (or deepcopy before)
+        """
+        num_children = len(root.children)  # need to calculate it here bc it will change dynamically in what follows
+        for child in root.children:
+            if self.allow_repetition_of_nodes:
+                # If nodes can be repeated, simply attach the child to the leaf. The subree below it is kept
+                child.parent = leaf
+
+            else:
+                # If there is only one child and it already occurs in the tree, skip
+                if num_children == 1 and (child.content, child.index) in [(n.content, n.index) for n in leaf.path]:
+                    child.parent = None  # For uniformity, bc the other clauses alter the root's child
+                    self._add_children_to_leaf(child, leaf)  # Move to next node without doing anything with child
+                else:  # there is more than one child or the child is not repeated
+                    child.parent = leaf
+                    self._add_children_to_leaf(child, child)  # The child is both the new leaf and new root
 
     def apply_rule(self, tableaux_system, rule_name, rule, subst_dict):
         return rule.instantiate(tableaux_system.language, subst_dict, instantiate_children=True)
@@ -266,7 +292,7 @@ class MetainferentialTableauxSolver(TableauxSolver):
     >>> sk_tableaux.tree_is_closed(tree)
     False
     """
-    allow_repetition_of_nodes = True
+    allow_repetition_of_nodes = False
 
     def _begin_tableaux(self, inference, beggining_index):
         """

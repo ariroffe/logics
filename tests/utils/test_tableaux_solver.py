@@ -1,6 +1,8 @@
 import unittest
+from copy import deepcopy
 
 from logics.classes.propositional import Formula, Inference
+from logics.classes.propositional.proof_theories.tableaux import TableauxNode
 from logics.classes.propositional.proof_theories.metainferential_tableaux import MetainferentialTableauxStandard
 from logics.instances.propositional.tableaux import (
     classical_tableaux_system, classical_indexed_tableaux_system, LP_tableaux_system, classical_constructive_tree_system
@@ -26,6 +28,79 @@ from logics.instances.propositional.many_valued_semantics import (
 
 
 class TestTableauxSolver(unittest.TestCase):
+    def test_get_last_premise_node(self):
+        n1 = TableauxNode(content=Formula(['p']), index=0)
+        n2 = TableauxNode(content=Formula(['q']), index=0, parent=n1)
+        n3 = TableauxNode(content=Formula(['r']), index=0, justification='R~~', parent=n2)
+        TableauxNode(content=Formula(['s']), index=0, justification='R~~', parent=n3)
+        '''
+        p, 0
+        └── q, 0
+            └── r, 0 (R~~)
+                └── s, 0 (R~~)
+        '''
+        self.assertEqual(standard_tableaux_solver._get_last_premise_node(n1), n2)
+
+    def test_add_children_to_leaf(self):
+        tree_leaf1 = TableauxNode(content=Formula(['p']), index=0)
+
+        rule_ap1 = TableauxNode(content=Formula(['q']), index=0)
+        rule_ap1_1 = TableauxNode(content=Formula(['p']), index=0, justification='R~~', parent=rule_ap1)
+        rule_ap1_2 = TableauxNode(content=Formula(['r']), index=0, justification='R~~', parent=rule_ap1_1)
+        '''
+        q, 0
+        └── p, 0 (R~~)
+            └── r, 0 (R~~)
+        '''
+
+        # the standard solver does allow repetition of nodes
+        standard_tableaux_solver._add_children_to_leaf(root=deepcopy(rule_ap1), leaf=tree_leaf1)
+        self.assertEqual(len(tree_leaf1.children), 1)
+        self.assertEqual(tree_leaf1.children[0].content, Formula(['p']))
+        self.assertEqual(len(tree_leaf1.children[0].children), 1)
+        self.assertEqual(tree_leaf1.children[0].children[0].content, Formula(['r']))
+
+        nonrepeat_solver = deepcopy(standard_tableaux_solver)
+        nonrepeat_solver.allow_repetition_of_nodes = False
+        tree_leaf2 = TableauxNode(content=Formula(['p']), index=0)
+
+        nonrepeat_solver._add_children_to_leaf(root=rule_ap1, leaf=tree_leaf2)
+        self.assertEqual(len(tree_leaf2.children), 1)
+        self.assertEqual(tree_leaf2.children[0].content, Formula(['r']))
+        self.assertEqual(len(tree_leaf2.children[0].children), 0)
+
+        # try again but with branching root
+        rule_ap2 = TableauxNode(content=Formula(['q']), index=0)
+        rule_ap2_1 = TableauxNode(content=Formula(['p']), index=0, justification='R~~', parent=rule_ap2)
+        rule_ap2_2 = TableauxNode(content=Formula(['r']), index=0, justification='R~~', parent=rule_ap2)
+        '''
+        q, 0
+        └── p, 0 (R~~)
+        └── r, 0 (R~~)
+        '''
+        tree_leaf3 = TableauxNode(content=Formula(['p']), index=0)
+        nonrepeat_solver._add_children_to_leaf(root=rule_ap2, leaf=tree_leaf3)
+        self.assertEqual(len(tree_leaf3.children), 2)
+        self.assertEqual(tree_leaf3.children[0].content, Formula(['p']))
+        self.assertEqual(tree_leaf3.children[1].content, Formula(['r']))
+
+        # A more complex pattern (rule application)
+        rule_ap3 = TableauxNode(content=Formula(['q']), index=0)
+        rule_ap3_1 = TableauxNode(content=Formula(['p']), index=0, justification='R~~', parent=rule_ap3)
+        TableauxNode(content=Formula(['r']), index=0, justification='R~~', parent=rule_ap3_1)
+        TableauxNode(content=Formula(['s']), index=0, justification='R~~', parent=rule_ap3_1)
+        '''
+        q, 0
+        └── p, 0 (R~~)
+            └── r, 0 (R~~)
+            └── s, 0 (R~~)
+        '''
+        tree_leaf4 = TableauxNode(content=Formula(['p']), index=0)
+        nonrepeat_solver._add_children_to_leaf(root=rule_ap3, leaf=tree_leaf4)
+        self.assertEqual(len(tree_leaf4.children), 2)
+        self.assertEqual(tree_leaf4.children[0].content, Formula(['r']))
+        self.assertEqual(tree_leaf4.children[1].content, Formula(['s']))
+
     def test_some_inferences(self):
         conjunction_elimination = classical_parser.parse('p ∧ q / p')
         conditional_elimination = classical_parser.parse('p, p → q / q')
@@ -432,10 +507,12 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
                 )
                 if classical_mvl_semantics.is_locally_valid(inf):
                     # if not sk_tableaux.tree_is_closed(tree):
+                    #     print("VALID INFERENCE, TREE NOT CLOSED")
                     #     tree.print_tree(classical_parser)
                     self.assertTrue(sk_tableaux.tree_is_closed(tree))
                 else:
                     # if sk_tableaux.tree_is_closed(tree):
+                    #     print("INVALID INFERENCE, TREE CLOSED")
                     #     tree.print_tree(classical_parser)
                     self.assertFalse(sk_tableaux.tree_is_closed(tree))
 
@@ -448,12 +525,12 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
                     )
                     if LP_mvl_semantics.is_locally_valid(inf):
                         # if not sk_tableaux.tree_is_closed(tree):
-                        #     print(classical_parser.unparse(inf), "is valid in LP but the tree did not close:")
+                        #     print("VALID INFERENCE, TREE NOT CLOSED")
                         #     tree.print_tree(classical_parser)
                         self.assertTrue(sk_tableaux.tree_is_closed(tree))
                     else:
                         # if sk_tableaux.tree_is_closed(tree):
-                        #     print(classical_parser.unparse(inf), "is not valid in LP but the tree did close:")
+                        #     print("INVALID INFERENCE, TREE CLOSED")
                         #     tree.print_tree(classical_parser)
                         self.assertFalse(sk_tableaux.tree_is_closed(tree))
 
@@ -464,12 +541,12 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
                     )
                     if K3_mvl_semantics.is_locally_valid(inf):
                         # if not sk_tableaux.tree_is_closed(tree):
-                        #     print(classical_parser.unparse(inf), "is valid in K3 but the tree did not close:")
+                        #     print("VALID INFERENCE, TREE NOT CLOSED")
                         #     tree.print_tree(classical_parser)
                         self.assertTrue(sk_tableaux.tree_is_closed(tree))
                     else:
                         # if sk_tableaux.tree_is_closed(tree):
-                        #     print(classical_parser.unparse(inf), "is valid in K3 but the tree did not close:")
+                        #     print("INVALID INFERENCE, TREE CLOSED")
                         #     tree.print_tree(classical_parser)
                         self.assertFalse(sk_tableaux.tree_is_closed(tree))
 
@@ -481,10 +558,12 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
                 )
                 if classical_mvl_semantics.is_locally_valid(inf):
                     # if not wk_tableaux.tree_is_closed(tree2):
+                    #     print("VALID INFERENCE, TREE NOT CLOSED")
                     #     tree2.print_tree(classical_parser)
                     self.assertTrue(wk_tableaux.tree_is_closed(tree2))
                 else:
                     # if wk_tableaux.tree_is_closed(tree2):
+                    #     print("INVALID INFERENCE, TREE CLOSED")
                     #     tree2.print_tree(classical_parser)
                     self.assertFalse(wk_tableaux.tree_is_closed(tree2))
 
@@ -496,8 +575,14 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
                         beggining_index=[T, T],
                     )
                     if PWK_mvl_semantics.is_locally_valid(inf):
+                        # if not wk_tableaux.tree_is_closed(tree2):
+                        #     print("VALID INFERENCE, TREE NOT CLOSED")
+                        #     tree2.print_tree(classical_parser)
                         self.assertTrue(wk_tableaux.tree_is_closed(tree2))
                     else:
+                        # if wk_tableaux.tree_is_closed(tree2):
+                        #     print("INVALID INFERENCE, TREE CLOSED")
+                        #     tree2.print_tree(classical_parser)
                         self.assertFalse(wk_tableaux.tree_is_closed(tree2))
 
                     tree2 = metainferential_tableaux_solver.solve(
@@ -506,8 +591,14 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
                         beggining_index=[S, S],
                     )
                     if WK_mvl_semantics.is_locally_valid(inf):
+                        # if not wk_tableaux.tree_is_closed(tree2):
+                        #     print("VALID INFERENCE, TREE NOT CLOSED")
+                        #     tree2.print_tree(classical_parser)
                         self.assertTrue(wk_tableaux.tree_is_closed(tree2))
                     else:
+                        # if wk_tableaux.tree_is_closed(tree2):
+                        #     print("INVALID INFERENCE, TREE CLOSED")
+                        #     tree2.print_tree(classical_parser)
                         self.assertFalse(wk_tableaux.tree_is_closed(tree2))
 
 
