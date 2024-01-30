@@ -510,6 +510,46 @@ class TableauxSystem:
         node.parent = parent
         return True
 
+    def get_counterexample(self, tree):
+        """Given a tree, returns a valuation that constitutes a counterexample to it.
+
+        The valuation is returned as a dict, where the keys are propositional letters (strings) and the values are
+        truth values. E.g. ``{'p': '1', 'q': '0'}``. If the tree is closed, returns ``None``
+
+        Parameters
+        ----------
+        tree: logics.classes.propositional.proof_theories.TableauxNode
+            The root of the tree we want to look at
+
+        Examples
+        --------
+        >>> from logics.utils.parsers import classical_parser
+        >>> from logics.classes.propositional.proof_theories import TableauxNode
+        >>> from logics.instances.propositional.tableaux import classical_tableaux_system
+        >>> n1 = TableauxNode(content=classical_parser.parse('p ∧ q'))
+        >>> n2 = TableauxNode(content=classical_parser.parse('~p'), parent=n1)
+        >>> n3 = TableauxNode(content=classical_parser.parse('q'), justification='R∧', parent=n2)
+        >>> n4 = TableauxNode(content=classical_parser.parse('p'), justification='R~~', parent=n2)
+        >>> n1.print_tree(classical_parser)  # For illustration purposes
+        p ∧ q
+        └── ~p
+            ├── q (R∧)
+            └── p (R~~)
+        >>> classical_tableaux_system.get_counterexample(n1)
+        {'p': '0', 'q': '1'}
+        """
+        for leaf in tree.leaves:
+            if not self.node_is_closed(leaf):
+                counterexample = dict()
+                for node in leaf.path:
+                    formula = node.content
+                    if formula.is_atomic:  # Atomic formulae that appear on the path are true
+                        counterexample[formula[0]] = '1'
+                    elif formula.main_symbol == '~' and formula[1].is_atomic:  # Negations of atomics are false
+                        counterexample[formula[1][0]] = '0'
+                return counterexample
+        return None
+
     def rule_is_applicable(self, node, rule_name, return_subst_dict=False):
         """Given a node and a rule name, determines if the rule can be applied to the node.
 
@@ -989,6 +1029,17 @@ class ManyValuedTableauxSystem(TableauxSystem):
         conclusions = {idx for idx in range(len(inference.conclusions)) if
                        (node.index == 0 and inference.conclusions[idx] == node.content)}
         return premises, conclusions
+
+    def get_counterexample(self, tree):
+        for leaf in tree.leaves:
+            if not self.node_is_closed(leaf):
+                counterexample = dict()
+                for node in leaf.path:
+                    formula = node.content
+                    if formula.is_atomic:
+                        counterexample[formula[0]] = str(node.index)  # The valuation is in the index here
+                return counterexample
+        return None
 
 
 class IndexedTableauxSystem(ManyValuedTableauxSystem, TableauxSystem):

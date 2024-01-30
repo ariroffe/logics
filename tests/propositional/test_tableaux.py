@@ -82,6 +82,29 @@ class TestTableauxSystem(unittest.TestCase):
         self.assertFalse(classical_tableaux_system.node_is_closed(alone))
         self.assertFalse(classical_tableaux_system.tree_is_closed(alone))
 
+    def test_get_counterexample(self):
+        self.assertIs(classical_tableaux_system.get_counterexample(self.n1), None)
+        self.assertEqual(classical_tableaux_system.get_counterexample(self.n5), {'p': '0', 'q': '1'})
+        self.assertEqual(classical_tableaux_system.get_counterexample(self.n9), {'p': '1', 'q': '1'})
+
+        n1 = TableauxNode(content=Formula(['∨', ['p'], ['~', ['p']]]))
+        n2 = TableauxNode(content=Formula(['p']), parent=n1)
+        n3 = TableauxNode(content=Formula(['~', ['q']]), parent=n2)
+        n4 = TableauxNode(content=Formula(['~', ['~', ['p']]]), justification='R∨', parent=n3)
+        n5 = TableauxNode(content=Formula(['p']), justification='R∨', parent=n4)
+        n6 = TableauxNode(content=Formula(['p']), justification='R~~', parent=n5)
+        n7 = TableauxNode(content=Formula(['~', ['p']]), justification='R∨', parent=n3)
+        '''
+        p ∨ ~p
+        └── p
+            └── ~q
+                ├── ~~p (R∨)
+                │   └── p (R∨)
+                │       └── p (R~~)
+                └── ~p (R∨)
+        '''
+        self.assertEqual(classical_tableaux_system.get_counterexample(n1), {'p': '1', 'q': '0'})
+
     def test_is_instance_of(self):
         an1 = TableauxNode(content=Formula(['A']))
         an2 = TableauxNode(content=Formula(['~', ['A']]))
@@ -282,6 +305,29 @@ class TestTableauxSystem(unittest.TestCase):
         '''
         correct, error_list = classical_indexed_tableaux_system.is_correct_tree(n1, return_error_list=True)
         self.assertTrue(correct)
+
+    def test_indexed_tableaux_counterexamples(self):
+        n1 = TableauxNode(content=Formula(['p']), index=1)
+        n2 = TableauxNode(content=Formula(['~', ['p']]), index=1, parent=n1)
+        n3 = TableauxNode(content=Formula(['p']), index=0, parent=n2)
+        '''
+        p, 1
+        └── ~p, 1
+            └── p, 0
+        '''
+        self.assertIs(classical_indexed_tableaux_system.get_counterexample(n1), None)
+
+        n1 = TableauxNode(content=Formula(['~', ['~', ['~', ['p']]]]), index=1)
+        n2 = TableauxNode(content=Formula(['~', ['~', ['p']]]), index=0, justification='R~1', parent=n1)
+        n3 = TableauxNode(content=Formula(['~', ['p']]), index=1, justification='R~0', parent=n2)
+        n4 = TableauxNode(content=Formula(['p']), index=0, justification='R~1', parent=n3)
+        '''
+        ~~~~p, 1
+        └── ~~p, 0 (R~1)
+            └── ~p, 1 (R~0)
+                └── p, 0 (R~1)
+        '''
+        self.assertEqual(classical_indexed_tableaux_system.get_counterexample(n1), {'p': '0'})
 
         # More extensive tests (with the random argument generator) are made in tests/utils/test_tableaux_solver
 

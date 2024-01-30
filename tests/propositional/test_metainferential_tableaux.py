@@ -320,3 +320,36 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
         self.assertTrue(sk_tableaux.rule_is_applicable(node1, 'inf1'))
         self.assertTrue(sk_tableaux.rule_is_applicable(node2, 'inf0'))
         self.assertFalse(sk_tableaux.rule_is_applicable(node2, 'inf1'))
+
+    def test_get_counterexample(self):
+        empty = MetainferentialTableauxStandard(set())
+        F = MetainferentialTableauxStandard({'0'})
+        S = MetainferentialTableauxStandard({'1'})
+        T = MetainferentialTableauxStandard({'1', 'i'})
+        Sbar = MetainferentialTableauxStandard({'1'}, bar=True)
+        TS = MetainferentialTableauxStandard([{'1', 'i'}, {'1'}], bar=False)
+
+        root = MetainferentialTableauxNode(content=classical_parser.parse('~~(p or q)/p'), index=TS)
+        node1 = MetainferentialTableauxNode(content=classical_parser.parse('~~(p or q)'), index=T, parent=root)
+        node2 = MetainferentialTableauxNode(content=classical_parser.parse('q'), index=Sbar, parent=node1)
+        node3 = MetainferentialTableauxNode(content=classical_parser.parse('p'), index=F, parent=node2)
+        node4 = MetainferentialTableauxNode(content=classical_parser.parse('p'), index=T, parent=node1)
+        node5 = MetainferentialTableauxNode(content=classical_parser.parse('q'), index=S, parent=node4)
+        """
+        ~~(p ∨ q) / p, [{'1', 'i'}, {'1'}]
+        └── ~~(p ∨ q), {'1', 'i'}
+            ├── q, -{'1'}
+            │   └── p, {'0'}
+            └── p, {'1', 'i'}
+                └── q, {'1'}
+        """
+        # Takes the first branch, the bar is not counted
+        self.assertEqual(sk_tableaux.get_counterexample(root), {'p': '0'})
+
+        # Close the first branch, should get the q from the second
+        node6 = MetainferentialTableauxNode(content=classical_parser.parse('p'), index=empty, parent=node3)
+        self.assertEqual(sk_tableaux.get_counterexample(root), {'q': '1'})
+
+        # Close the second branch, should now return None
+        node7 = MetainferentialTableauxNode(content=classical_parser.parse('p'), index=empty, parent=node5)
+        self.assertIs(sk_tableaux.get_counterexample(root), None)
