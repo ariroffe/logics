@@ -11,6 +11,7 @@ from logics.instances.propositional.metainferential_tableaux import (
     metainferential_tableaux_rules,
     SK_metainferential_tableaux_system as sk_tableaux,
     WK_metainferential_tableaux_system as wk_tableaux,
+    CL_metainferential_tableaux_system as cl_tableaux,
 )
 from logics.utils.solvers.tableaux import (
     standard_tableaux_solver, indexed_tableaux_solver, metainferential_tableaux_solver
@@ -482,7 +483,7 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
         """
         self.assertFalse(sk_tableaux.tree_is_closed(tree))
 
-    def test_with_generator(self):
+    def test_three_valued_with_generator(self):
         T = {'1', 'i'}
         S = {'1'}
 
@@ -600,6 +601,39 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
                         #     print("INVALID INFERENCE, TREE CLOSED")
                         #     tree2.print_tree(classical_parser)
                         self.assertFalse(wk_tableaux.tree_is_closed(tree2))
+
+    def test_cl_with_generator(self):
+        T = {'1'}
+        level_standards = {
+            1: [T, T],
+            2: [[T, T], [T, T]],
+            3: [[[T, T], [T, T]], [[T, T], [T, T]]]
+        }
+
+        for level in range(1, 4):
+            for _ in range(10):
+                inf = random_formula_generator.random_inference(num_premises=2, num_conclusions=1,
+                                                                max_depth=2, atomics=['p', 'q', 'r'],
+                                                                language=cl_reduced_language, level=level,
+                                                                exact_num_premises=False, exact_num_conclusions=False)
+
+                # SK schema (should be sound and complete with classical semantics)
+                tree = metainferential_tableaux_solver.solve(
+                    inference=inf,
+                    tableaux_system=cl_tableaux,
+                    beggining_index=level_standards[level],
+                )
+                if classical_mvl_semantics.is_locally_valid(inf):
+                    # if not sk_tableaux.tree_is_closed(tree):
+                    #     print("VALID INFERENCE, TREE NOT CLOSED")
+                    #     tree.print_tree(classical_parser)
+                    self.assertTrue(cl_tableaux.tree_is_closed(tree))
+                else:
+                    # if sk_tableaux.tree_is_closed(tree):
+                    #     print("INVALID INFERENCE, TREE CLOSED")
+                    #     tree.print_tree(classical_parser)
+                    self.assertFalse(cl_tableaux.tree_is_closed(tree))
+
 
 
 class TestConstructiveTreeSolver(unittest.TestCase):

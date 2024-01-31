@@ -48,6 +48,102 @@ metainferential_tableaux_rules = {
 }
 
 
+# CL SCHEME
+# ----------------------------------------------------------------------
+T = MetainferentialTableauxStandard({'1'})
+F = MetainferentialTableauxStandard({'0'})
+
+CL_negation_1 = MetainferentialTableauxNode(content=Formula(['~', ['A']]), index=T)
+MetainferentialTableauxNode(content=Formula(['A']), index=F, justification='R~1', parent=CL_negation_1)
+'''
+['~', ['A']], {'1'}
+└── ['A'], {'0'} (R~1)
+'''
+
+CL_negation_0 = MetainferentialTableauxNode(content=Formula(['~', ['A']]), index=F)
+MetainferentialTableauxNode(content=Formula(['A']), index=T, justification='R~0', parent=CL_negation_0)
+'''
+['~', ['A']], {'1'}
+└── ['A'], {'0'} (R~0)
+'''
+
+CL_conjunction_1 = MetainferentialTableauxNode(content=Formula(['∧', ['A'], ['B']]), index=T)
+CLcj1 = MetainferentialTableauxNode(content=Formula(['A']), index=T, justification='R∧1', parent=CL_conjunction_1)
+MetainferentialTableauxNode(content=Formula(['B']), index=T, justification='R∧1', parent=CLcj1)
+'''
+['∧', ['A'], ['B']], {'1'}
+└── ['A'], {'1'} (R∧1)
+    └── ['B'], {'1'} (R∧1)
+'''
+
+CL_conjunction_0 = MetainferentialTableauxNode(content=Formula(['∧', ['A'], ['B']]), index=F)
+MetainferentialTableauxNode(content=Formula(['A']), index=F, justification='R∧0', parent=CL_conjunction_0)
+MetainferentialTableauxNode(content=Formula(['B']), index=F, justification='R∧0', parent=CL_conjunction_0)
+'''
+['∧', ['A'], ['B']], {'0'}
+└── ['A'], {'0'} (R∧0)
+└── ['B'], {'0'} (R∧0)
+'''
+
+CL_disjunction_1 = MetainferentialTableauxNode(content=Formula(['∨', ['A'], ['B']]), index=T)
+MetainferentialTableauxNode(content=Formula(['A']), index=T, justification='R∨1', parent=CL_disjunction_1)
+MetainferentialTableauxNode(content=Formula(['B']), index=T, justification='R∨1', parent=CL_disjunction_1)
+'''
+['∨', ['A'], ['B']], {'1'}
+└── ['A'], {'1'} (R∨1)
+└── ['B'], {'1'} (R∨1)
+'''
+
+CL_disjunction_0 = MetainferentialTableauxNode(content=Formula(['∨', ['A'], ['B']]), index=F)
+CLds0 = MetainferentialTableauxNode(content=Formula(['A']), index=F, justification='R∨0', parent=CL_disjunction_0)
+MetainferentialTableauxNode(content=Formula(['B']), index=F, justification='R∨0', parent=CLds0)
+'''
+['∧', ['A'], ['B']], {'0'}
+└── ['A'], {'0'} (R∨0)
+    └── ['B'], {'0'} (R∨0)
+'''
+
+CL_conditional_1 = MetainferentialTableauxNode(content=Formula(['→', ['A'], ['B']]), index=T)
+MetainferentialTableauxNode(content=Formula(['A']), index=F, justification='R→1', parent=CL_conditional_1)
+MetainferentialTableauxNode(content=Formula(['B']), index=T, justification='R→1', parent=CL_conditional_1)
+'''
+['→', ['A'], ['B']], {'1'}
+└── ['A'], {'0'} (R→1)
+└── ['B'], {'1'} (R→1)
+'''
+
+CL_conditional_0 = MetainferentialTableauxNode(content=Formula(['→', ['A'], ['B']]), index=F)
+CLcd0 = MetainferentialTableauxNode(content=Formula(['A']), index=T, justification='R→0', parent=CL_conditional_0)
+MetainferentialTableauxNode(content=Formula(['B']), index=F, justification='R→0', parent=CLcd0)
+'''
+['→', ['A'], ['B']], {'0'}
+└── ['A'], {'1'} (R→0)
+    └── ['B'], {'0'} (R→0)
+'''
+
+CL_metainferential_tableaux_rules = deepcopy(metainferential_tableaux_rules)
+CL_metainferential_tableaux_rules.update({
+    'R~1': CL_negation_1,
+    'R~0': CL_negation_0,
+
+    'R∧1': CL_conjunction_1,
+    'R∧0': CL_conjunction_0,
+
+    'R∨1': CL_disjunction_1,
+    'R∨0': CL_disjunction_0,
+
+    'R→1': CL_conditional_1,
+    'R→0': CL_conditional_0,
+})
+
+CL_metainferential_tableaux_system = MetainferentialTableauxSystem(
+    base_indexes={'1', '0'},
+    language=classical_infinite_language,
+    rules=CL_metainferential_tableaux_rules,
+    closure_rules= [],  # we are using fast_node_is_closed so this is not necessary
+    solver=metainferential_tableaux_solver,
+)
+
 # SK SCHEME
 # ----------------------------------------------------------------------
 S = MetainferentialTableauxStandard({'1'})
@@ -141,8 +237,8 @@ MetainferentialTableauxNode(content=Formula(['B']), index=F, justification='R∨
 '''
 
 SK_conditional_1 = MetainferentialTableauxNode(content=Formula(['→', ['A'], ['B']]), index=S)
-MetainferentialTableauxNode(content=Formula(['A']), index=F, justification='R→0', parent=SK_conditional_1)
-MetainferentialTableauxNode(content=Formula(['B']), index=S, justification='R→0', parent=SK_conditional_1)
+MetainferentialTableauxNode(content=Formula(['A']), index=F, justification='R→1', parent=SK_conditional_1)
+MetainferentialTableauxNode(content=Formula(['B']), index=S, justification='R→1', parent=SK_conditional_1)
 '''
 ['→', ['A'], ['B']], {'1'}
 └── ['A'], {'0'} (R→1)
