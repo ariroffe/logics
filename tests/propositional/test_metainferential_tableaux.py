@@ -321,7 +321,7 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
         self.assertTrue(sk_tableaux.rule_is_applicable(node2, 'inf0'))
         self.assertFalse(sk_tableaux.rule_is_applicable(node2, 'inf1'))
 
-    def test_get_counterexample(self):
+    def test_get_counterexamples(self):
         empty = MetainferentialTableauxStandard(set())
         F = MetainferentialTableauxStandard({'0'})
         S = MetainferentialTableauxStandard({'1'})
@@ -344,12 +344,16 @@ class TestMetainferentialTableauxSystem(unittest.TestCase):
                 └── q, {'1'}
         """
         # Takes the first branch, the bar is not counted
-        self.assertEqual(sk_tableaux.get_counterexample(root), {'p': '0'})
+        self.assertEqual(sk_tableaux.get_counterexamples(root, exit_on_first=True), {'p': '0'})
+
+        # If not exit on first, should return both
+        self.assertEqual(sk_tableaux.get_counterexamples(root, exit_on_first=False), [{'p': '0'}, {'q': '1'}])
 
         # Close the first branch, should get the q from the second
         node6 = MetainferentialTableauxNode(content=classical_parser.parse('p'), index=empty, parent=node3)
-        self.assertEqual(sk_tableaux.get_counterexample(root), {'q': '1'})
+        self.assertEqual(sk_tableaux.get_counterexamples(root, exit_on_first=True), {'q': '1'})
 
         # Close the second branch, should now return None
         node7 = MetainferentialTableauxNode(content=classical_parser.parse('p'), index=empty, parent=node5)
-        self.assertIs(sk_tableaux.get_counterexample(root), None)
+        self.assertIs(sk_tableaux.get_counterexamples(root, exit_on_first=True), None)
+        self.assertIs(sk_tableaux.get_counterexamples(root, exit_on_first=False), None)

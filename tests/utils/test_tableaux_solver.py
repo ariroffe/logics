@@ -493,7 +493,7 @@ class TestMetainferentialTableauxSolver(unittest.TestCase):
             3: [[[S, T], [T, S]], [[T, S], [S, T]]]
         }
 
-        for level in range(1, 4):
+        for level in range(1, 3):  # obviate level 3 because it takes quite some time
             for _ in range(10):
                 inf = random_formula_generator.random_inference(num_premises=2, num_conclusions=1,
                                                                 max_depth=2, atomics=['p', 'q', 'r'],

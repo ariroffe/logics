@@ -510,16 +510,23 @@ class TableauxSystem:
         node.parent = parent
         return True
 
-    def get_counterexample(self, tree):
+    def get_counterexamples(self, tree, exit_on_first=False):
         """Given a tree, returns a valuation that constitutes a counterexample to it.
 
         The valuation is returned as a dict, where the keys are propositional letters (strings) and the values are
-        truth values. E.g. ``{'p': '1', 'q': '0'}``. If the tree is closed, returns ``None``
+        truth values. E.g. ``{'p': '1', 'q': '0'}``. If ``exit_on_first`` is false, will return a list of such dicts.
+        If the tree is closed, returns ``None``.
+
+        Note that the dicts only contains the valuations of the atomics needed to produce a counterexample. If some
+        propositional letter present in the inference does not appear on the open branch, this will not assign it any
+        value.
 
         Parameters
         ----------
         tree: logics.classes.propositional.proof_theories.TableauxNode
             The root of the tree we want to look at
+        exit_on_first: bool, optional
+            Whether it returns a single counterexample (if ``True``) or many
 
         Examples
         --------
@@ -535,9 +542,16 @@ class TableauxSystem:
         └── ~p
             ├── q (R∧)
             └── p (R~~)
-        >>> classical_tableaux_system.get_counterexample(n1)
+        >>> classical_tableaux_system.get_counterexample(n1, exit_on_first=True)
         {'p': '0', 'q': '1'}
+        >>> classical_tableaux_system.get_counterexample(n1)  # exit_on_first is False by default
+        [{'p': '0', 'q': '1'}]
+
+        Notes
+        -----
+        Make sure the node you are passing as ``tree`` has no parents, otherwise you might get incorrect results
         """
+        counterexamples = []
         for leaf in tree.leaves:
             if not self.node_is_closed(leaf):
                 counterexample = dict()
@@ -547,7 +561,12 @@ class TableauxSystem:
                         counterexample[formula[0]] = '1'
                     elif formula.main_symbol == '~' and formula[1].is_atomic:  # Negations of atomics are false
                         counterexample[formula[1][0]] = '0'
-                return counterexample
+                if exit_on_first:
+                    return counterexample
+                elif counterexample not in counterexamples:
+                    counterexamples.append(counterexample)
+        if counterexamples:
+            return counterexamples
         return None
 
     def rule_is_applicable(self, node, rule_name, return_subst_dict=False):
@@ -1030,7 +1049,9 @@ class ManyValuedTableauxSystem(TableauxSystem):
                        (node.index == 0 and inference.conclusions[idx] == node.content)}
         return premises, conclusions
 
-    def get_counterexample(self, tree):
+    def get_counterexamples(self, tree, exit_on_first=False):
+        """Same as TableauxSystem's get_counterexamples"""
+        counterexamples = []
         for leaf in tree.leaves:
             if not self.node_is_closed(leaf):
                 counterexample = dict()
@@ -1038,7 +1059,12 @@ class ManyValuedTableauxSystem(TableauxSystem):
                     formula = node.content
                     if formula.is_atomic:
                         counterexample[formula[0]] = str(node.index)  # The valuation is in the index here
-                return counterexample
+                if exit_on_first:
+                    return counterexample
+                elif counterexample not in counterexamples:
+                    counterexamples.append(counterexample)
+        if counterexamples:
+            return counterexamples
         return None
 
 

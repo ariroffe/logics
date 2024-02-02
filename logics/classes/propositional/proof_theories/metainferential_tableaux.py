@@ -344,8 +344,9 @@ class MetainferentialTableauxSystem(TableauxSystem):
     def is_correct_tree(self, tree, inference=None, return_error_list=False, exit_on_first_error=False, parser=None):
         raise NotImplementedError()
 
-    def get_counterexample(self, tree):
-        """Same as TableauxSystem's get_counterexample"""
+    def get_counterexamples(self, tree, exit_on_first=False):
+        """Same as TableauxSystem's get_counterexamples"""
+        counterexamples = []
         for leaf in tree.leaves:
             if not self.node_is_closed(leaf):
                 counterexample = dict()
@@ -356,5 +357,10 @@ class MetainferentialTableauxSystem(TableauxSystem):
                         # The only formula nodes that are informative are the ones that have a singleton as index
                         if formula.is_atomic and index.level == 0 and not index.bar and len(index.content) == 1:
                             counterexample[formula[0]] = str(next(iter(index.content)))
-                return counterexample
+                if exit_on_first:
+                    return counterexample
+                elif counterexample not in counterexamples:
+                    counterexamples.append(counterexample)
+        if counterexamples:
+            return counterexamples
         return None
