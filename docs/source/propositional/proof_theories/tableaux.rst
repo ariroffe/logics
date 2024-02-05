@@ -29,6 +29,8 @@ Instances
        :language: python
        :lines: 11-95
 
+    Closes a branch when both A and ~A occur in it (for some formula A)
+
 .. data:: logics.instances.propositional.tableaux.classical_indexed_tableaux_system
 
     Indexed presentation of classical logic. Has the following rules:
@@ -36,6 +38,8 @@ Instances
     .. literalinclude:: ../../../../logics/instances/propositional/tableaux.py
        :language: python
        :lines: 124-216
+
+    Closes a branch when both A, 1 and A, 0 occur in it (for some formula A)
 
 .. data:: logics.instances.propositional.tableaux.FDE_tableaux_system
 .. data:: logics.instances.propositional.tableaux.LP_tableaux_system

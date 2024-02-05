@@ -394,7 +394,6 @@ class TableauxSystem:
     -----
     There are predefined instances of this class for known systems, see below.
     """
-
     # Assumes a branch is closed if a node and its negation (with the same index) are present in a branch:
     fast_node_is_closed_enabled = True
 
@@ -1038,6 +1037,27 @@ class ManyValuedTableauxSystem(TableauxSystem):
     >>> # Also considers it closed bc of how the closure rules are given to the instance, see below
     >>> FDE_tableaux_system.tree_is_closed(n1)
     True
+
+    Note that the ``get_counterexamples`` method takes two extra parameters, ``gap_value`` and ``glut_value`` (both of
+    which default to ``None``, but can be set to strings). For example:
+
+    >>> from logics.instances.propositional.tableaux import classical_indexed_tableaux_system,
+    >>> from logics.instances.propositional.tableaux import K3_tableaux_system, LP_tableaux_system
+    >>> n1 = TableauxNode(content=classical_parser('~p'), index=1)
+    >>> n2 = TableauxNode(content=classical_parser('~q'), index=1, parent=n1)
+    >>> n3 = TableauxNode(content=classical_parser('p'), index=1, parent=n2)
+    >>> n1.print_tree(classical_parser)  # For illustration purposes
+    ~p, 1
+    └── ~q, 1
+        └── p, 1
+    >>> classical_indexed_tableaux_system.get_counterexamples(n1)  # Only looks at atomics
+    [{'p': '1'}]
+    >>> K3_tableaux_system.get_counterexamples(n1, gap_value='i') is None  # in k3 this is closed
+    True
+    >>> LP_tableaux_system.get_counterexamples(n1, glut_value='i')
+    [{'p': 'i', 'q': '0'}]
+    >>> FDE_tableaux_system.get_counterexamples(n1, gap_value='n', glut_value='b')
+    [{'p': 'b', 'q': '0'}]
     """
     fast_node_is_closed_enabled = False
 
@@ -1049,16 +1069,53 @@ class ManyValuedTableauxSystem(TableauxSystem):
                        (node.index == 0 and inference.conclusions[idx] == node.content)}
         return premises, conclusions
 
-    def get_counterexamples(self, tree, exit_on_first=False):
-        """Same as TableauxSystem's get_counterexamples"""
+    def get_counterexamples(self, tree, exit_on_first=False, gap_value=None, glut_value=None):
+        """Same as TableauxSystem's get_counterexamples
+
+        gap/glut_value (strings) exists because FDE uses 'b' and 'n' as values, while LP and K3 use 'i'
+
+        The way to get a counterexample here is to assign 1 to atomics that appear as p, 1
+        0 to atomics that appear as p, 0, b to atomics that have both p, 1 and p, 0 and n to atomics that have none
+        """
         counterexamples = []
+        many_valued = gap_value is not None or glut_value is not None
+
         for leaf in tree.leaves:
             if not self.node_is_closed(leaf):
                 counterexample = dict()
                 for node in leaf.path:
                     formula = node.content
+                    # Atomic formula
                     if formula.is_atomic:
-                        counterexample[formula[0]] = str(node.index)  # The valuation is in the index here
+                        atomic = formula[0]
+                        if many_valued and node.index == 1:  # In many-valued logics you only do stuff with p, + nodes
+                            current_value = counterexample.get(atomic)
+                            if current_value is None:
+                                counterexample[atomic] = '1'
+                            elif current_value == '0':
+                                counterexample[atomic] = glut_value
+                        elif not many_valued:  # indexed classical logic
+                            counterexample[atomic] = str(node.index)
+
+                    # Node of form ~p, + in many-valued system
+                    elif many_valued and formula.main_symbol == '~' and formula[1].is_atomic and node.index == 1:
+                        atomic = formula[1][0]
+                        current_value = counterexample.get(atomic)
+                        if current_value is None:
+                            counterexample[atomic] = '0'
+                        elif current_value == '1':
+                            counterexample[atomic] = glut_value
+
+                # For many-valued systems with a gap value, we make a second pass through the path
+                # to assign the indeterminate value to atomics it has not seen
+                if gap_value is not None:
+                    for node in leaf.path:
+                        formula = node.content
+                        atomics = formula.atomics_inside(self.language)
+                        for atomic in atomics:
+                            if atomic not in counterexample:
+                                counterexample[atomic] = gap_value
+
                 if exit_on_first:
                     return counterexample
                 elif counterexample not in counterexamples:

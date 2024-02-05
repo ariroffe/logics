@@ -4,7 +4,13 @@ from logics.classes.propositional.proof_theories.tableaux import TableauxNode, C
 from logics.classes.propositional import Formula, Inference
 from logics.classes.errors import ErrorCode, CorrectionError
 from logics.instances.propositional.languages import classical_infinite_language as lang
-from logics.instances.propositional.tableaux import classical_tableaux_system, classical_indexed_tableaux_system
+from logics.instances.propositional.tableaux import (
+    classical_tableaux_system,
+    classical_indexed_tableaux_system,
+    FDE_tableaux_system,
+    K3_tableaux_system,
+    LP_tableaux_system
+)
 
 
 class TestTableauxSystem(unittest.TestCase):
@@ -317,7 +323,11 @@ class TestTableauxSystem(unittest.TestCase):
         └── ~p, 1
             └── p, 0
         '''
+        # Closed for every system
         self.assertIs(classical_indexed_tableaux_system.get_counterexamples(n1, exit_on_first=True), None)
+        self.assertIs(K3_tableaux_system.get_counterexamples(n1, exit_on_first=True, gap_value='i'), None)
+        self.assertIs(LP_tableaux_system.get_counterexamples(n1, exit_on_first=True), None)
+        self.assertIs(FDE_tableaux_system.get_counterexamples(n1, exit_on_first=True), None)
 
         n1 = TableauxNode(content=Formula(['~', ['~', ['~', ['p']]]]), index=1)
         n2 = TableauxNode(content=Formula(['~', ['~', ['p']]]), index=0, justification='R~1', parent=n1)
@@ -329,7 +339,12 @@ class TestTableauxSystem(unittest.TestCase):
             └── ~p, 1 (R~0)
                 └── p, 0 (R~1)
         '''
+        # Open for every system
         self.assertEqual(classical_indexed_tableaux_system.get_counterexamples(n1, exit_on_first=True), {'p': '0'})
+        self.assertEqual(K3_tableaux_system.get_counterexamples(n1, exit_on_first=True, gap_value='i'), {'p': '0'})
+        self.assertEqual(LP_tableaux_system.get_counterexamples(n1, exit_on_first=True, glut_value='i'), {'p': '0'})
+        self.assertEqual(FDE_tableaux_system.get_counterexamples(n1, exit_on_first=True, gap_value='n', glut_value='b'),
+                         {'p': '0'})
 
         n1 = TableauxNode(content=Formula(['p']), index=1)
         TableauxNode(content=Formula(['q']), index=1, parent=n1)
@@ -341,6 +356,36 @@ class TestTableauxSystem(unittest.TestCase):
         '''
         self.assertEqual(classical_indexed_tableaux_system.get_counterexamples(n1, exit_on_first=False),
                          [{'p': '1', 'q': '1'}, {'p': '1', 'r': '0'}])
+        # Many-valued systems should do nothing with the r, 0 node
+        self.assertEqual(K3_tableaux_system.get_counterexamples(n1, exit_on_first=True, gap_value='i'), {'p': '1', 'q': '1'})
+        self.assertEqual(LP_tableaux_system.get_counterexamples(n1, exit_on_first=True, glut_value='i'), {'p': '1', 'q': '1'})
+        self.assertEqual(FDE_tableaux_system.get_counterexamples(n1, exit_on_first=True, gap_value='n', glut_value='b'),
+                         {'p': '1', 'q': '1'})
+
+        n1 = TableauxNode(content=Formula(['~', ['p']]), index=1)
+        n2 = TableauxNode(content=Formula(['~', ['q']]), index=1, parent=n1)
+        n3 = TableauxNode(content=Formula(['p']), index=1, parent=n2)
+        '''
+        ~p, 1
+        └── ~q, 1
+            └── p, 1
+        '''
+        self.assertIs(K3_tableaux_system.get_counterexamples(n1, gap_value='i'), None)  # in k3 this is closed
+        self.assertEqual(LP_tableaux_system.get_counterexamples(n1, glut_value='i'), [{'p': 'i', 'q': '0'}])
+        self.assertEqual(FDE_tableaux_system.get_counterexamples(n1, gap_value='n', glut_value='b'), [{'p': 'b', 'q': '0'}])
+
+        n1 = TableauxNode(content=Formula(['~', ['p']]), index=0)
+        n2 = TableauxNode(content=Formula(['~', ['q']]), index=1, parent=n1)
+        n3 = TableauxNode(content=Formula(['p']), index=0, parent=n2)
+        '''
+        ~p, 0
+        └── ~q, 1
+            └── p, 0
+        '''
+        self.assertEqual(K3_tableaux_system.get_counterexamples(n1, gap_value='i'), [{'p': 'i', 'q': '0'}])
+        self.assertIs(LP_tableaux_system.get_counterexamples(n1, glut_value='i'), None)  # Closed in LP
+        self.assertEqual(FDE_tableaux_system.get_counterexamples(n1, gap_value='n', glut_value='b'),
+                         [{'p': 'n', 'q': '0'}])
 
         # More extensive tests (with the random argument generator) are made in tests/utils/test_tableaux_solver
 
