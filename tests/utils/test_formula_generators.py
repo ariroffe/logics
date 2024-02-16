@@ -1,16 +1,17 @@
 import unittest
 
 from logics.instances.propositional.languages import classical_infinite_language_with_sent_constants as cl_language
-from logics.utils.formula_generators.generators_biased import random_formula_generator
+from logics.instances.predicate.languages import classical_predicate_language as pred_lang
+from logics.utils.formula_generators.generators_biased import random_formula_generator, random_predicate_formula_generator
 from logics.instances.propositional.many_valued_semantics import classical_mvl_semantics
 
 
 class TestBiasedGenerators(unittest.TestCase):
     def test_depth(self):
         # Test that it returns formulae of the desired depth
+        atomics = ['p', 'q']
         for depth in range(1, 6):
             for x in range(20):
-                atomics = ['p', 'q']
                 f1 = random_formula_generator._exact_depth_some_atomics(depth, atomics, cl_language)
                 self.assertEqual(f1.depth, depth)
 
@@ -59,10 +60,16 @@ class TestBiasedGenerators(unittest.TestCase):
                                                                               validity_apparatus=classical_mvl_semantics)
             self.assertTrue(classical_mvl_semantics.is_valid(valid_metainf))
 
-
-class TestUnbiasedGenerators(unittest.TestCase):
-    def test1(self):
-        pass
+    def test_predicate_generator(self):
+        for depth in range(1, 6):
+            for x in range(50):
+                f = random_predicate_formula_generator.random_formula(
+                    depth=depth, predicates=['P', 'Q'], max_predicate_arity=2, ind_constants=['a', 'b'],
+                    variables=['x', 'y'], language=pred_lang
+                )
+                self.assertEqual(f.depth, depth)
+                self.assertEqual(f.free_variables(pred_lang), set())
+                self.assertTrue(f.is_closed(pred_lang))
 
 
 if __name__ == '__main__':

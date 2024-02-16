@@ -46,6 +46,7 @@ Table of Contents
    predicate/language
    predicate/formula
    predicate/parsers
+   predicate/formula_generators
    predicate/semantics/models
    predicate/semantics/truth_theory
    predicate/proof_theories/natural_deduction
