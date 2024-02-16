@@ -25,6 +25,7 @@ class ErrorCode(IntEnum):
     TBL_PREMISE_NOT_PRESENT = 305
     TBL_CONCLUSION_NOT_PRESENT = 306
     TBL_INCORRECT_INDEX = 307
+    TBL_INCORRECT_COUNTEREXAMPLE = 308  # used in Taut2, not here
 
     # Axiom systems
     AX_INCORRECT_PREMISE = 401

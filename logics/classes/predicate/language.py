@@ -154,8 +154,8 @@ class PredicateLanguage(Language):
             return {c for c in self.predicate_letters if self.predicate_letters[c] == arity}
 
     def arity(self, string):
-        """Overriden from the base class to include the arities of predicate letters/variables/metavariables and
-        function symbols
+        """Overriden from the base class to include the arities of predicate letters, variables, metavariables,
+        function symbols and quantifiers
 
         Raises
         ------
@@ -165,6 +165,8 @@ class PredicateLanguage(Language):
         Examples
         --------
         >>> from logics.instances.predicate.languages import classical_function_language
+        >>> classical_function_language.arity('∀')
+        1
         >>> classical_function_language.arity('~')
         1
         >>> classical_function_language.arity('∧')
@@ -178,7 +180,9 @@ class PredicateLanguage(Language):
         >>> classical_function_language.arity('Π')  # predicate metavariable
         1
         """
-        if string in self.constant_arity_dict:
+        if string in self.quantifiers:
+            return 1
+        elif string in self.constant_arity_dict:
             return self.constant_arity_dict[string]
         elif string in self.predicate_letters:
             return self.predicate_letters[string]

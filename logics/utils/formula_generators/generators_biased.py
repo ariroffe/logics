@@ -1,5 +1,8 @@
 import random
+from copy import copy
+
 from logics.classes.propositional import Formula, Inference
+from logics.classes.predicate import PredicateFormula
 from logics.classes.exceptions import FormulaGeneratorError
 
 
@@ -436,3 +439,134 @@ class BiasedPropositionalGenerator:
 
 
 random_formula_generator = BiasedPropositionalGenerator()
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Predicate formula generator
+
+class BiasedPredicateGenerator:
+    def _random_term(self, ind_constants, variables):
+        # We select an ind_constant and a variable with equal probability, even if there is just 1 var and 5 ind_cts
+        if not variables or random.choice((True, False)):
+            return random.choice(ind_constants)
+        else:
+            return random.choice(variables)
+
+    def _random_atomic_formula(self, predicates, max_arity, ind_constants, variables, predicate_arities):
+        # Firstly, we must choose a predicate and set its arity
+        predicate = random.choice(predicates)
+        formula = PredicateFormula([predicate])
+        if predicate in predicate_arities:
+            arity = predicate_arities[predicate]
+        else:
+            arity = random.randint(1, max_arity)
+            predicate_arities[predicate] = arity  # Modify the dict, will be seen by the caller
+
+        for _ in range(arity):
+            formula.append(self._random_term(ind_constants, variables))
+
+        return formula
+
+    def random_formula(self, depth, predicates, max_predicate_arity, ind_constants, variables, language,
+                       remaining_depth=0, predicate_arities=None):
+        """Generates a random formula of some *exact* depth, which uses some of the predicates, variables and ind cts
+        provided
+
+        Because of the educational usecases I have in mind, I don't want it to output things like ∀x P(a) or like
+        ∀x ∀x P(x). More precisely, Its made so every quantifier binds at least one variable.
+
+        Assumes that the predicate arities can be random (i.e. will not respect the
+        predicate_letters={'P': 1, 'Q': 1, 'R': 2, 'S': 3} argument given to PredicateLanguage). If you want it to,
+        give it predicate_arities=language.predicate_letters
+
+        Examples
+        --------
+        >>> from logics.instances.predicate.languages import classical_predicate_language as lang
+        >>> from logics.utils.parsers import classical_predicate_parser
+        >>> from logics.utils.formula_generators.generators_biased import random_predicate_formula_generator
+        >>> formula = random_predicate_formula_generator.random_formula(depth=2, predicates=['P', 'Q'],
+        ...               max_predicate_arity=2, ind_constants=['a', 'b'], variables=['x', 'y'], language=lang)
+        >>> classical_predicate_parser.unparse(formula)
+        ∃x (Q(a, x) ∧ P(x))
+        >>> formula = random_predicate_formula_generator.random_formula(depth=2, predicates=['P', 'Q'],
+        ...               max_predicate_arity=2, ind_constants=['a', 'b'], variables=['x', 'y'], language=lang)
+        >>> classical_predicate_parser.unparse(formula)
+        ∃x ∃y Q(x, y)
+        >>> formula = random_predicate_formula_generator.random_formula(depth=2, predicates=['P', 'Q'],
+        ...               max_predicate_arity=2, ind_constants=['a', 'b'], variables=['x', 'y'], language=lang)
+        >>> classical_predicate_parser.unparse(formula)
+        ~∃y Q(y)
+        >>> formula = random_predicate_formula_generator.random_formula(depth=2, predicates=['P', 'Q'],
+        ...               max_predicate_arity=2, ind_constants=['a', 'b'], variables=['x', 'y'], language=lang)
+        >>> classical_predicate_parser.unparse(formula)
+        (Q(a) → P(b)) → ~Q(a)
+        """
+        if predicate_arities is None:
+            predicate_arities = dict()
+
+        if depth == 0:
+            # We must make sure that the number of free variables in this atomic is not greater than the
+            # remaining depth, otherwise we cannot get to bind them all.
+            # E.g. if we originally asked for depth=1, when this clause is reached, remaining_depth==1
+            # and variables[:remaining_depth] will be ['x']
+            return self._random_atomic_formula(predicates, max_predicate_arity, ind_constants,
+                                               variables[:remaining_depth], predicate_arities)
+
+        else:
+            # We proceed recursively in the reverse direction than the other generator, that is, we go bottom-up
+            # First generate a subformula
+            first_argument = self.random_formula(depth-1, predicates, max_predicate_arity, ind_constants, variables,
+                                                 language, remaining_depth+1, predicate_arities)
+
+            # Check the free variables in the first arg
+            free_vars = first_argument.free_variables(language)
+            # If free_vars is ['x', 'y'], rem_depth must be at least 1
+            # since one quantifier can be introduced here, and the and another in the remaining top call
+            assert remaining_depth + 1 >= len(free_vars)
+
+            # Then choose a logical constant
+            if not free_vars:
+                # If there are no free variables, do not introduce quantifiers that bind nothing
+                constant = random.choice(tuple(language.constants()))
+            elif remaining_depth + 1 == len(free_vars):
+                # We MUST choose a quantifier
+                # e.g.  remaining depth is 0 (this is the last constant introduced) and we have 1 free variable
+                # e.g.2 remaining depth is 1 (we will introduce this + 1 ctt) and we have 2 free variables
+                constant = random.choice(language.quantifiers)
+            else:
+                # Otherwise can be either a quantifier or a logical constant, choose with equal prob so that
+                # there is no bias for all the quantifiers to be at the beginning of the formula
+                if random.choice((True, False)):
+                    constant = random.choice(tuple(language.constants()))
+                else:
+                    constant = random.choice(language.quantifiers)
+
+            arity = language.arity(constant)
+
+            # Quantified formula
+            if constant in language.quantifiers:
+                variable = random.choice(list(free_vars))
+                return PredicateFormula([constant, variable, first_argument])
+
+            # Unary connective formula
+            elif arity == 1:
+                return PredicateFormula([constant, first_argument])
+
+            # Binary connective formula
+            else:
+                # We must be careful here bc the second subformula could introduce more free variables
+                # We can use the free variables in the first_argument freely, though
+                # E.g. x, y are already free here, and we have 2 remaining depth (will introduce 3 more cts including
+                # this one) -- then the second subformula can contain one extra var and should choose from [x, y, z]
+
+                # Depth can be between 0 and the current depth - 1
+                second_argument = self.random_formula(random.randint(0, depth-1), predicates, max_predicate_arity,
+                                                      ind_constants, variables[:len(free_vars)+remaining_depth],
+                                                      language, remaining_depth+1, predicate_arities)
+                if random.choice((True, False)):
+                    return PredicateFormula([constant, first_argument, second_argument])
+                else:
+                    return PredicateFormula([constant, second_argument, first_argument])
+
+
+random_predicate_formula_generator = BiasedPredicateGenerator()
