@@ -457,13 +457,13 @@ class ModelTheory:
             predicate = formula[0]
             predicate_denotation = model.denotation(predicate, free_variable_denotation_dict)
             # Denotations of the terms
-            # 1-ary
-            if self.language.arity(predicate) == 1:
+            # 1-ary predicate
+            if len(formula) == 2:
                 term_denotations = model.denotation(formula[1], free_variable_denotation_dict)
                 # Callable
                 if callable(predicate_denotation):
                     return predicate_denotation(term_denotations)
-            # >1-ary
+            # >1-ary predicate
             else:
                 term_denotations = tuple(model.denotation(x, free_variable_denotation_dict) for x in formula[1:])
                 # Callable
