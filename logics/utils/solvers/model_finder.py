@@ -1,4 +1,5 @@
 from copy import deepcopy
+from itertools import product
 
 from logics.classes.predicate.semantics import Model
 from logics.classes.exceptions import SolverError
@@ -46,6 +47,7 @@ class ModelFinder:
         - For now it has only been tested with classical model theory, will probably need some adjustments for
           non-classical model theories
         - For now does not work with function symbols
+        - Will not work with open formulae
         """
         predicates = formula.predicates_inside()
         ind_constants = sorted(list(formula.individual_constants_inside(logic.language)))
@@ -54,10 +56,10 @@ class ModelFinder:
 
         # Now try to find the model adding from 0 to 5 extra elements to the domain
         for add_cts in range(self.max_domain_cardinality):
-            # If there are n individual constants, then '1', '2', ... 'n' are already in the domain, otherwise '1'
-            # so, e.g. when add_cts is 1 and domain is {'1', '2'}, will add '3', if add_cts is 2 will ad '3', '4'
-            for _ in range(add_cts):
+            if add_cts:  # if it is not 0, add an extra element to the domain
                 model['domain'].add(str(len(model['domain'])+1))
+
+            print(f"Attempt with domain {model['domain']}")
 
             # Might stop before the loop since we might already have elements in the domain bc of ind constants
             if len(model['domain']) > self.max_domain_cardinality:
@@ -91,13 +93,11 @@ class ModelFinder:
 
         return model
 
-    def _analyze_requirements(self, requirements, model, logic, positive_atomic_reqs=None, negative_atomic_reqs=None,
-                              free_variable_denotation_dict=None):
+    def _analyze_requirements(self, requirements, model, logic, positive_atomic_reqs=None, negative_atomic_reqs=None):
         if positive_atomic_reqs is None:
             positive_atomic_reqs = dict()  # that certain element/s should be in the extension of some predicate
             negative_atomic_reqs = dict()  # that certain element/s should be in the antiextension of some predicate
             # Both will have form {'P': {elem1, elem2}, 'R': {(elem1, elem2), ...}} if P unary and R binary
-            free_variable_denotation_dict = dict()
 
         while requirements:
             req = requirements[0]  # The requirement we are analyzing now, we will delete it after we are done with it
@@ -105,8 +105,7 @@ class ModelFinder:
             # Atomic formula
             if req.formula.is_atomic:
                 try:
-                    self._analyze_atomic_requirement(req, model, positive_atomic_reqs, negative_atomic_reqs,
-                                                     free_variable_denotation_dict)
+                    self._analyze_atomic_requirement(req, model, positive_atomic_reqs, negative_atomic_reqs)
                     del requirements[0]
                 except ValueError as e:
                     raise e
@@ -116,8 +115,7 @@ class ModelFinder:
                 try:
                     positive_atomic_reqs, negative_atomic_reqs = \
                         self._analyze_unary_connective_requirement(requirements, req, model, logic,
-                                                                   positive_atomic_reqs, negative_atomic_reqs,
-                                                                   free_variable_denotation_dict)
+                                                                   positive_atomic_reqs, negative_atomic_reqs)
                     del requirements[0]
                 except ValueError as e:
                     raise e
@@ -127,8 +125,7 @@ class ModelFinder:
                 try:
                     positive_atomic_reqs, negative_atomic_reqs = \
                         self._analyze_binary_connective_requirement(requirements, req, model, logic,
-                                                                   positive_atomic_reqs, negative_atomic_reqs,
-                                                                   free_variable_denotation_dict)
+                                                                   positive_atomic_reqs, negative_atomic_reqs)
                     del requirements[0]
                 except ValueError as e:
                     raise e
@@ -138,8 +135,7 @@ class ModelFinder:
                 try:
                     positive_atomic_reqs, negative_atomic_reqs = \
                         self._analyze_quantifier_requirement(requirements, req, model, logic,
-                                                             positive_atomic_reqs, negative_atomic_reqs,
-                                                             free_variable_denotation_dict)
+                                                             positive_atomic_reqs, negative_atomic_reqs)
                     del requirements[0]
                 except ValueError as e:
                     raise e
@@ -149,8 +145,7 @@ class ModelFinder:
 
         return positive_atomic_reqs, negative_atomic_reqs
 
-    def _analyze_atomic_requirement(self, requirement, model, positive_atomic_reqs, negative_atomic_reqs,
-                                    free_variable_denotation_dict):
+    def _analyze_atomic_requirement(self, requirement, model, positive_atomic_reqs, negative_atomic_reqs):
         # Will modify the positive_atomic and negative_atomic reqs dicts instead of returning
         formula = requirement.formula
         predicate = formula[0]
@@ -160,10 +155,10 @@ class ModelFinder:
 
         # Unary predicate
         if predicate_arity == 1:
-            args_denotation = model.denotation(arguments[0], free_variable_denotation_dict)
+            args_denotation = model.denotation(arguments[0], requirement.variables)
         # n>1-ary predicate
         else:
-            args_denotation = tuple(model.denotation(x, free_variable_denotation_dict) for x in arguments)
+            args_denotation = tuple(model.denotation(x, requirement.variables) for x in arguments)
 
         # Check if contradictions and add new requirements
         if sought_value == '1':
@@ -186,7 +181,7 @@ class ModelFinder:
                 negative_atomic_reqs[predicate].add(args_denotation)
 
     def _analyze_unary_connective_requirement(self, all_requirements, requirement, model, logic, positive_atomic_reqs,
-                                              negative_atomic_reqs, free_variable_denotation_dict):
+                                              negative_atomic_reqs):
         formula = requirement.formula
         connective = formula.main_symbol
         sought_value = requirement.value
@@ -201,8 +196,7 @@ class ModelFinder:
 
                     # Call recursively and see if it returns. Send copies of everything in case it does not
                     positive_atomic_reqs, negative_atomic_reqs = self._analyze_requirements(
-                        new_requirements, model, logic, deepcopy(positive_atomic_reqs), deepcopy(negative_atomic_reqs),
-                        free_variable_denotation_dict
+                        new_requirements, model, logic, deepcopy(positive_atomic_reqs), deepcopy(negative_atomic_reqs)
                     )
                     return positive_atomic_reqs, negative_atomic_reqs
                 except ValueError:
@@ -211,7 +205,7 @@ class ModelFinder:
         raise ValueError("Unsatisfiable unary requirement")
 
     def _analyze_binary_connective_requirement(self, all_requirements, requirement, model, logic, positive_atomic_reqs,
-                                              negative_atomic_reqs, free_variable_denotation_dict):
+                                              negative_atomic_reqs):
         formula = requirement.formula
         connective = formula.main_symbol
         sought_value = requirement.value
@@ -232,8 +226,7 @@ class ModelFinder:
                         # Call recursively and see if it returns. Send copies of everything in case it does not
                         positive_atomic_reqs, negative_atomic_reqs = self._analyze_requirements(
                             new_requirements, model, logic, deepcopy(positive_atomic_reqs),
-                            deepcopy(negative_atomic_reqs),
-                            free_variable_denotation_dict
+                            deepcopy(negative_atomic_reqs)
                         )
                         return positive_atomic_reqs, negative_atomic_reqs
                     except ValueError:
@@ -242,17 +235,60 @@ class ModelFinder:
         raise ValueError("Unsatisfiable unary requirement")
 
     def _analyze_quantifier_requirement(self, all_requirements, requirement, model, logic, positive_atomic_reqs,
-                                              negative_atomic_reqs, free_variable_denotation_dict):
-        raise NotImplemented()
+                                              negative_atomic_reqs):
+        formula = requirement.formula
+        subf = formula[2]
+        quantifier = formula.main_symbol
+        sought_value = requirement.value
+        prev_variable_assignment = requirement.variable_assignment
+
+        # there should only be one free var
+        free_var = next(iter(subf.free_variables(logic.language, _bound_variables=set(prev_variable_assignment))))
+        if not free_var:
+            # If the quantifier is not binding anything, then it does not add any atomic requirement
+            return positive_atomic_reqs, negative_atomic_reqs
+
+        domain = sorted(list(model['domain']))
+        possible_variable_assignments = [{free_var: elem, **prev_variable_assignment} for elem in domain]
+        # If x is free here and y was bound before, the above should give [{x: obj1, y:objn}, {x: obj2, y:objn}, ...]
+
+        possible_truth_value_combinations_for_instances = product(logic.truth_values, repeat=len(domain))
+        # if there are 3 elems in the domain, then the instances can get values (1, 1, 1), (1, 1, 0), (1, 0, 1), ...
+
+        # See which combinations of truth values result in the quantified formula getting the desired value
+        for value_comb in possible_truth_value_combinations_for_instances:
+            v = value_comb[0]
+            for v2 in value_comb[1:]:
+                if quantifier == '∃':
+                    v = logic.apply_truth_function('∨', v, v2)  # Treat existentials as disjunctions
+                if quantifier == '∀':
+                    v = logic.apply_truth_function('∧', v, v2)  # Treat universals as conjunctions
+
+            # If it does get the value:
+            if v == sought_value:
+                # Then we need to add as requisites that the instances
+                new_requirements = [Requirement(formula=subf,
+                                                value=value_comb[idx],
+                                                variable_assignment=possible_variable_assignments[idx])
+                                    for idx in range(len(domain))]
+                print(new_requirements)
+                # CONTINUE WORKING HERE. NEED TO ADJUST VAR ASSIGNMENTS TO THE CODE ABOVE
+
+        # If we reach here, we found no value that will satisfy the requirement
+        raise ValueError("Unsatisfiable quantifier requirement")
+
 
 class Requirement:
-    """Requirement that a formula should get a given value"""
-    def __init__(self, formula, value):
+    """Requirement that a formula should get a given value with a given variable assignment"""
+    def __init__(self, formula, value, variable_assignment=None):
+        if variable_assignment is None:
+            variable_assignment = dict()
+        self.variable_assignment = variable_assignment
         self.formula = formula
         self.value = value
 
-    def __str__(self):
-        return f"Requirement - formula: {self.formula}, value: {self.value}"
+    def __repr__(self):
+        return f"(Requirement - formula: {self.formula}, value: {self.value}, variables: {self.variable_assignment})"
 
 
 classical_model_finder = ModelFinder()
