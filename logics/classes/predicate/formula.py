@@ -251,6 +251,28 @@ class PredicateFormula(Formula):
         """
         return not self.is_closed(language)
 
+    def predicates_inside(self, preds=None):
+        """Returns a dict with the predicates and their arity. Arity is inferred from the formula, not the language
+
+        Examples
+        --------
+        >>> from logics.utils.parsers import classical_predicate_parser
+        >>> f = classical_predicate_parser.parse("∀x (P(x) ∨ ~R(x,a))")
+        >>> f.predicates_inside()
+        {'P': 1, 'R': 2}
+        """
+        if preds is None:
+            preds = dict()
+        # Atomic
+        if self.is_atomic and len(self) > 1:  # if len is 1, it is a sentential mv, has no atomics
+            preds[self[0]] = len(self) - 1  # -1 because one position corresponds to the predicate
+        # Molecular
+        else:
+            # Add the constants in the arguments
+            for arg in self.arguments(['∀', '∃']):
+                preds.update(arg.predicates_inside(preds))
+        return preds
+
     def individual_constants_inside(self, language, ind_cts=None):
         """Returns a set of the individual constants that the formula contains
 

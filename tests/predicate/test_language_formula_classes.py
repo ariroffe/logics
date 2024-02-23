@@ -106,6 +106,14 @@ class TestLanguageFormulaClasses(unittest.TestCase):
         self.assertFalse(f.contains_string('y'))
         self.assertTrue(f.contains_string('f'))
 
+    def test_predicates_inside(self):
+        self.assertEqual(parser.parse("P(a)").predicates_inside(), {'P': 1})
+        self.assertEqual(PredicateFormula(["P", "a", "b"]).predicates_inside(), {'P': 2})  # not respecting lang
+        self.assertEqual(parser.parse("R(a,f(b))").predicates_inside(), {'R': 2})
+        self.assertEqual(parser.parse("forall x P(x)").predicates_inside(), {'P': 1})
+        f = parser.parse("forall x (P(x) or P(c)) and ~R(a, f(b))")
+        self.assertEqual(f.predicates_inside(), {'P': 1, 'R': 2})
+
     def test_individual_constants_inside(self):
         self.assertEqual(parser.parse("P(a)").individual_constants_inside(cl_language), {'a'})
         self.assertEqual(parser.parse("R(a,b)").individual_constants_inside(cl_language), {'a', 'b'})
