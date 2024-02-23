@@ -122,6 +122,31 @@ class ModelFinder:
                 except ValueError as e:
                     raise e
 
+            # Binary connective formula
+            elif req.formula[0] in logic.language.constants(2):
+                try:
+                    positive_atomic_reqs, negative_atomic_reqs = \
+                        self._analyze_binary_connective_requirement(requirements, req, model, logic,
+                                                                   positive_atomic_reqs, negative_atomic_reqs,
+                                                                   free_variable_denotation_dict)
+                    del requirements[0]
+                except ValueError as e:
+                    raise e
+
+            # Quantified formula
+            elif req.formula[0] in logic.language.quantifiers:
+                try:
+                    positive_atomic_reqs, negative_atomic_reqs = \
+                        self._analyze_quantifier_requirement(requirements, req, model, logic,
+                                                             positive_atomic_reqs, negative_atomic_reqs,
+                                                             free_variable_denotation_dict)
+                    del requirements[0]
+                except ValueError as e:
+                    raise e
+
+            else:
+                raise SolverError(f"Unknown logical constant {req.formula[0]}")
+
         return positive_atomic_reqs, negative_atomic_reqs
 
     def _analyze_atomic_requirement(self, requirement, model, positive_atomic_reqs, negative_atomic_reqs,
@@ -185,6 +210,40 @@ class ModelFinder:
         # If we reach here, we found no value that will satisfy the requirement
         raise ValueError("Unsatisfiable unary requirement")
 
+    def _analyze_binary_connective_requirement(self, all_requirements, requirement, model, logic, positive_atomic_reqs,
+                                              negative_atomic_reqs, free_variable_denotation_dict):
+        formula = requirement.formula
+        connective = formula.main_symbol
+        sought_value = requirement.value
+
+        # We need to check the truth function for the connective and try every PAIR of requirements that results in the
+        # sentence getting the sought value
+        for t_value1 in logic.truth_values:
+            for t_value2 in logic.truth_values:
+                if logic.apply_truth_function(connective, t_value1, t_value2) == sought_value:
+                    try:
+                        # Add TWO new requirements and remove the current one we are analyzing
+                        new_requirements = [
+                            Requirement(formula=formula[1], value=t_value1),
+                            Requirement(formula=formula[2], value=t_value2),
+                            *all_requirements[1:]
+                        ]
+
+                        # Call recursively and see if it returns. Send copies of everything in case it does not
+                        positive_atomic_reqs, negative_atomic_reqs = self._analyze_requirements(
+                            new_requirements, model, logic, deepcopy(positive_atomic_reqs),
+                            deepcopy(negative_atomic_reqs),
+                            free_variable_denotation_dict
+                        )
+                        return positive_atomic_reqs, negative_atomic_reqs
+                    except ValueError:
+                        pass
+        # If we reach here, we found no value that will satisfy the requirement
+        raise ValueError("Unsatisfiable unary requirement")
+
+    def _analyze_quantifier_requirement(self, all_requirements, requirement, model, logic, positive_atomic_reqs,
+                                              negative_atomic_reqs, free_variable_denotation_dict):
+        raise NotImplemented()
 
 class Requirement:
     """Requirement that a formula should get a given value"""
