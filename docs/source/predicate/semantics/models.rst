@@ -45,3 +45,10 @@ Instances
 .. data:: logics.instances.predicate.model_semantics.realnumber_arithmetic_model_semantics
 
    Model theory for second-order real-number arithmetic. For the language `real_number_arithmetic_language`.
+
+
+Model Finder
+------------
+
+.. autoclass:: logics.utils.solvers.model_finder.ModelFinder
+   :members:

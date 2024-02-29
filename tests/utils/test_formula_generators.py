@@ -61,10 +61,11 @@ class TestBiasedGenerators(unittest.TestCase):
             self.assertTrue(classical_mvl_semantics.is_valid(valid_metainf))
 
     def test_predicate_generator(self):
-        for depth in range(1, 6):
+        for depth in range(0, 6):
             for x in range(50):
                 f = random_predicate_formula_generator.random_formula(
-                    depth=depth, predicates=['P', 'Q'], max_predicate_arity=2, ind_constants=['a', 'b'],
+                    depth=depth, predicates=['P', 'R'], predicate_arities=pred_lang.predicate_letters,
+                    max_predicate_arity=2, ind_constants=['a', 'b'],
                     variables=['x', 'y'], language=pred_lang
                 )
                 self.assertEqual(f.depth, depth)

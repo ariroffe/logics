@@ -49,7 +49,7 @@ class TestModelFinder(unittest.TestCase):
     def test_with_generator(self):
         lang = classical_model_semantics.language
         for depth in range(0, 4):
-            for _ in range(10):
+            for _ in range(25):
                 formula = random_predicate_formula_generator.random_formula(depth=depth,
                                                                             predicates=['P', 'R'],
                                                                             predicate_arities=lang.predicate_letters,
