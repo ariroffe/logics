@@ -1,3 +1,5 @@
+from copy import copy
+
 from logics.classes.propositional import Formula
 
 
@@ -212,15 +214,16 @@ class PredicateFormula(Formula):
             return free
 
         # Molecular
+        new_bound_variables = copy(_bound_variables)
         if self.main_symbol in language.quantifiers:
             # In case of a bounded quantifier, check for free variables in the bound (before adding to the bounded)
             if self[2] == '∈':
                 free |= self.free_variables(language, term=self[3], _bound_variables=_bound_variables)
             # Quantified formula: add the quantified variable to bound_variables
-            _bound_variables |= {self[1]}
+            new_bound_variables |= {self[1]}
         # Return the varibles in each immediate subformula
         for subformula in self.arguments():
-            free |= subformula.free_variables(language, _bound_variables=_bound_variables)
+            free |= subformula.free_variables(language, _bound_variables=new_bound_variables)
         return free
 
     def is_closed(self, language):

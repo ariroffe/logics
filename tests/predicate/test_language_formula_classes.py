@@ -2,7 +2,10 @@ import unittest
 
 from logics.utils.parsers.predicate_parser import classical_predicate_parser as parser
 from logics.classes.predicate import InfinitePredicateLanguage, PredicateFormula
-from logics.instances.predicate.languages import classical_infinite_predicate_language as cl_language
+from logics.instances.predicate.languages import (
+    classical_infinite_predicate_language as cl_language,
+    classical_predicate_language as finite_lang
+)
 from logics.instances.predicate.languages import real_number_arithmetic_language as arithmetic
 
 
@@ -186,6 +189,10 @@ class TestLanguageFormulaClasses(unittest.TestCase):
         # Check that variable metavariables are
         self.assertEqual(PredicateFormula(['P', 'χ']).free_variables(self.function_language), {'χ'})
         self.assertEqual(PredicateFormula(['∀', 'χ', ['P', 'χ']]).free_variables(self.function_language), set())
+
+        # We were getting incorrect results with some formulae, e.g. this:
+        f = parser.parse("∃x P(x) → P(x)")
+        self.assertEqual(f.free_variables(finite_lang), {'x'})
 
     def test_some_base_formula_methods(self):
         self.assertEqual(PredicateFormula(['∧', ['P', 'x'], ['A']]).main_symbol, '∧')
