@@ -1,4 +1,4 @@
-from copy import deepcopy
+from copy import copy, deepcopy
 from itertools import product
 
 from logics.classes.predicate.semantics import Model
@@ -40,6 +40,9 @@ class ModelFinder:
         >>> from logics.instances.predicate.model_semantics import classical_model_semantics
         >>> f = classical_predicate_parser.parse("exists x P(x) and ~P(a)")
         >>> classical_model_finder.find_model(f, "1", classical_model_semantics)
+        {'domain': {'1', '2'}, 'a': '1', 'P': {'2'}}
+        >>> classical_model_finder.find_model(f, "0", classical_model_semantics)
+        {'domain': {'1'}, 'a': '1', 'P': {'1'}}
 
         Notes
         -----
@@ -51,16 +54,15 @@ class ModelFinder:
         """
         predicates = formula.predicates_inside()
         ind_constants = sorted(list(formula.individual_constants_inside(logic.language)))
-        model = self._get_initial_model(ind_constants, predicates)
         requirements = [Requirement(formula, sought_value)]
 
         # Now try to find the model adding from 0 to 5 extra elements to the domain
         for add_cts in range(self.max_domain_cardinality):
+            model = self._get_initial_model(ind_constants, predicates)
             if add_cts:  # if it is not 0, add an extra element to the domain
                 model['domain'].add(str(len(model['domain'])+1))
 
-            print(f"Attempt with domain {model['domain']}")
-
+            # print(f"\nAttempt with domain {model['domain']}, initial model {model}")
             # Might stop before the loop since we might already have elements in the domain bc of ind constants
             if len(model['domain']) > self.max_domain_cardinality:
                 raise SolverError("Could not find model for the sentence provided")
@@ -69,7 +71,7 @@ class ModelFinder:
                 positive_atomic_requirements, negative_atomic_requirements = self._analyze_requirements(
                     requirements, model, logic
                 )
-                print(positive_atomic_requirements, negative_atomic_requirements)
+                self.assign_model_predicates(model, positive_atomic_requirements)
                 return model
 
             except ValueError:
@@ -152,13 +154,14 @@ class ModelFinder:
         predicate_arity = len(formula) - 1  # one position is the predicate
         arguments = formula[1:]
         sought_value = requirement.value
+        variable_assignment = requirement.variable_assignment
 
         # Unary predicate
         if predicate_arity == 1:
-            args_denotation = model.denotation(arguments[0], requirement.variables)
+            args_denotation = model.denotation(arguments[0], variable_assignment)
         # n>1-ary predicate
         else:
-            args_denotation = tuple(model.denotation(x, requirement.variables) for x in arguments)
+            args_denotation = tuple(model.denotation(x, variable_assignment) for x in arguments)
 
         # Check if contradictions and add new requirements
         if sought_value == '1':
@@ -185,15 +188,17 @@ class ModelFinder:
         formula = requirement.formula
         connective = formula.main_symbol
         sought_value = requirement.value
+        prev_variable_assignment = requirement.variable_assignment
 
         # We need to check the truth function for the connective and try every requirement that results in the sentence
         # getting the sought value
         for t_value in logic.truth_values:
             if logic.apply_truth_function(connective, t_value) == sought_value:
+                # Add a new requirement and remove the current one we are analyzing
+                new_requirements = [Requirement(formula=formula[1], value=t_value,
+                                                variable_assignment=prev_variable_assignment),
+                                    *all_requirements[1:]]
                 try:
-                    # Add a new requirement and remove the current one we are analyzing
-                    new_requirements = [Requirement(formula=formula[1], value=t_value), *all_requirements[1:]]
-
                     # Call recursively and see if it returns. Send copies of everything in case it does not
                     positive_atomic_reqs, negative_atomic_reqs = self._analyze_requirements(
                         new_requirements, model, logic, deepcopy(positive_atomic_reqs), deepcopy(negative_atomic_reqs)
@@ -209,20 +214,20 @@ class ModelFinder:
         formula = requirement.formula
         connective = formula.main_symbol
         sought_value = requirement.value
+        prev_variable_assignment = requirement.variable_assignment
 
         # We need to check the truth function for the connective and try every PAIR of requirements that results in the
         # sentence getting the sought value
         for t_value1 in logic.truth_values:
             for t_value2 in logic.truth_values:
                 if logic.apply_truth_function(connective, t_value1, t_value2) == sought_value:
+                    # Add TWO new requirements and remove the current one we are analyzing
+                    new_requirements = [
+                        Requirement(formula=formula[1], value=t_value1, variable_assignment=prev_variable_assignment),
+                        Requirement(formula=formula[2], value=t_value2, variable_assignment=prev_variable_assignment),
+                        *all_requirements[1:]
+                    ]
                     try:
-                        # Add TWO new requirements and remove the current one we are analyzing
-                        new_requirements = [
-                            Requirement(formula=formula[1], value=t_value1),
-                            Requirement(formula=formula[2], value=t_value2),
-                            *all_requirements[1:]
-                        ]
-
                         # Call recursively and see if it returns. Send copies of everything in case it does not
                         positive_atomic_reqs, negative_atomic_reqs = self._analyze_requirements(
                             new_requirements, model, logic, deepcopy(positive_atomic_reqs),
@@ -237,19 +242,25 @@ class ModelFinder:
     def _analyze_quantifier_requirement(self, all_requirements, requirement, model, logic, positive_atomic_reqs,
                                               negative_atomic_reqs):
         formula = requirement.formula
+        quantifier = formula[0]
+        quantified_variable = formula[1]
         subf = formula[2]
-        quantifier = formula.main_symbol
         sought_value = requirement.value
         prev_variable_assignment = requirement.variable_assignment
 
+        new_variable_assignment = copy(prev_variable_assignment)
+        if quantified_variable in new_variable_assignment:
+            # If in a nested quantifier on a variable that was previously bound before
+            # Then the current quantifier binds it, it becomes free inside subf
+            del new_variable_assignment[quantified_variable]
         # there should only be one free var
-        free_var = next(iter(subf.free_variables(logic.language, _bound_variables=set(prev_variable_assignment))))
+        free_var = next(iter(subf.free_variables(logic.language, _bound_variables=set(new_variable_assignment))))
         if not free_var:
             # If the quantifier is not binding anything, then it does not add any atomic requirement
             return positive_atomic_reqs, negative_atomic_reqs
 
         domain = sorted(list(model['domain']))
-        possible_variable_assignments = [{free_var: elem, **prev_variable_assignment} for elem in domain]
+        possible_variable_assignments = [{free_var: elem, **new_variable_assignment} for elem in domain]
         # If x is free here and y was bound before, the above should give [{x: obj1, y:objn}, {x: obj2, y:objn}, ...]
 
         possible_truth_value_combinations_for_instances = product(logic.truth_values, repeat=len(domain))
@@ -266,16 +277,27 @@ class ModelFinder:
 
             # If it does get the value:
             if v == sought_value:
-                # Then we need to add as requisites that the instances
+                # Then we need to add as requisites the instances with the appropriate var assignment
                 new_requirements = [Requirement(formula=subf,
                                                 value=value_comb[idx],
                                                 variable_assignment=possible_variable_assignments[idx])
                                     for idx in range(len(domain))]
-                print(new_requirements)
-                # CONTINUE WORKING HERE. NEED TO ADJUST VAR ASSIGNMENTS TO THE CODE ABOVE
+                new_requirements = [*new_requirements, *all_requirements[1:]]
+                try:
+                    positive_atomic_reqs, negative_atomic_reqs = self._analyze_requirements(
+                        new_requirements, model, logic, deepcopy(positive_atomic_reqs),
+                        deepcopy(negative_atomic_reqs)
+                    )
+                    return positive_atomic_reqs, negative_atomic_reqs
+                except ValueError:
+                    pass
 
         # If we reach here, we found no value that will satisfy the requirement
         raise ValueError("Unsatisfiable quantifier requirement")
+
+    def assign_model_predicates(self, model, positive_atomic_requirements):
+        for pred in positive_atomic_requirements:
+            model[pred] = positive_atomic_requirements[pred]
 
 
 class Requirement:

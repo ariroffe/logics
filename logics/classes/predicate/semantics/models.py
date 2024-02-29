@@ -3,7 +3,6 @@ from itertools import product, combinations
 
 from logics.classes.predicate import PredicateFormula
 from logics.classes.exceptions import DenotationError
-from logics.utils.parsers.parser_utils import godel_decode
 from logics.utils.parsers.predicate_parser import arithmetic_truth_parser
 
 
