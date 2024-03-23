@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.1] - 2024-03-23
+### Fixed
+- Bug in the biconditional rule of classical tableaux system
+
 ## [1.10.0] - 2024-02-29
 ### Added
 - Model finder for classical model theory w/documentation and tests

@@ -84,16 +84,16 @@ TableauxNode(content=Formula(['~', ['B']]), justification='R↔', parent=cbr3)
 '''
 
 classical_neg_biconditional_rule = TableauxNode(content=Formula(['~', ['↔', ['A'], ['B']]]))
-cnbr2 = TableauxNode(content=Formula(['~', ['A']]), justification='R↔', parent=classical_neg_biconditional_rule)
-TableauxNode(content=Formula(['B']), justification='R↔', parent=cnbr2)
-cnbr3 = TableauxNode(content=Formula(['A']), justification='R↔', parent=classical_neg_biconditional_rule)
-TableauxNode(content=Formula(['~', ['B']]), justification='R↔', parent=cnbr3)
+cnbr2 = TableauxNode(content=Formula(['~', ['A']]), justification='R~↔', parent=classical_neg_biconditional_rule)
+TableauxNode(content=Formula(['B']), justification='R~↔', parent=cnbr2)
+cnbr3 = TableauxNode(content=Formula(['A']), justification='R~↔', parent=classical_neg_biconditional_rule)
+TableauxNode(content=Formula(['~', ['B']]), justification='R~↔', parent=cnbr3)
 '''
 ['~', ['↔', ['A'], ['B']]]
-├── ['~', ['A']] (R↔)
-│   └── ['B'] (R↔)
-└── ['A'] (R↔)
-    └── ['~', ['B']] (R↔)
+├── ['~', ['A']] (R~↔)
+│   └── ['B'] (R~↔)
+└── ['A'] (R~↔)
+    └── ['~', ['B']] (R~↔)
 '''
 
 classical_tableaux_rules = {
