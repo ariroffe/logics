@@ -392,7 +392,10 @@ class TableauxSystem:
 
     Notes
     -----
-    There are predefined instances of this class for known systems, see below.
+    - There are predefined instances of this class for known systems, see below.
+    - If some rule contains two versions (e.g. A ∧ B ⇛ A ⇛ B and A ∧ B ⇛ B ⇛ A), you can name them R∧_1 and R∧_2 the
+      rules dict, but put only R∧ in the justification of the children for both. See the test for is_correct_tree in
+      the tests module for an example.
     """
     # Assumes a branch is closed if a node and its negation (with the same index) are present in a branch:
     fast_node_is_closed_enabled = True
@@ -599,6 +602,7 @@ class TableauxSystem:
         """
         rule = self.rules[rule_name]
         rule_prems = [n for n in PreOrderIter(rule) if n.justification is None]  # Rule premises
+        # Check if the node is an instance of the last premise of the rule
         instance, subst_dict = node.is_instance_of(rule_prems[-1], self.language, return_subst_dict=True)
         if instance:
             # If it is, check that the rest of the premises of the rule (if there are any) are present
@@ -759,7 +763,11 @@ class TableauxSystem:
             # Check if a rule applies to the node and is correctly applied in the tree
             # e.g. if the node is a conjunction, see that both conjuncts are below in the tree, and save both conjuncts
             # as correctly derived nodes
+            rules_applied_to_node = set()
             for rule_name in self.rules:
+                # Some rules have names like R∧_1 and R∧_2 but are actually different versions of the same rule
+                actual_rule_name = rule_name[:-2] if rule_name[-2] == '_' and rule_name[-1].isdigit() else rule_name
+
                 # For each rule, see if the current node is an instance of the LAST premise of the rule
                 result = self.rule_is_applicable(node, rule_name, return_subst_dict=True)
                 applicable = result[0]
@@ -772,6 +780,10 @@ class TableauxSystem:
                     result3 = self._is_correctly_applied(node, rule_prems[-1], correctly_derived_nodes, subst_dict)
                     correct = result3[0]
                     if not correct:
+                        # If another version of the rule was correctly applied, do not count it as an error
+                        if actual_rule_name in rules_applied_to_node:
+                            continue
+
                         if not return_error_list:
                             return False
                         error_list.append(CorrectionError(code=ErrorCode.TBL_RULE_NOT_APPLIED,
@@ -781,6 +793,7 @@ class TableauxSystem:
                         if exit_on_first_error:
                             return False, error_list
                     else:
+                        rules_applied_to_node.add(actual_rule_name)
                         correctly_derived_nodes |= result3[1]
 
         # After visiting all nodes, check that all premises and conclusions are present in the tableaux
