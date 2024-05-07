@@ -764,37 +764,49 @@ class TableauxSystem:
             # e.g. if the node is a conjunction, see that both conjuncts are below in the tree, and save both conjuncts
             # as correctly derived nodes
             rules_applied_to_node = set()
+            rules_applicable_but_not_applied = set()
             for rule_name in self.rules:
                 # Some rules have names like R∧_1 and R∧_2 but are actually different versions of the same rule
                 actual_rule_name = rule_name[:-2] if rule_name[-2] == '_' and rule_name[-1].isdigit() else rule_name
+
+                # If another version of the rule was correctly applied, move on
+                if actual_rule_name in rules_applied_to_node:
+                    continue
 
                 # For each rule, see if the current node is an instance of the LAST premise of the rule
                 result = self.rule_is_applicable(node, rule_name, return_subst_dict=True)
                 applicable = result[0]
                 if applicable:
                     subst_dict = result[1]
+
                     # Get the rule premises
                     rule_prems = [n for n in PreOrderIter(self.rules[rule_name]) if n.justification is None]
+
                     # See if the rule is correctly applied
                     # (rule_prems[-1] contains the last premise AND ITS SUBTREE)
                     result3 = self._is_correctly_applied(node, rule_prems[-1], correctly_derived_nodes, subst_dict)
                     correct = result3[0]
                     if not correct:
-                        # If another version of the rule was correctly applied, do not count it as an error
-                        if actual_rule_name in rules_applied_to_node:
-                            continue
-
-                        if not return_error_list:
-                            return False
-                        error_list.append(CorrectionError(code=ErrorCode.TBL_RULE_NOT_APPLIED,
-                                                          index=tuple(n.child_index for n in node.path),
-                                                          description=f'Rule {rule_name} was not applied to '
-                                                                      f'node {node._self_string(parser)}'))
-                        if exit_on_first_error:
-                            return False, error_list
+                        # It does not mean the tree is incorrect, maybe another version of the rule has been applied
+                        rules_applicable_but_not_applied.add(actual_rule_name)
                     else:
                         rules_applied_to_node.add(actual_rule_name)
+                        if actual_rule_name in rules_applicable_but_not_applied:
+                            rules_applicable_but_not_applied.remove(actual_rule_name)
                         correctly_derived_nodes |= result3[1]
+                        break  # this assumes that no more than one rule should be applied to each node
+
+            # If after going through every rule you find that some applicable rule was not applied, throw an error
+            if rules_applicable_but_not_applied:
+                if not return_error_list:
+                    return False
+                not_applied_rule_name = next(iter(rules_applicable_but_not_applied))
+                error_list.append(CorrectionError(code=ErrorCode.TBL_RULE_NOT_APPLIED,
+                                                  index=tuple(n.child_index for n in node.path),
+                                                  description=f'Rule {not_applied_rule_name} was not applied to '
+                                                              f'node {node._self_string(parser)}'))
+                if exit_on_first_error:
+                    return False, error_list
 
         # After visiting all nodes, check that all premises and conclusions are present in the tableaux
         if inference is not None:

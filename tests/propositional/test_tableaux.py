@@ -291,11 +291,11 @@ class TestTableauxSystem(unittest.TestCase):
     def test_is_correct_tree_multiple_versions_of_rule(self):
         # Build a classical system but with two conjunction rules, that swap A and B in the conclusions
         classical_tableaux_system_modified = deepcopy(classical_tableaux_system)
-        classical_tableaux_system_modified.rules['R∧1'] = deepcopy(classical_tableaux_system_modified.rules['R∧'])
-        classical_tableaux_system_modified.rules['R∧2'] = deepcopy(classical_tableaux_system_modified.rules['R∧'])
+        classical_tableaux_system_modified.rules['R∧_1'] = deepcopy(classical_tableaux_system_modified.rules['R∧'])
+        classical_tableaux_system_modified.rules['R∧_2'] = deepcopy(classical_tableaux_system_modified.rules['R∧'])
         del classical_tableaux_system_modified.rules['R∧']
-        classical_tableaux_system_modified.rules['R∧2'].children[0].content = Formula(['B'])
-        classical_tableaux_system_modified.rules['R∧2'].children[0].children[0].content = Formula(['A'])
+        classical_tableaux_system_modified.rules['R∧_2'].children[0].content = Formula(['B'])
+        classical_tableaux_system_modified.rules['R∧_2'].children[0].children[0].content = Formula(['A'])
         """
         ['∧', ['A'], ['B']]
         └── ['B'] (R∧)
@@ -303,37 +303,37 @@ class TestTableauxSystem(unittest.TestCase):
         """
 
         n1 = TableauxNode(content=Formula(['∧', ['p'], ['q']]))
-        n2 = TableauxNode(content=Formula(['q']), parent=n1)
-        n3 = TableauxNode(content=Formula(['p']), parent=n2)
+        n2 = TableauxNode(content=Formula(['q']), justification='R∧', parent=n1)
+        TableauxNode(content=Formula(['p']), justification='R∧', parent=n2)
         '''
         p ∧ q
-        └── q
-            └── p
+        └── q (R∧)
+            └── p (R∧)
         '''
         self.assertFalse(classical_tableaux_system.is_correct_tree(n1))
-        self.assertFalse(classical_tableaux_system_modified.is_correct_tree(n1))
+        self.assertTrue(classical_tableaux_system_modified.is_correct_tree(n1))
 
         # Try the same with disjunction, inverting the leaves
-        classical_tableaux_system_modified.rules['R∨1'] = deepcopy(classical_tableaux_system_modified.rules['R∨'])
-        classical_tableaux_system_modified.rules['R∨2'] = deepcopy(classical_tableaux_system_modified.rules['R∨'])
+        classical_tableaux_system_modified.rules['R∨_1'] = deepcopy(classical_tableaux_system_modified.rules['R∨'])
+        classical_tableaux_system_modified.rules['R∨_2'] = deepcopy(classical_tableaux_system_modified.rules['R∨'])
         del classical_tableaux_system_modified.rules['R∨']
-        classical_tableaux_system_modified.rules['R∨2'].children[0].content = Formula(['B'])
-        classical_tableaux_system_modified.rules['R∨2'].children[1].content = Formula(['A'])
+        classical_tableaux_system_modified.rules['R∨_2'].children[0].content = Formula(['B'])
+        classical_tableaux_system_modified.rules['R∨_2'].children[1].content = Formula(['A'])
         """
         ['∨', ['A'], ['B']]
         ├── ['B'] (R∨)
         └── ['A'] (R∨)
         """
         n1 = TableauxNode(content=Formula(['∨', ['p'], ['q']]))
-        n2 = TableauxNode(content=Formula(['q']), parent=n1)
-        n3 = TableauxNode(content=Formula(['p']), parent=n1)
+        TableauxNode(content=Formula(['q']), justification='R∨', parent=n1)
+        TableauxNode(content=Formula(['p']), justification='R∨', parent=n1)
         '''
-        p ∧ q
-        ├── q
-        └── p
+        p ∨ q
+        ├── q (R∨)
+        └── p (R∨)
         '''
         self.assertFalse(classical_tableaux_system.is_correct_tree(n1))
-        self.assertFalse(classical_tableaux_system_modified.is_correct_tree(n1))
+        self.assertTrue(classical_tableaux_system_modified.is_correct_tree(n1))
 
     def test_classical_indexed_tableaux(self):
         # Node is closed

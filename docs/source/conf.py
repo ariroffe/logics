@@ -22,7 +22,7 @@ copyright = '2020, Ariel Jonathan Roffe'
 author = 'Ariel Jonathan Roffe'
 
 # The full version, including alpha/beta/rc tags
-release = '1.10.2'
+release = '1.10.3'
 
 
 # -- General configuration ---------------------------------------------------
