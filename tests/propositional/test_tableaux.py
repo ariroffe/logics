@@ -10,7 +10,8 @@ from logics.instances.propositional.tableaux import (
     classical_indexed_tableaux_system,
     FDE_tableaux_system,
     K3_tableaux_system,
-    LP_tableaux_system
+    LP_tableaux_system,
+    get_system_with_invertible_rules
 )
 
 
@@ -302,6 +303,19 @@ class TestTableauxSystem(unittest.TestCase):
             └── ['A'] (R∧)
         """
 
+        # Default order
+        n1 = TableauxNode(content=Formula(['∧', ['p'], ['q']]))
+        n2 = TableauxNode(content=Formula(['p']), justification='R∧', parent=n1)
+        TableauxNode(content=Formula(['q']), justification='R∧', parent=n2)
+        '''
+        p ∧ q
+        └── p (R∧)
+            └── q (R∧)
+        '''
+        self.assertTrue(classical_tableaux_system.is_correct_tree(n1))
+        self.assertTrue(classical_tableaux_system_modified.is_correct_tree(n1))
+
+        # Reverse order
         n1 = TableauxNode(content=Formula(['∧', ['p'], ['q']]))
         n2 = TableauxNode(content=Formula(['q']), justification='R∧', parent=n1)
         TableauxNode(content=Formula(['p']), justification='R∧', parent=n2)
@@ -324,6 +338,20 @@ class TestTableauxSystem(unittest.TestCase):
         ├── ['B'] (R∨)
         └── ['A'] (R∨)
         """
+
+        # Default order
+        n1 = TableauxNode(content=Formula(['∨', ['p'], ['q']]))
+        TableauxNode(content=Formula(['p']), justification='R∨', parent=n1)
+        TableauxNode(content=Formula(['q']), justification='R∨', parent=n1)
+        '''
+        p ∨ q
+        ├── p (R∨)
+        └── q (R∨)
+        '''
+        self.assertTrue(classical_tableaux_system.is_correct_tree(n1))
+        self.assertTrue(classical_tableaux_system_modified.is_correct_tree(n1))
+
+        # Reverse order
         n1 = TableauxNode(content=Formula(['∨', ['p'], ['q']]))
         TableauxNode(content=Formula(['q']), justification='R∨', parent=n1)
         TableauxNode(content=Formula(['p']), justification='R∨', parent=n1)
@@ -334,6 +362,119 @@ class TestTableauxSystem(unittest.TestCase):
         '''
         self.assertFalse(classical_tableaux_system.is_correct_tree(n1))
         self.assertTrue(classical_tableaux_system_modified.is_correct_tree(n1))
+
+        # Binconditional case with horizontal and vertical swapping (only on one branch)
+        classical_tableaux_system_modified.rules['R↔_1'] = deepcopy(classical_tableaux_system_modified.rules['R↔'])
+        del classical_tableaux_system_modified.rules['R↔']
+
+        biconditional_rule2 = TableauxNode(content=Formula(['↔', ['A'], ['B']]))
+        cbr2 = TableauxNode(content=Formula(['~', ['A']]), justification='R↔', parent=biconditional_rule2)
+        TableauxNode(content=Formula(['~', ['B']]), justification='R↔', parent=cbr2)
+        cbr3 = TableauxNode(content=Formula(['A']), justification='R↔', parent=biconditional_rule2)
+        TableauxNode(content=Formula(['B']), justification='R↔', parent=cbr3)
+        '''
+        ['↔', ['A'], ['B']]
+        ├── ['~', ['A']] (R↔)
+        │   └── ['~', ['B']] (R↔)
+        └── ['A'] (R↔)
+            └── ['B'] (R↔)
+        '''
+        classical_tableaux_system_modified.rules['R↔_2'] = biconditional_rule2
+
+        biconditional_rule3 = TableauxNode(content=Formula(['↔', ['A'], ['B']]))
+        cbr4 = TableauxNode(content=Formula(['~', ['A']]), justification='R↔', parent=biconditional_rule3)
+        TableauxNode(content=Formula(['~', ['B']]), justification='R↔', parent=cbr4)
+        cbr5 = TableauxNode(content=Formula(['B']), justification='R↔', parent=biconditional_rule3)
+        TableauxNode(content=Formula(['A']), justification='R↔', parent=cbr5)
+        '''
+        ['↔', ['A'], ['B']]
+        ├── ['~', ['A']] (R↔)
+        │   └── ['~', ['B']] (R↔)
+        └── ['B'] (R↔)
+            └── ['A'] (R↔)
+        '''
+        classical_tableaux_system_modified.rules['R↔_3'] = biconditional_rule3
+
+        # Default order
+        n1 = TableauxNode(content=Formula(['↔', ['p'], ['q']]))
+        n2 = TableauxNode(content=Formula(['p']), justification='R↔', parent=n1)
+        TableauxNode(content=Formula(['q']), justification='R↔', parent=n2)
+        n3 = TableauxNode(content=Formula(['~', ['p']]), justification='R↔', parent=n1)
+        TableauxNode(content=Formula(['~', ['q']]), justification='R↔', parent=n3)
+        '''
+        ['↔', ['p'], ['q']]
+        ├── ['p'] (R↔)
+        │   └── ['q'] (R↔)
+        └── ['~', ['p']] (R↔)
+            └── ['~', ['q']] (R↔)
+
+        '''
+        self.assertTrue(classical_tableaux_system.is_correct_tree(n1))
+        self.assertTrue(classical_tableaux_system_modified.is_correct_tree(n1))
+
+        # Horizontal swap
+        n1 = TableauxNode(content=Formula(['↔', ['p'], ['q']]))
+        n2 = TableauxNode(content=Formula(['~', ['p']]), justification='R↔', parent=n1)
+        TableauxNode(content=Formula(['~', ['q']]), justification='R↔', parent=n2)
+        n3 = TableauxNode(content=Formula(['p']), justification='R↔', parent=n1)
+        TableauxNode(content=Formula(['q']), justification='R↔', parent=n3)
+        '''
+        ['↔', ['p'], ['q']]
+        ├── ['~', ['p']] (R↔)
+        │   └── ['~', ['q']] (R↔)
+        └── ['p'] (R↔)
+            └── ['q'] (R↔)
+
+        '''
+        self.assertFalse(classical_tableaux_system.is_correct_tree(n1))
+        self.assertTrue(classical_tableaux_system_modified.is_correct_tree(n1))
+
+        # Vertical swap on the right
+        n1 = TableauxNode(content=Formula(['↔', ['p'], ['q']]))
+        n2 = TableauxNode(content=Formula(['~', ['p']]), justification='R↔', parent=n1)
+        TableauxNode(content=Formula(['~', ['q']]), justification='R↔', parent=n2)
+        n3 = TableauxNode(content=Formula(['q']), justification='R↔', parent=n1)
+        TableauxNode(content=Formula(['p']), justification='R↔', parent=n3)
+        '''
+        ['↔', ['p'], ['q']]
+        ├── ['~', ['p']] (R↔)
+        │   └── ['~', ['q']] (R↔)
+        └── ['q'] (R↔)
+            └── ['p'] (R↔)
+
+        '''
+        self.assertFalse(classical_tableaux_system.is_correct_tree(n1))
+        self.assertTrue(classical_tableaux_system_modified.is_correct_tree(n1))
+
+        # Vertical swap on the left
+        n1 = TableauxNode(content=Formula(['↔', ['p'], ['q']]))
+        n2 = TableauxNode(content=Formula(['~', ['q']]), justification='R↔', parent=n1)
+        TableauxNode(content=Formula(['~', ['p']]), justification='R↔', parent=n2)
+        n3 = TableauxNode(content=Formula(['p']), justification='R↔', parent=n1)
+        TableauxNode(content=Formula(['q']), justification='R↔', parent=n3)
+        '''
+        ['↔', ['p'], ['q']]
+        ├── ['~', ['q']] (R↔)
+        │   └── ['~', ['p']] (R↔)
+        └── ['p'] (R↔)
+            └── ['q'] (R↔)
+
+        '''
+        self.assertFalse(classical_tableaux_system.is_correct_tree(n1))
+        self.assertFalse(classical_tableaux_system_modified.is_correct_tree(n1))
+
+    def test_invertible_systems(self):
+        classical_invertible = get_system_with_invertible_rules(classical_tableaux_system)
+        self.assertEqual(len(classical_invertible.rules), 29)
+        # for rule_name in classical_invertible.rules:
+        #     print(rule_name)
+        #     print(classical_invertible.rules[rule_name].print_tree(), '\n\n')
+
+        classical_indexed_invertible = get_system_with_invertible_rules(classical_indexed_tableaux_system)
+        self.assertEqual(len(classical_invertible.rules), 29)
+        # for rule_name in classical_indexed_invertible.rules:
+        #     print(rule_name)
+        #     print(classical_indexed_invertible.rules[rule_name].print_tree(), '\n\n')
 
     def test_classical_indexed_tableaux(self):
         # Node is closed

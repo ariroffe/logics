@@ -787,6 +787,9 @@ class TableauxSystem:
                     result3 = self._is_correctly_applied(node, rule_prems[-1], correctly_derived_nodes, subst_dict)
                     correct = result3[0]
                     if not correct:
+                        # todo TEST HERE WHAT IS result3[1], WE ARE SEEING AN ERROR IN APPEARING unaccounted_nodes
+                        # I'm not getting the error now, I'll leave this just in case
+
                         # It does not mean the tree is incorrect, maybe another version of the rule has been applied
                         rules_applicable_but_not_applied.add(actual_rule_name)
                     else:

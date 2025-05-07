@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from logics.classes.propositional import Formula
 from logics.instances.propositional.languages import classical_infinite_language
 from logics.classes.propositional.proof_theories.tableaux import TableauxNode, TableauxSystem, IndexedTableauxSystem, \
@@ -386,3 +388,98 @@ TableauxNode(content=Formula(['□', ['~', ['A']]]), justification='R~◇', pare
 
 classical_constructive_tree_system = ConstructiveTreeSystem(language=classical_infinite_language,
                                                             solver=constructive_tree_solver)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# SYSTEMS WITH INVERTIBLE RULES (e.g. that allow both p ∧ q -> p -> q and p ∧ q -> q -> p)
+
+def get_system_with_invertible_rules(original_system):
+    # WARNING: Works with some restrictions (rules of height up to 2, up to 2 leaves)
+    invertible_system = deepcopy(original_system)
+
+    for rule_name in original_system.rules:
+        results = get_inverted_rules(rule_name, original_system.rules[rule_name])
+        del invertible_system.rules[rule_name]
+        for result in results:
+            invertible_system.rules[result[0]] = result[1]
+
+    return invertible_system
+
+
+def get_inverted_rules(rule_name, rule):
+    if rule.height == 1 and len(rule.children) == 1:  # Has a single child that is a leaf (e.g. R~~)
+        return [[rule_name, rule]]  # There is only one possible version of the rule
+
+    # Horizontal swaps
+    result = []
+    counter = 1
+
+    result.append([f'{rule_name}_{counter}', deepcopy(rule)])  # First version is the original rule
+    counter += 1
+
+    if rule.height == 2:
+        # Vertical swaps on the left (or only) branch
+        tree_swap_left = _vertical_swap(deepcopy(rule), 0)
+        result.append([f'{rule_name}_{counter}', tree_swap_left])  # swap left
+        counter += 1
+
+        # If the tree has more than one branch, we need to vertically swap the other branches before the horizontal swap
+        if len(rule.children) == 2:
+            result.append([f'{rule_name}_{counter}', _vertical_swap(deepcopy(rule), 1)])  # swap right
+            result.append([f'{rule_name}_{counter+1}', _vertical_swap(deepcopy(tree_swap_left), 1)])  # swap both
+            counter += 2
+
+    if len(rule.children) > 1:
+        rule2 = _horizontal_swap(deepcopy(rule))
+        result.append([f'{rule_name}_{counter}', deepcopy(rule2)])
+        counter += 1
+
+        if rule2.height == 2:
+            # Vertical swaps on the left (or only) branch
+            tree_swap_left2 = _vertical_swap(deepcopy(rule2), 0)
+            result.append([f'{rule_name}_{counter}', tree_swap_left2])  # swap left
+            counter += 1
+
+            # Same, rest of the vertical swaps
+            if len(rule2.children) == 2:
+                result.append([f'{rule_name}_{counter}', _vertical_swap(deepcopy(rule2), 1)])  # swap right
+                result.append([f'{rule_name}_{counter + 1}', _vertical_swap(deepcopy(tree_swap_left2), 1)])  # swap both
+                counter += 2
+
+    return result
+
+
+def _horizontal_swap(tree):
+    first_child = tree.children[0]
+    second_child = tree.children[1]
+    # Detach
+    first_child.parent = None
+    # Reattach at the end
+    first_child.parent = tree
+    return tree
+
+
+def _vertical_swap(tree, child_idx):
+    middle = tree.children[child_idx]
+    leaf = middle.children[0]
+    # Detach
+    leaf.parent = None
+    middle.parent = leaf
+    leaf.parent = tree
+
+    # When we reattach the leaf, it will be in the last position (second child of the root node)
+    # So if this was the first branch (child_idx=0), we need to detach and reattach the other branch so it is placed at
+    # the end again
+    if child_idx == 0 and len(tree.children) > 1:
+        other_branch = tree.children[0]
+        other_branch.parent = None
+        other_branch.parent = tree
+
+    return tree
+
+
+classical_tableaux_system_invertible = get_system_with_invertible_rules(classical_tableaux_system)
+classical_indexed_tableaux_system_invertible = get_system_with_invertible_rules(classical_indexed_tableaux_system)
+FDE_tableaux_system_invertible = get_system_with_invertible_rules(FDE_tableaux_system)
+K3_tableaux_system_invertible = get_system_with_invertible_rules(K3_tableaux_system)
+LP_tableaux_system_invertible = get_system_with_invertible_rules(LP_tableaux_system)

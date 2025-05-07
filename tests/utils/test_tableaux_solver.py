@@ -5,7 +5,10 @@ from logics.classes.propositional import Formula, Inference
 from logics.classes.propositional.proof_theories.tableaux import TableauxNode
 from logics.classes.propositional.proof_theories.metainferential_tableaux import MetainferentialTableauxStandard
 from logics.instances.propositional.tableaux import (
-    classical_tableaux_system, classical_indexed_tableaux_system, LP_tableaux_system, classical_constructive_tree_system
+    classical_tableaux_system, classical_tableaux_system_invertible,
+    classical_indexed_tableaux_system, classical_indexed_tableaux_system_invertible,
+    LP_tableaux_system,
+    classical_constructive_tree_system
 )
 from logics.instances.propositional.metainferential_tableaux import (
     metainferential_tableaux_rules,
@@ -171,7 +174,9 @@ class TestTableauxSolver(unittest.TestCase):
             # tableaux.print_tree(classical_parser)
             try:
                 self.assertTrue(classical_tableaux_system.is_correct_tree(tableaux, inf))
+                self.assertTrue(classical_tableaux_system_invertible.is_correct_tree(tableaux, inf))
                 self.assertTrue(classical_indexed_tableaux_system.is_correct_tree(tableaux2, inf))
+                self.assertTrue(classical_indexed_tableaux_system_invertible.is_correct_tree(tableaux2, inf))
             except Exception as e:
                 print("ERROR WITH INFERENCE:", classical_parser.unparse(inf))
                 # tableaux.print_tree(classical_parser)
@@ -201,7 +206,9 @@ class TestTableauxSolver(unittest.TestCase):
 
             try:
                 self.assertTrue(classical_tableaux_system.is_correct_tree(tableaux, inf))
+                self.assertTrue(classical_tableaux_system_invertible.is_correct_tree(tableaux, inf))
                 self.assertTrue(classical_indexed_tableaux_system.is_correct_tree(tableaux2, inf))
+                self.assertTrue(classical_indexed_tableaux_system_invertible.is_correct_tree(tableaux2, inf))
             except Exception as e:
                 print("ERROR WITH INFERENCE:", classical_parser.unparse(inf))
                 # tableaux.print_tree(classical_parser)
