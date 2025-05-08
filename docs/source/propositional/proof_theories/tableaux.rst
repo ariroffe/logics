@@ -58,6 +58,72 @@ Instances
        :lines: 340-349
 
 
+Systems with invertible rules
+-----------------------------
+
+The TableauxSystem class' ``is_correct_tree`` method needs the applications of rules to be made in order. For example,
+if a rule like this is provided:
+
+.. code-block::
+
+   A ↔ B
+   ├── A (R↔)
+   │   └── B (R↔)
+   └── ~A (R↔)
+       └── ~B (R↔)
+
+Then the following will be a correctly derived tree:
+
+.. code-block::
+
+   p ↔ q
+   ├── p (R↔)
+   │   └── q (R↔)
+   └── ~p (R↔)
+       └── ~q (R↔)
+
+But the following two will not, because they do not respect the order in which the nodes are derived in the rule:
+
+.. code-block::
+
+   p ↔ q
+   ├── q (R↔)
+   │   └── p (R↔)
+   └── ~p' (R↔)
+       └── ~q (R↔)
+
+   p ↔ q
+   ├── ~p (R↔)
+   │   └── ~q (R↔)
+   └── p (R↔)
+       └── q (R↔)
+
+This may be undesirable in some circumstances, since that order should not make a difference. To fix this issue, we
+simply add systems with more rules, so for instance:
+
+.. code-block::
+
+   A ↔ B
+   ├── B (R↔)
+   │   └── A (R↔)
+   └── ~A (R↔)
+       └── ~B (R↔)
+
+and
+
+.. code-block::
+
+   A ↔ B
+   ├── ~A (R↔)
+   │   └── ~B (R↔)
+   └── A (R↔)
+       └── B (R↔)
+
+are added as rules. These systems are built so that every possible order that does not alter the derivation is a correct
+one. They are called the same as the above, but with an _invertible suffix, e.g., ``classical_tableaux_system_invertible``,
+``classical_indexed_tableaux_system_invertible``, ``FDE_tableaux_system_invertible``, ``K3_tableaux_system_invertible``,
+``LP_tableaux_system_invertible``
+
 Tableaux Solver
 ---------------
 

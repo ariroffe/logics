@@ -391,7 +391,7 @@ classical_constructive_tree_system = ConstructiveTreeSystem(language=classical_i
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-# SYSTEMS WITH INVERTIBLE RULES (e.g. that allow both p ∧ q -> p -> q and p ∧ q -> q -> p)
+# SYSTEMS WITH INVERTIBLE RULES
 
 def get_system_with_invertible_rules(original_system):
     # WARNING: Works with some restrictions (rules of height up to 2, up to 2 leaves)

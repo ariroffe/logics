@@ -6,6 +6,7 @@ build==0.3.1.post1
 certifi==2020.11.8
 cffi==1.17.1
 chardet==3.0.4
+charset-normalizer==3.4.2
 colorama==0.4.4
 cryptography==3.4.7
 docutils==0.16
@@ -24,10 +25,11 @@ Pygments==2.7.2
 pyparsing==2.4.7
 pytz==2020.4
 readme-renderer==29.0
-requests==2.25.0
+requests==2.32.3
 requests-toolbelt==0.9.1
 rfc3986==1.4.0
 SecretStorage==3.3.1
+setuptools==80.3.1
 six==1.15.0
 snowballstemmer==2.0.0
 Sphinx==3.3.1
@@ -41,6 +43,6 @@ sphinxcontrib-serializinghtml==1.1.4
 toml==0.10.2
 tqdm==4.59.0
 twine==3.4.1
-urllib3==1.26.2
+urllib3==2.4.0
 webencodings==0.5.1
 zipp==3.4.1
